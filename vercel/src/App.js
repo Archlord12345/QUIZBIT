@@ -1,6 +1,5 @@
 import React from 'react';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { LayoutDashboard, Users, MessageSquare, Settings, Database } from 'lucide-react';
 
 const firebaseConfig = {
@@ -13,8 +12,7 @@ const firebaseConfig = {
   measurementId: "G-4T8SFQHM4G"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+initializeApp(firebaseConfig);
 
 function App() {
   return (
