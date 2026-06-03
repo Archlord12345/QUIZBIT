@@ -79,7 +79,7 @@ const BattleRoyaleView = ({
     setLoading(true);
     setError('');
     try {
-      const activeRoom = await BattleRoyaleController.startRoom(room);
+      const activeRoom = await BattleRoyaleController.startRoom(room, account);
       setRoom(activeRoom);
       onStartBattle(activeRoom);
     } catch (err) {
