@@ -3,5 +3,5 @@
   "name": "quizbit-admin",
   "installCommand": "npm ci --prefix vercel",
   "buildCommand": "npm run build --prefix vercel",
-  "outputDirectory": "vercel/build"
+  "outputDirectory": "vercel/dist"
 }
