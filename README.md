@@ -36,6 +36,8 @@ QuizBit est une plateforme de quiz mobile avec génération de questions par IA,
 
 ### Panel admin Vercel
 
+Le panel cloud utilise Vite, Framer Motion, Recharts et TanStack Table pour de meilleures performances, des animations fluides et des tableaux plus propres.
+
 Le panel cloud est disponible ici :
 
 ```txt
@@ -180,13 +182,13 @@ CLOUDINARY_UPLOAD_PRESET=
 Variables utilisées par le panel Vercel :
 
 ```env
-REACT_APP_FIREBASE_API_KEY=
-REACT_APP_FIREBASE_AUTH_DOMAIN=
-REACT_APP_FIREBASE_PROJECT_ID=
-REACT_APP_FIREBASE_STORAGE_BUCKET=
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=
-REACT_APP_FIREBASE_APP_ID=
-REACT_APP_FIREBASE_MEASUREMENT_ID=
+REACT_APP_ / VITE_FIREBASE_API_KEY=
+REACT_APP_ / VITE_FIREBASE_AUTH_DOMAIN=
+REACT_APP_ / VITE_FIREBASE_PROJECT_ID=
+REACT_APP_ / VITE_FIREBASE_STORAGE_BUCKET=
+REACT_APP_ / VITE_FIREBASE_MESSAGING_SENDER_ID=
+REACT_APP_ / VITE_FIREBASE_APP_ID=
+REACT_APP_ / VITE_FIREBASE_MEASUREMENT_ID=
 GEMINI_API_KEY=
 MISTRAL_API_KEY=
 CLOUDINARY_CLOUD_NAME=
@@ -230,18 +232,18 @@ Sur une machine avec Android SDK configuré :
 
 ```sh
 cd android
-./gradlew assembleDebug
+./gradlew assembleRelease
 ```
 
 APK généré :
 
 ```txt
-android/app/build/outputs/apk/debug/app-debug.apk
+android/app/build/outputs/apk/release/app-release.apk
 ```
 
 ## Build APK avec GitHub Actions
 
-Le workflow suivant construit automatiquement un APK debug :
+Le workflow suivant construit automatiquement un APK release :
 
 ```txt
 .github/workflows/android-apk.yml
@@ -263,16 +265,18 @@ Le workflow :
 5. génère `.env` depuis les GitHub Secrets ;
 6. lance lint, typecheck, tests ;
 7. valide le bundle Android React Native ;
-8. lance `./gradlew assembleDebug` ;
+8. lance `./gradlew assembleRelease` ;
 9. upload l'APK en artifact.
 
 Artifact :
 
 ```txt
-quizbit-debug-apk-<run_number>
+quizbit-release-apk-<run_number>
 ```
 
 ## Panel admin Vercel
+
+Le panel cloud utilise Vite, Framer Motion, Recharts et TanStack Table pour de meilleures performances, des animations fluides et des tableaux plus propres.
 
 ### Installation
 

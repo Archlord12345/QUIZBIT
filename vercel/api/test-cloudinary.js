@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+const { getEnv } = require('./env');
 
 const requestWithTimeout = async (url, options = {}, timeoutMs = 9000) => {
   const controller = new AbortController();
@@ -10,26 +10,19 @@ const requestWithTimeout = async (url, options = {}, timeoutMs = 9000) => {
   }
 };
 
-const signCloudinaryParams = (params, secret) => {
-  const payload = Object.keys(params)
-    .sort()
-    .map(key => `${key}=${params[key]}`)
-    .join('&');
-  return crypto.createHash('sha1').update(`${payload}${secret}`).digest('hex');
-};
-
 module.exports = async (req, res) => {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ ok: false, message: 'Method not allowed' });
   }
 
-  const cloudName =
-    process.env.CLOUDINARY_CLOUD_NAME ||
-    process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  const cloudName = getEnv(
+    'CLOUDINARY_CLOUD_NAME',
+    'REACT_APP_CLOUDINARY_CLOUD_NAME',
+  );
+  const uploadPreset = getEnv('CLOUDINARY_UPLOAD_PRESET');
+  const apiKey = getEnv('CLOUDINARY_API_KEY');
+  const apiSecret = getEnv('CLOUDINARY_API_SECRET');
 
   if (!cloudName) {
     return res.status(400).json({
@@ -40,11 +33,16 @@ module.exports = async (req, res) => {
 
   try {
     if (apiKey && apiSecret) {
-      const timestamp = Math.floor(Date.now() / 1000);
-      const params = { timestamp };
-      const signature = signCloudinaryParams(params, apiSecret);
+      const basicAuth = Buffer.from(`${apiKey}:${apiSecret}`).toString(
+        'base64',
+      );
       const response = await requestWithTimeout(
-        `https://api.cloudinary.com/v1_1/${cloudName}/usage?timestamp=${timestamp}&api_key=${apiKey}&signature=${signature}`,
+        `https://api.cloudinary.com/v1_1/${cloudName}/usage`,
+        {
+          headers: {
+            Authorization: `Basic ${basicAuth}`,
+          },
+        },
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -55,7 +53,7 @@ module.exports = async (req, res) => {
       }
       return res.status(200).json({
         ok: true,
-        message: 'Cloudinary API key/secret OK',
+        message: `Cloudinary OK (${cloudName})`,
       });
     }
 
@@ -81,7 +79,7 @@ module.exports = async (req, res) => {
     ) {
       return res.status(200).json({
         ok: true,
-        message: 'Cloudinary joignable, preset reconnu.',
+        message: `Cloudinary joignable (${cloudName}), preset reconnu.`,
       });
     }
 
@@ -92,7 +90,9 @@ module.exports = async (req, res) => {
       });
     }
 
-    return res.status(200).json({ ok: true, message: 'Cloudinary OK' });
+    return res
+      .status(200)
+      .json({ ok: true, message: `Cloudinary OK (${cloudName})` });
   } catch (error) {
     return res.status(502).json({
       ok: false,

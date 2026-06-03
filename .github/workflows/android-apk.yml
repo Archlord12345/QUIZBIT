@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android Release APK
 
 on:
   workflow_dispatch:
@@ -11,12 +11,12 @@ on:
       - 'cursor/**'
 
 concurrency:
-  group: android-apk-${{ github.ref }}
+  group: android-release-apk-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-apk:
-    name: Build debug APK
+  build-release-apk:
+    name: Build release APK
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -50,12 +50,8 @@ jobs:
 
       - name: Install Android SDK packages
         run: |
-          sdkmanager --install \
-            'platforms;android-36' \
-            'build-tools;36.0.0' \
-            'platform-tools' \
-            'ndk;27.1.12297006'
           yes | sdkmanager --licenses >/dev/null
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platform-tools"
 
       - name: Write Android local.properties
         run: echo "sdk.dir=${ANDROID_HOME}" > android/local.properties
@@ -76,6 +72,9 @@ jobs:
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
           CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_URL=${{ secrets.CLOUDINARY_URL }}
           CLOUDINARY_UPLOAD_PRESET=${{ secrets.CLOUDINARY_UPLOAD_PRESET }}
           EOF
           sed -i 's/^          //' .env
@@ -94,25 +93,20 @@ jobs:
 
       - name: Validate Android JavaScript bundle
         run: |
-          npx react-native bundle \
-            --platform android \
-            --dev false \
-            --entry-file index.js \
-            --bundle-output /tmp/quizbit-index.android.bundle \
-            --assets-dest /tmp/quizbit-assets
+          npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output /tmp/quizbit-index.android.bundle --assets-dest /tmp/quizbit-assets
 
       - name: Make Gradle wrapper executable
         run: chmod +x android/gradlew
 
-      - name: Build debug APK
+      - name: Build release APK
         working-directory: android
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleRelease --stacktrace
 
-      - name: Upload APK artifact
+      - name: Upload release APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: quizbit-debug-apk-${{ github.run_number }}
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: quizbit-release-apk-${{ github.run_number }}
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
 
@@ -120,7 +114,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: android-build-reports-${{ github.run_number }}
+          name: android-release-build-reports-${{ github.run_number }}
           path: |
             android/build/reports/**
             android/app/build/reports/**
@@ -131,9 +125,9 @@ jobs:
         if: success()
         run: |
           {
-            echo '## APK Android généré'
+            echo '## APK Android release généré'
             echo ''
-            echo "Artifact: \`quizbit-debug-apk-${{ github.run_number }}\`"
+            echo "Artifact: `quizbit-release-apk-${{ github.run_number }}`"
             echo ''
-            echo "Télécharge l'APK depuis l'onglet **Artifacts** de ce run GitHub Actions."
+            echo "Télécharge l'APK release depuis l'onglet **Artifacts** de ce run GitHub Actions."
           } >> "$GITHUB_STEP_SUMMARY"

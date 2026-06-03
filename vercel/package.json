@@ -3,34 +3,21 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@tanstack/react-table": "^8.21.3",
+    "@vitejs/plugin-react": "^6.0.2",
     "firebase": "^10.0.0",
+    "framer-motion": "^12.40.0",
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-scripts": "5.0.1"
+    "recharts": "^3.8.1",
+    "vite": "^8.0.16"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "start": "vite --host 0.0.0.0",
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "check": "node --check api/test-gemini.js && node --check api/test-mistral.js && node --check api/test-cloudinary.js"
   }
 }
