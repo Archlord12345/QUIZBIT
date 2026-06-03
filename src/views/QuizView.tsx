@@ -8,21 +8,33 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { COLORS, SPACING } from '../utils/theme';
 import QuizController, { QuizState } from '../controllers/QuizController';
+import { GameMode } from '../controllers/ScoreController';
+import { COLORS, SPACING } from '../utils/theme';
 
 type QuizViewProps = {
   initialQuiz: QuizState;
+  mode: GameMode;
+  onComplete: (finalScore: number, quiz: QuizState) => Promise<void>;
   onExit: () => void;
 };
 
-const QuizView = ({ initialQuiz, onExit }: QuizViewProps) => {
+const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
   const [quizState, setQuizState] = useState(initialQuiz);
   const [openAnswer, setOpenAnswer] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState('');
 
   const currentQuestion = quizState.questions[quizState.currentIndex];
+
+  const completeQuiz = async (finalScore: number) => {
+    await onComplete(finalScore, quizState);
+    Alert.alert(
+      mode === 'battle_royale' ? 'Battle terminée !' : 'Partie terminée !',
+      `Score final : ${finalScore}`,
+      [{ text: 'OK', onPress: onExit }],
+    );
+  };
 
   const handleAnswer = async (answer: string) => {
     if (!answer.trim() || submitting) {
@@ -47,11 +59,7 @@ const QuizView = ({ initialQuiz, onExit }: QuizViewProps) => {
           }
           setOpenAnswer('');
         },
-        (finalScore: number) => {
-          Alert.alert('Partie terminée !', `Score final : ${finalScore}`, [
-            { text: 'OK', onPress: onExit },
-          ]);
-        },
+        completeQuiz,
       );
     } finally {
       setSubmitting(false);
@@ -62,8 +70,11 @@ const QuizView = ({ initialQuiz, onExit }: QuizViewProps) => {
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
         <Text style={styles.score}>Score: {quizState.score}</Text>
-        <Text style={styles.hearts}>Coeurs: {quizState.hearts}/3</Text>
+        <Text style={styles.hearts}>Vies: {quizState.hearts}</Text>
       </View>
+      <Text style={styles.modeBadge}>
+        {mode === 'battle_royale' ? 'Mode Battle Royale' : 'Mode Solo'}
+      </Text>
 
       <View style={styles.questionCard}>
         <Text style={styles.progress}>
@@ -124,15 +135,15 @@ const QuizView = ({ initialQuiz, onExit }: QuizViewProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
     backgroundColor: COLORS.primary,
+    flexGrow: 1,
     padding: SPACING.md,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 12,
     marginTop: 50,
-    marginBottom: 20,
   },
   score: {
     color: 'white',
@@ -144,13 +155,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
+  modeBadge: {
+    color: COLORS.secondary,
+    fontWeight: '800',
+    marginBottom: 18,
+    textAlign: 'center',
+  },
   questionCard: {
     backgroundColor: 'white',
     borderRadius: 25,
-    padding: SPACING.xl,
-    minHeight: 400,
-    justifyContent: 'center',
     elevation: 10,
+    justifyContent: 'center',
+    minHeight: 400,
+    padding: SPACING.xl,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
@@ -163,46 +180,46 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   questionText: {
-    fontSize: 24,
     color: COLORS.text,
-    textAlign: 'center',
+    fontSize: 24,
     fontWeight: '700',
     marginBottom: 40,
+    textAlign: 'center',
   },
   optionsContainer: {
     gap: 15,
   },
   optionButton: {
     backgroundColor: '#F0F2F5',
-    padding: 18,
+    borderColor: '#E1E4E8',
     borderRadius: 15,
     borderWidth: 1,
-    borderColor: '#E1E4E8',
+    padding: 18,
   },
   optionDisabled: {
     opacity: 0.6,
   },
   optionText: {
-    fontSize: 18,
     color: COLORS.text,
-    textAlign: 'center',
+    fontSize: 18,
     fontWeight: '500',
+    textAlign: 'center',
   },
   input: {
-    borderWidth: 1,
+    backgroundColor: '#FAFBFC',
     borderColor: '#DFE1E6',
     borderRadius: 10,
-    padding: 15,
-    fontSize: 16,
+    borderWidth: 1,
     color: COLORS.text,
+    fontSize: 16,
     marginBottom: 15,
-    backgroundColor: '#FAFBFC',
+    padding: 15,
   },
   submitButton: {
-    backgroundColor: COLORS.accent,
-    padding: 16,
-    borderRadius: 10,
     alignItems: 'center',
+    backgroundColor: COLORS.accent,
+    borderRadius: 10,
+    padding: 16,
   },
   submitButtonText: {
     color: 'white',
@@ -210,15 +227,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   feedback: {
-    marginTop: 20,
-    textAlign: 'center',
     color: COLORS.text,
     fontWeight: '700',
+    marginTop: 20,
+    textAlign: 'center',
   },
   quitButton: {
-    marginTop: 'auto',
-    marginBottom: 30,
     alignSelf: 'center',
+    marginBottom: 30,
+    marginTop: 'auto',
   },
   quitText: {
     color: 'rgba(255, 255, 255, 0.7)',
