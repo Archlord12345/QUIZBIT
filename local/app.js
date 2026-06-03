@@ -1,3 +1,5 @@
+/* eslint-env browser */
+/* eslint-disable no-alert */
 const STORAGE_KEY = 'quizbit-local-admin-v1';
 
 const initialState = {
