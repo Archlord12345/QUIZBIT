@@ -41,9 +41,12 @@ class AIModel {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.geminiKey}`;
     const prompt = [
       `Genere ${count} questions de quiz en francais sur "${theme}".`,
-      'Reponds uniquement avec un tableau JSON valide.',
-      'Schema: [{"id":"1","text":"Question","options":["A","B","C","D"],"answer":"A","type":"mcq"}].',
-      'Chaque question doit avoir 4 options et la reponse doit exactement correspondre a une option.',
+      'Reponds uniquement avec un tableau JSON valide, sans markdown.',
+      'Il existe exactement deux types de questions:',
+      '1. type "mcq": question a choix multiples avec options de 2 a 5 choix maximum, et answer doit exactement correspondre a une option.',
+      '2. type "open": question ouverte sans options, ou l utilisateur saisit lui-meme la reponse, et answer contient la reponse attendue.',
+      'Schema: [{"id":"1","text":"Question","options":["A","B","C"],"answer":"A","type":"mcq"},{"id":"2","text":"Question ouverte","answer":"Reponse attendue","type":"open"}].',
+      'Melange des questions mcq et open quand le theme le permet.',
     ].join(' ');
 
     const response = await fetch(url, {
@@ -72,9 +75,56 @@ class AIModel {
     userAnswer: string,
     correctAnswer: string,
   ): Promise<boolean> {
-    return (
+    if (
       this.normalizeAnswer(userAnswer) === this.normalizeAnswer(correctAnswer)
+    ) {
+      return true;
+    }
+
+    if (!this.geminiKey) {
+      return false;
+    }
+
+    return this.validateAnswerWithGemini(userAnswer, correctAnswer);
+  }
+
+  private async validateAnswerWithGemini(
+    userAnswer: string,
+    correctAnswer: string,
+  ): Promise<boolean> {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.geminiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: [
+                    'Tu verifies une reponse ouverte de quiz en francais.',
+                    'Reponds uniquement par OUI ou NON.',
+                    `Reponse attendue: ${correctAnswer}`,
+                    `Reponse utilisateur: ${userAnswer}`,
+                    'Accepte les synonymes et formulations equivalentes, refuse les contresens.',
+                  ].join(' '),
+                },
+              ],
+            },
+          ],
+        }),
+      },
     );
+    const data = await response.json();
+    if (!response.ok) {
+      return false;
+    }
+
+    const text = String(data?.candidates?.[0]?.content?.parts?.[0]?.text || '');
+    return this.normalizeAnswer(text).startsWith('oui');
   }
 
   private parseQuestionsJson(text: string): unknown {
@@ -121,11 +171,9 @@ class AIModel {
       return null;
     }
 
-    const options = rawOptions.includes(answer)
-      ? rawOptions
-      : [answer, ...rawOptions.filter(option => option !== answer)];
+    const requestedType = candidate.type === 'open' ? 'open' : 'mcq';
 
-    if (options.length < 2) {
+    if (requestedType === 'open' || rawOptions.length < 2) {
       return {
         id: String(candidate.id || `open-${index + 1}`),
         text,
@@ -134,11 +182,15 @@ class AIModel {
       };
     }
 
+    const options = rawOptions.includes(answer)
+      ? rawOptions
+      : [answer, ...rawOptions.filter(option => option !== answer)];
+
     return {
       id: String(candidate.id || `mcq-${index + 1}`),
       text,
       answer,
-      options: options.slice(0, 4),
+      options: options.slice(0, 5),
       type: 'mcq',
     };
   }

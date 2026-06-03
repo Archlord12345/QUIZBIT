@@ -928,21 +928,196 @@ const EmptyRow = memo(({ colSpan }) => (
   </tr>
 ));
 
+const questionStats = questions => {
+  const list = Array.isArray(questions) ? questions : [];
+  return list.reduce(
+    (acc, question) => {
+      if (question?.type === 'open') acc.open += 1;
+      else if (question?.type === 'mcq') acc.mcq += 1;
+      else acc.invalid += 1;
+      if (Array.isArray(question?.options) && question.options.length > 5) {
+        acc.tooManyChoices += 1;
+      }
+      return acc;
+    },
+    { mcq: 0, open: 0, invalid: 0, tooManyChoices: 0 },
+  );
+};
+
 const QuestionsTable = memo(({ onSelect, rows }) => (
-  <DataTable headers={['Theme', 'Questions', 'Date', 'Mode', 'Actions']}>
-    {rows.length === 0 ? <EmptyRow colSpan={5} /> : null}
-    {rows.map(row => (
-      <tr key={row.id}>
-        <td style={styles.td}>{row.theme || 'N/A'}</td>
-        <td style={styles.td}>{row.questions?.length || 0}</td>
-        <td style={styles.td}>{safeDate(row.createdAt)}</td>
-        <td style={styles.td}>{row.mode || 'solo'}</td>
-        <td style={styles.td}>
-          <ActionButton onClick={() => onSelect(row)} label="Voir" />
-        </td>
-      </tr>
-    ))}
+  <DataTable
+    headers={[
+      'Theme',
+      'Questions, reponses et choix',
+      'Types',
+      'Date',
+      'Mode',
+      'Actions',
+    ]}
+  >
+    {rows.length === 0 ? <EmptyRow colSpan={6} /> : null}
+    {rows.map(row => {
+      const stats = questionStats(row.questions);
+      return (
+        <tr key={row.id}>
+          <td style={{ ...styles.td, minWidth: 170 }}>
+            <strong>{row.theme || 'N/A'}</strong>
+            <div style={{ color: '#6B778C', fontSize: 12, marginTop: 6 }}>
+              {row.id}
+            </div>
+          </td>
+          <td style={{ ...styles.td, minWidth: 460 }}>
+            <QuizQuestionsPreview questions={row.questions} />
+          </td>
+          <td style={{ ...styles.td, minWidth: 140 }}>
+            <TypeCounter label="QCM" value={stats.mcq} tone="mcq" />
+            <TypeCounter label="Ouvertes" value={stats.open} tone="open" />
+            {stats.invalid ? (
+              <TypeCounter
+                label="Invalides"
+                value={stats.invalid}
+                tone="error"
+              />
+            ) : null}
+            {stats.tooManyChoices ? (
+              <div style={{ color: '#BF2600', fontSize: 12, marginTop: 8 }}>
+                {stats.tooManyChoices} question(s) ont plus de 5 choix
+              </div>
+            ) : null}
+          </td>
+          <td style={styles.td}>{safeDate(row.createdAt)}</td>
+          <td style={styles.td}>{row.mode || 'solo'}</td>
+          <td style={styles.td}>
+            <ActionButton onClick={() => onSelect(row)} label="JSON" />
+          </td>
+        </tr>
+      );
+    })}
   </DataTable>
+));
+
+const TypeCounter = memo(({ label, tone, value }) => {
+  const colors = {
+    mcq: ['#E3FCEF', '#006644'],
+    open: ['#EAE6FF', '#403294'],
+    error: ['#FFEBE6', '#BF2600'],
+  };
+  const [backgroundColor, color] = colors[tone] || colors.mcq;
+  return (
+    <div
+      style={{
+        ...styles.pill,
+        backgroundColor,
+        color,
+        display: 'block',
+        marginBottom: 7,
+        textAlign: 'center',
+      }}
+    >
+      {label}: {value}
+    </div>
+  );
+});
+
+const QuizQuestionsPreview = memo(({ questions }) => {
+  const list = Array.isArray(questions) ? questions : [];
+  if (!list.length) {
+    return (
+      <span style={{ color: '#6B778C' }}>Aucune question dans ce quiz.</span>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gap: 12,
+        maxHeight: 420,
+        overflow: 'auto',
+        paddingRight: 6,
+      }}
+    >
+      {list.map((question, index) => (
+        <QuestionPreview
+          key={question.id || `${question.text}-${index}`}
+          index={index}
+          question={question}
+        />
+      ))}
+    </div>
+  );
+});
+
+const QuestionPreview = memo(({ index, question }) => {
+  const type = question?.type === 'open' ? 'open' : 'mcq';
+  const options = Array.isArray(question?.options)
+    ? question.options.filter(Boolean)
+    : [];
+  const visibleOptions = options.slice(0, 5);
+  const hasTooManyChoices = options.length > 5;
+  const answer = question?.answer || 'Reponse manquante';
+
+  return (
+    <article
+      style={{
+        backgroundColor: '#F9FAFB',
+        border: '1px solid #E5E7EB',
+        borderRadius: 12,
+        padding: 12,
+      }}
+    >
+      <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
+        <strong>#{index + 1}</strong>
+        <QuestionTypePill type={type} />
+        {hasTooManyChoices ? (
+          <span style={{ color: '#BF2600', fontSize: 12, fontWeight: 800 }}>
+            Max 5 choix autorises
+          </span>
+        ) : null}
+      </div>
+      <div style={{ fontWeight: 800, marginTop: 8 }}>
+        {question?.text || 'Question manquante'}
+      </div>
+      <div style={{ color: '#006644', marginTop: 8 }}>
+        <strong>Reponse attendue:</strong> {answer}
+      </div>
+      {type === 'mcq' ? (
+        <div
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}
+        >
+          {visibleOptions.map((option, optionIndex) => (
+            <span
+              key={`${option}-${optionIndex}`}
+              style={{
+                ...styles.pill,
+                backgroundColor: option === answer ? '#E3FCEF' : '#EBECF0',
+                color: option === answer ? '#006644' : '#172B4D',
+              }}
+            >
+              {optionIndex + 1}. {option}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div style={{ color: '#6B778C', fontSize: 12, marginTop: 8 }}>
+          Question ouverte: l'utilisateur saisit sa reponse, puis l'app analyse
+          la reponse avec Gemini avant validation.
+        </div>
+      )}
+    </article>
+  );
+});
+
+const QuestionTypePill = memo(({ type }) => (
+  <span
+    style={{
+      ...styles.pill,
+      backgroundColor: type === 'open' ? '#EAE6FF' : '#E3FCEF',
+      color: type === 'open' ? '#403294' : '#006644',
+    }}
+  >
+    {type === 'open' ? 'Reponse ouverte' : 'Choix multiples'}
+  </span>
 ));
 
 const UsersTable = memo(({ onSelect, rows }) => (

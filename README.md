@@ -18,6 +18,8 @@ QuizBit est une plateforme de quiz mobile avec génération de questions par IA,
 - Profils utilisateurs stockés dans Firestore.
 - Génération de quiz avec Google Gemini.
 - Questions QCM et questions ouvertes.
+- QCM avec 2 à 5 choix maximum.
+- Questions ouvertes : l'utilisateur saisit sa réponse et l'app l'analyse avec Gemini pour validation.
 - Scores sauvegardés dans Firestore.
 - Leaderboard global depuis Firestore.
 - Mode battle royale avec salles Firestore :
@@ -45,6 +47,7 @@ Il permet de consulter et diagnostiquer les données réelles Firestore :
 - dashboard global ;
 - utilisateurs ;
 - quiz ;
+- questions, réponses attendues, types de questions et choix QCM ;
 - scores ;
 - battle rooms ;
 - recherche dans les données chargées ;
@@ -118,7 +121,7 @@ Ce panel utilise `localStorage`. Il ne modifie pas Firestore.
 - Xcode/CocoaPods pour iOS
 - Projet Firebase avec Auth + Firestore
 - Clé Google Gemini
-- Compte Cloudinary si avatar upload souhaité
+- Compte Cloudinary si avatar upload souhaité, avec cloud name et API credentials
 - Compte Vercel pour le panel admin cloud
 
 ## Installation racine
@@ -146,6 +149,9 @@ FIREBASE_MEASUREMENT_ID=
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
 CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+CLOUDINARY_URL=
 CLOUDINARY_UPLOAD_PRESET=
 ```
 
@@ -162,6 +168,9 @@ REACT_APP_FIREBASE_MEASUREMENT_ID=
 GEMINI_API_KEY=
 MISTRAL_API_KEY=
 CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+CLOUDINARY_URL=
 CLOUDINARY_UPLOAD_PRESET=
 ```
 
@@ -325,6 +334,35 @@ cd local
 npm run check
 ```
 
+## Types de questions
+
+QuizBit supporte deux types de questions dans les quiz Firestore et dans le panel admin.
+
+### QCM (`mcq`)
+
+```ts
+{
+  id: string;
+  text: string;
+  type: 'mcq';
+  options: string[]; // 2 à 5 choix maximum
+  answer: string;   // doit correspondre exactement à un des choix
+}
+```
+
+### Réponse ouverte (`open`)
+
+```ts
+{
+  id: string;
+  text: string;
+  type: 'open';
+  answer: string; // réponse attendue
+}
+```
+
+Pour une question ouverte, l'utilisateur saisit lui-même sa réponse. L'app compare d'abord la réponse normalisée, puis utilise Gemini pour analyser les synonymes et formulations équivalentes.
+
 ## Collections Firestore attendues
 
 ### `users`
@@ -407,6 +445,13 @@ Le panel `vercel/` est prévu pour Vercel et répond actuellement à :
 ```txt
 https://quizbit-admin.vercel.app/
 ```
+
+Le dépôt contient deux configurations pour sécuriser le lien avec Vercel :
+
+- `vercel/vercel.json` si le projet Vercel utilise `vercel/` comme root directory ;
+- `vercel.json` + wrappers `api/` à la racine si le projet Vercel est lié à la racine du dépôt.
+
+Dans les deux cas, le build cible le panel admin et garde les routes API de diagnostics disponibles.
 
 Configurer les variables d'environnement Vercel avant déploiement pour que diagnostics et données Firestore fonctionnent correctement.
 
