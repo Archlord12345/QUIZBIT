@@ -1015,6 +1015,7 @@ function AiPromptTester() {
     'Créer un quiz sur les capitales africaines avec QCM et questions ouvertes',
   );
   const [count, setCount] = useState(5);
+  const [provider, setProvider] = useState('auto');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
@@ -1030,7 +1031,7 @@ function AiPromptTester() {
       const response = await fetch('/api/generate-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: cleanPrompt, count }),
+        body: JSON.stringify({ prompt: cleanPrompt, count, provider }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.ok) {
@@ -1055,16 +1056,29 @@ function AiPromptTester() {
             placeholder="Ex: Génère un quiz sur les planètes avec 3 QCM et 2 réponses ouvertes"
           />
         </label>
-        <label>
-          Nombre de questions
-          <input
-            min="1"
-            max="20"
-            type="number"
-            value={count}
-            onChange={event => setCount(Number(event.target.value || 5))}
-          />
-        </label>
+        <div className="ai-controls">
+          <label>
+            Nombre de questions
+            <input
+              min="1"
+              max="20"
+              type="number"
+              value={count}
+              onChange={event => setCount(Number(event.target.value || 5))}
+            />
+          </label>
+          <label>
+            Fournisseur IA
+            <select
+              value={provider}
+              onChange={event => setProvider(event.target.value)}
+            >
+              <option value="auto">Auto: Gemini puis Mistral</option>
+              <option value="gemini">Gemini d'abord, Mistral si echec</option>
+              <option value="mistral">Mistral d'abord, Gemini si echec</option>
+            </select>
+          </label>
+        </div>
         <button
           className="btn primary"
           disabled={loading || !prompt.trim()}
@@ -1075,7 +1089,11 @@ function AiPromptTester() {
         {error ? <div className="ai-error">{error}</div> : null}
         {result ? (
           <div className="ai-result">
-            <div className="ai-model">Modèle: {result.model}</div>
+            <div className="ai-model">
+              Fournisseur utilise: {result.provider || 'N/A'} / Modèle:{' '}
+              {result.model}
+              {result.fallbackUsed ? ' — fallback automatique utilisé' : ''}
+            </div>
             <QuizPreview questions={result.questions} />
           </div>
         ) : null}

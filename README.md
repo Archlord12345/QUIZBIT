@@ -221,9 +221,17 @@ Routes principales :
 /api/user-update-stats
 /api/scores-record
 /api/scores-list
+/api/generate-questions
+/api/validate-answer
+/api/cloudinary-upload
+/api/battle-create
+/api/battle-join
+/api/battle-get
+/api/battle-start
+/api/battle-finish
 ```
 
-Ces routes utilisent Firebase côté serveur Vercel puis renvoient les données nécessaires à l'application.
+Ces routes utilisent Firebase, Gemini et Cloudinary côté serveur Vercel puis renvoient les données nécessaires à l'application. Le flux APK ne doit pas appeler directement Firebase/Gemini/Cloudinary pour ses fonctionnalités runtime.
 
 ## Lancer l'application mobile
 
