@@ -1,3 +1,4 @@
+const { getEnv } = require('./env');
 const requestWithTimeout = async (url, options = {}, timeoutMs = 9000) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -14,8 +15,7 @@ module.exports = async (req, res) => {
     return res.status(405).json({ ok: false, message: 'Method not allowed' });
   }
 
-  const key =
-    process.env.MISTRAL_API_KEY || process.env.REACT_APP_MISTRAL_API_KEY;
+  const key = getEnv('MISTRAL_API_KEY', 'REACT_APP_MISTRAL_API_KEY');
   if (!key) {
     return res
       .status(400)
@@ -41,11 +41,9 @@ module.exports = async (req, res) => {
     }
     return res.status(200).json({ ok: true, message: 'API Mistral OK' });
   } catch (error) {
-    return res
-      .status(502)
-      .json({
-        ok: false,
-        message: error.message || 'Test Mistral impossible.',
-      });
+    return res.status(502).json({
+      ok: false,
+      message: error.message || 'Test Mistral impossible.',
+    });
   }
 };

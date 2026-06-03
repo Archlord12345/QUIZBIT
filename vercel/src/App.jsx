@@ -13,7 +13,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity,
   BarChart3,
-  CheckCircle,
   Database,
   Download,
   LayoutDashboard,
@@ -22,7 +21,6 @@ import {
   Settings,
   Sparkles,
   Users,
-  XCircle,
 } from 'lucide-react';
 import {
   Area,
@@ -1011,27 +1009,17 @@ function SettingsPage({
 }
 
 function TestRow({ label, loading, onTest, result }) {
+  const status = result?.status || 'idle';
+  const message = loading ? 'Test en cours...' : result?.message || 'Non teste';
   return (
-    <div className="test-row">
+    <div className="test-row" data-status={status}>
       <strong>{label}</strong>
       <button className="btn small" disabled={loading} onClick={onTest}>
         {loading ? 'Test...' : 'Tester'}
       </button>
-      <span
-        className={
-          result?.status === 'success'
-            ? 'result success'
-            : result?.status === 'error'
-            ? 'result error'
-            : 'result'
-        }
-      >
-        {result?.status === 'success' ? (
-          <CheckCircle size={16} />
-        ) : result?.status === 'error' ? (
-          <XCircle size={16} />
-        ) : null}
-        {result?.message || 'Non teste'}
+      <span className={`result ${status}`}>
+        <span className="result-dot" aria-hidden="true" />
+        <span>{message}</span>
       </span>
     </div>
   );

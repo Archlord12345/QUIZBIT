@@ -1,3 +1,4 @@
+const { getEnv } = require('./env');
 const requestWithTimeout = async (url, options = {}, timeoutMs = 9000) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -14,8 +15,7 @@ module.exports = async (req, res) => {
     return res.status(405).json({ ok: false, message: 'Method not allowed' });
   }
 
-  const key =
-    process.env.GEMINI_API_KEY || process.env.REACT_APP_GEMINI_API_KEY;
+  const key = getEnv('GEMINI_API_KEY', 'REACT_APP_GEMINI_API_KEY');
   if (!key) {
     return res
       .status(400)
