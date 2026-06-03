@@ -372,7 +372,10 @@ function App() {
     [battleRooms, quizzes, scores, users],
   );
 
-  const currentRows = pageRows[currentPage] || [];
+  const currentRows = useMemo(
+    () => pageRows[currentPage] || [],
+    [currentPage, pageRows],
+  );
   const filteredRows = useMemo(
     () => currentRows.filter(row => recordMatches(row, search)),
     [currentRows, search],
