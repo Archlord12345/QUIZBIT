@@ -19,13 +19,6 @@ export type UserAccount = {
   bestScore: number;
 };
 
-type LocalCredentials = {
-  password: string;
-  account: UserAccount;
-};
-
-const localAccounts = new Map<string, LocalCredentials>();
-
 class AuthController {
   private currentAccount: UserAccount | null = null;
 
@@ -38,89 +31,50 @@ class AuthController {
     password: string,
     displayName: string,
   ): Promise<UserAccount> {
+    this.assertFirebaseReady();
     const cleanEmail = email.trim().toLowerCase();
     const cleanName =
       displayName.trim() || cleanEmail.split('@')[0] || 'Player';
     this.validateCredentials(cleanEmail, password);
 
-    if (firebaseEnabled && auth && db) {
-      const credential = await createUserWithEmailAndPassword(
-        auth,
-        cleanEmail,
-        password,
-      );
-      await updateProfile(credential.user, { displayName: cleanName });
-      const account = this.fromFirebaseUser(
-        credential.user.uid,
-        cleanEmail,
-        cleanName,
-      );
-      await setDoc(doc(db, 'users', account.id), {
-        ...account,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-      this.currentAccount = account;
-      return account;
-    }
-
-    if (localAccounts.has(cleanEmail)) {
-      throw new Error('Compte local deja existant.');
-    }
-
+    const credential = await createUserWithEmailAndPassword(
+      auth!,
+      cleanEmail,
+      password,
+    );
+    await updateProfile(credential.user, { displayName: cleanName });
     const account = this.fromFirebaseUser(
-      `local-${Date.now()}`,
+      credential.user.uid,
       cleanEmail,
       cleanName,
     );
-    localAccounts.set(cleanEmail, { password, account });
+    await setDoc(doc(db!, 'users', account.id), {
+      ...account,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
     this.currentAccount = account;
     return account;
   }
 
   async login(email: string, password: string): Promise<UserAccount> {
+    this.assertFirebaseReady();
     const cleanEmail = email.trim().toLowerCase();
     this.validateCredentials(cleanEmail, password);
 
-    if (firebaseEnabled && auth && db) {
-      const credential = await signInWithEmailAndPassword(
-        auth,
+    const credential = await signInWithEmailAndPassword(
+      auth!,
+      cleanEmail,
+      password,
+    );
+    const profile = await this.loadProfile(credential.user.uid);
+    const account =
+      profile ||
+      this.fromFirebaseUser(
+        credential.user.uid,
         cleanEmail,
-        password,
+        credential.user.displayName || cleanEmail.split('@')[0],
       );
-      const profile = await this.loadProfile(credential.user.uid);
-      const account =
-        profile ||
-        this.fromFirebaseUser(
-          credential.user.uid,
-          cleanEmail,
-          credential.user.displayName || cleanEmail.split('@')[0],
-        );
-      this.currentAccount = account;
-      return account;
-    }
-
-    const local = localAccounts.get(cleanEmail);
-    if (!local || local.password !== password) {
-      throw new Error(
-        'Identifiants locaux invalides. Cree un compte ou verifie le mot de passe.',
-      );
-    }
-
-    this.currentAccount = local.account;
-    return local.account;
-  }
-
-  async continueAsGuest(displayName: string = 'Invite'): Promise<UserAccount> {
-    const account: UserAccount = {
-      id: `guest-${Date.now()}`,
-      email: 'guest@quizbit.local',
-      displayName: displayName.trim() || 'Invite',
-      isGuest: true,
-      gamesPlayed: 0,
-      totalScore: 0,
-      bestScore: 0,
-    };
     this.currentAccount = account;
     return account;
   }
@@ -129,18 +83,16 @@ class AuthController {
     account: UserAccount,
     imageUri: string,
   ): Promise<UserAccount> {
+    this.assertFirebaseReady();
     const upload = await CloudinaryModel.uploadImage(imageUri);
     const updatedAccount = { ...account, avatarUrl: upload.url };
     this.currentAccount = updatedAccount;
 
-    if (!account.isGuest && firebaseEnabled && db) {
-      await updateDoc(doc(db, 'users', account.id), {
-        avatarUrl: upload.url,
-        updatedAt: new Date().toISOString(),
-      });
-    }
+    await updateDoc(doc(db!, 'users', account.id), {
+      avatarUrl: upload.url,
+      updatedAt: new Date().toISOString(),
+    });
 
-    this.syncLocalAccount(updatedAccount);
     return updatedAccount;
   }
 
@@ -148,6 +100,7 @@ class AuthController {
     account: UserAccount,
     score: number,
   ): Promise<UserAccount> {
+    this.assertFirebaseReady();
     const updatedAccount: UserAccount = {
       ...account,
       gamesPlayed: account.gamesPlayed + 1,
@@ -156,18 +109,15 @@ class AuthController {
     };
     this.currentAccount = updatedAccount;
 
-    if (!account.isGuest && firebaseEnabled && db) {
-      await setDoc(
-        doc(db, 'users', account.id),
-        {
-          ...updatedAccount,
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true },
-      );
-    }
+    await setDoc(
+      doc(db!, 'users', account.id),
+      {
+        ...updatedAccount,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
 
-    this.syncLocalAccount(updatedAccount);
     return updatedAccount;
   }
 
@@ -179,11 +129,8 @@ class AuthController {
   }
 
   private async loadProfile(userId: string): Promise<UserAccount | null> {
-    if (!db) {
-      return null;
-    }
-
-    const snapshot = await getDoc(doc(db, 'users', userId));
+    this.assertFirebaseReady();
+    const snapshot = await getDoc(doc(db!, 'users', userId));
     if (!snapshot.exists()) {
       return null;
     }
@@ -216,10 +163,11 @@ class AuthController {
     }
   }
 
-  private syncLocalAccount(account: UserAccount) {
-    const local = localAccounts.get(account.email);
-    if (local) {
-      localAccounts.set(account.email, { ...local, account });
+  private assertFirebaseReady() {
+    if (!firebaseEnabled || !auth || !db) {
+      throw new Error(
+        'Firebase doit etre configure pour utiliser les comptes reels.',
+      );
     }
   }
 }

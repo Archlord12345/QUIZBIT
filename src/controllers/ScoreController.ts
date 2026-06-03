@@ -22,8 +22,6 @@ export type ScoreEntry = {
   createdAt: string;
 };
 
-const localScores: ScoreEntry[] = [];
-
 class ScoreController {
   async recordScore(
     account: UserAccount,
@@ -31,8 +29,8 @@ class ScoreController {
     score: number,
     mode: GameMode,
   ): Promise<{ account: UserAccount; scoreEntry: ScoreEntry }> {
-    const scoreEntry: ScoreEntry = {
-      id: `score-${Date.now()}`,
+    this.assertFirestoreReady();
+    const scoreEntry: Omit<ScoreEntry, 'id'> = {
       userId: account.id,
       displayName: account.displayName,
       theme,
@@ -41,51 +39,51 @@ class ScoreController {
       createdAt: new Date().toISOString(),
     };
 
-    localScores.unshift(scoreEntry);
-
-    if (firebaseEnabled && db && !account.isGuest) {
-      const ref = await addDoc(collection(db, 'scores'), {
-        ...scoreEntry,
-        createdAt: Timestamp.fromDate(new Date(scoreEntry.createdAt)),
-      });
-      scoreEntry.id = ref.id;
-    }
+    const ref = await addDoc(collection(db!, 'scores'), {
+      ...scoreEntry,
+      createdAt: Timestamp.fromDate(new Date(scoreEntry.createdAt)),
+    });
 
     const updatedAccount = await AuthController.updateScoreStats(
       account,
       score,
     );
-    return { account: updatedAccount, scoreEntry };
+    return {
+      account: updatedAccount,
+      scoreEntry: { ...scoreEntry, id: ref.id },
+    };
   }
 
   async getLeaderboard(mode?: GameMode): Promise<ScoreEntry[]> {
-    if (firebaseEnabled && db) {
-      const snapshot = await getDocs(
-        query(collection(db, 'scores'), orderBy('score', 'desc'), limit(25)),
-      );
-      return snapshot.docs
-        .map(docSnapshot => {
-          const data = docSnapshot.data();
-          return {
-            id: docSnapshot.id,
-            userId: String(data.userId || ''),
-            displayName: String(data.displayName || 'Player'),
-            theme: String(data.theme || ''),
-            score: Number(data.score || 0),
-            mode: data.mode === 'battle_royale' ? 'battle_royale' : 'solo',
-            createdAt:
-              typeof data.createdAt?.toDate === 'function'
-                ? data.createdAt.toDate().toISOString()
-                : String(data.createdAt || new Date().toISOString()),
-          } as ScoreEntry;
-        })
-        .filter(score => !mode || score.mode === mode);
-    }
+    this.assertFirestoreReady();
+    const snapshot = await getDocs(
+      query(collection(db!, 'scores'), orderBy('score', 'desc'), limit(25)),
+    );
+    return snapshot.docs
+      .map(docSnapshot => {
+        const data = docSnapshot.data();
+        return {
+          id: docSnapshot.id,
+          userId: String(data.userId || ''),
+          displayName: String(data.displayName || 'Player'),
+          theme: String(data.theme || ''),
+          score: Number(data.score || 0),
+          mode: data.mode === 'battle_royale' ? 'battle_royale' : 'solo',
+          createdAt:
+            typeof data.createdAt?.toDate === 'function'
+              ? data.createdAt.toDate().toISOString()
+              : String(data.createdAt || new Date().toISOString()),
+        } as ScoreEntry;
+      })
+      .filter(score => !mode || score.mode === mode);
+  }
 
-    return [...localScores]
-      .filter(score => !mode || score.mode === mode)
-      .sort((left, right) => right.score - left.score)
-      .slice(0, 25);
+  private assertFirestoreReady() {
+    if (!firebaseEnabled || !db) {
+      throw new Error(
+        'Firestore doit etre configure pour lire ou ecrire les scores reels.',
+      );
+    }
   }
 }
 

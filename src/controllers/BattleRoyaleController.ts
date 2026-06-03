@@ -30,13 +30,12 @@ export type BattleRoyaleRoom = {
   createdAt: string;
 };
 
-const localRooms = new Map<string, BattleRoyaleRoom>();
-
 class BattleRoyaleController {
   async createRoom(
     host: UserAccount,
     config: BattleRoyaleConfig,
   ): Promise<BattleRoyaleRoom> {
+    this.assertFirestoreReady();
     const room: BattleRoyaleRoom = {
       id: `room-${Date.now()}`,
       code: this.generateCode(),
@@ -47,12 +46,7 @@ class BattleRoyaleController {
       createdAt: new Date().toISOString(),
     };
 
-    localRooms.set(room.code, room);
-
-    if (firebaseEnabled && db && !host.isGuest) {
-      await setDoc(doc(collection(db, 'battleRooms'), room.code), room);
-    }
-
+    await setDoc(doc(collection(db!, 'battleRooms'), room.code), room);
     return room;
   }
 
@@ -62,7 +56,7 @@ class BattleRoyaleController {
   ): Promise<BattleRoyaleRoom> {
     const room = await this.getRoom(code.trim().toUpperCase());
     if (!room) {
-      throw new Error('Salle battle royale introuvable.');
+      throw new Error('Salle battle royale introuvable dans Firestore.');
     }
     if (room.status !== 'waiting') {
       throw new Error('Cette salle a deja demarre.');
@@ -98,13 +92,14 @@ class BattleRoyaleController {
     account: UserAccount,
     score: number,
   ): Promise<BattleRoyaleRoom> {
-    const players = room.players.map(player =>
+    const latestRoom = (await this.getRoom(room.code)) || room;
+    const players = latestRoom.players.map(player =>
       player.userId === account.id
         ? {
             ...player,
             score,
             finished: true,
-            eliminated: score < room.config.eliminationScore,
+            eliminated: score < latestRoom.config.eliminationScore,
           }
         : player,
     );
@@ -114,44 +109,34 @@ class BattleRoyaleController {
       (left, right) => right.score - left.score,
     )[0];
     const updatedRoom: BattleRoyaleRoom = {
-      ...room,
+      ...latestRoom,
       players,
-      status: allFinished ? 'finished' : room.status,
+      status: allFinished ? 'finished' : latestRoom.status,
       winnerId: allFinished
         ? survivors[0]?.userId || winner?.userId
-        : room.winnerId,
+        : latestRoom.winnerId,
     };
     await this.saveRoom(updatedRoom);
     return updatedRoom;
   }
 
   async getRoom(code: string): Promise<BattleRoyaleRoom | null> {
-    const local = localRooms.get(code);
-    if (local) {
-      return local;
+    this.assertFirestoreReady();
+    const snapshot = await getDoc(doc(db!, 'battleRooms', code));
+    if (!snapshot.exists()) {
+      return null;
     }
 
-    if (firebaseEnabled && db) {
-      const snapshot = await getDoc(doc(db, 'battleRooms', code));
-      if (snapshot.exists()) {
-        const room = snapshot.data() as BattleRoyaleRoom;
-        localRooms.set(room.code, room);
-        return room;
-      }
-    }
-
-    return null;
+    return snapshot.data() as BattleRoyaleRoom;
   }
 
   private async saveRoom(room: BattleRoyaleRoom) {
-    localRooms.set(room.code, room);
-    if (firebaseEnabled && db) {
-      await setDoc(
-        doc(db, 'battleRooms', room.code),
-        { ...room },
-        { merge: true },
-      );
-    }
+    this.assertFirestoreReady();
+    await setDoc(
+      doc(db!, 'battleRooms', room.code),
+      { ...room },
+      { merge: true },
+    );
   }
 
   private normalizeConfig(config: BattleRoyaleConfig): BattleRoyaleConfig {
@@ -181,6 +166,14 @@ class BattleRoyaleController {
 
   private generateCode() {
     return Math.random().toString(36).slice(2, 8).toUpperCase();
+  }
+
+  private assertFirestoreReady() {
+    if (!firebaseEnabled || !db) {
+      throw new Error(
+        'Firestore doit etre configure pour utiliser les battles reels.',
+      );
+    }
   }
 }
 

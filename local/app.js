@@ -98,7 +98,7 @@ function renderHeader() {
         <h1>${label}</h1>
         <p>Administration locale rapide pour developpement, demo et tests hors cloud.</p>
       </div>
-      <button class="button secondary" id="seed-demo">Ajouter demo</button>
+
     </header>
   `;
 }
@@ -287,7 +287,6 @@ function table(headers, rows, rowRenderer) {
 }
 
 function bindPageActions() {
-  document.getElementById('seed-demo')?.addEventListener('click', seedDemo);
   document.getElementById('add-quiz')?.addEventListener('click', addQuiz);
   document.getElementById('add-user')?.addEventListener('click', addUser);
   document.getElementById('add-score')?.addEventListener('click', addScore);
@@ -469,49 +468,6 @@ function importJson() {
 function resetLocal() {
   if (!confirm('Effacer toutes les donnees locales ?')) return;
   mutate({ ...initialState });
-}
-
-function seedDemo() {
-  const user = {
-    id: uid('user'),
-    displayName: 'Demo Player',
-    email: 'demo@quizbit.local',
-    gamesPlayed: 1,
-    totalScore: 40,
-    bestScore: 40,
-  };
-  mutate({
-    ...state,
-    users: [user, ...state.users],
-    scores: [
-      {
-        id: uid('score'),
-        userId: user.id,
-        displayName: user.displayName,
-        theme: 'Demo',
-        score: 40,
-        mode: 'solo',
-        createdAt: new Date().toISOString(),
-      },
-      ...state.scores,
-    ],
-    battleRooms: [
-      {
-        id: uid('battle'),
-        code: 'DEMO42',
-        status: 'waiting',
-        players: [],
-        config: {
-          theme: 'Demo Battle',
-          maxPlayers: 10,
-          questionCount: 5,
-          eliminationScore: 20,
-        },
-        createdAt: new Date().toISOString(),
-      },
-      ...state.battleRooms,
-    ],
-  });
 }
 
 render();
