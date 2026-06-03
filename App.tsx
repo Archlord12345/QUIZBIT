@@ -1,5 +1,6 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import LogoMark from './src/components/LogoMark';
 import AuthController, { UserAccount } from './src/controllers/AuthController';
 import BattleRoyaleController, {
   BattleRoyaleRoom,
@@ -90,8 +91,8 @@ const App = () => {
   if (savingScore) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color="white" size="large" />
-        <Text style={styles.loadingText}>Sauvegarde du score...</Text>
+        <LogoMark compact subtitle="Sauvegarde du score..." />
+        <ActivityIndicator color="#21E7FF" size="large" />
       </View>
     );
   }

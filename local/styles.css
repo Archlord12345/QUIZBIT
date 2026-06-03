@@ -1,15 +1,15 @@
 :root {
   color-scheme: light;
-  --primary: #0052cc;
-  --accent: #0747a6;
-  --secondary: #00b8d9;
-  --surface: #ffffff;
-  --background: #f4f5f7;
-  --text: #172b4d;
-  --muted: #6b778c;
-  --success: #36b37e;
-  --warning: #ffab00;
-  --error: #ff5630;
+  --primary: #050816;
+  --accent: #2d7dff;
+  --secondary: #21e7ff;
+  --surface: #10162a;
+  --background: #070a13;
+  --text: #f8fbff;
+  --muted: #94a3b8;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ff4d6d;
 }
 
 * {
@@ -94,7 +94,8 @@ textarea {
 }
 
 .card {
-  background: var(--surface);
+  background: linear-gradient(145deg, #10162a, #111b3d);
+  border: 1px solid rgb(33 231 255 / 14%);
   border-radius: 16px;
   box-shadow: 0 4px 14px rgb(9 30 66 / 8%);
   padding: 22px;
@@ -140,7 +141,8 @@ textarea {
 }
 
 .table-wrap {
-  background: var(--surface);
+  background: linear-gradient(145deg, #10162a, #111b3d);
+  border: 1px solid rgb(33 231 255 / 14%);
   border-radius: 16px;
   box-shadow: 0 4px 14px rgb(9 30 66 / 8%);
   overflow: auto;
@@ -177,8 +179,8 @@ th {
 input,
 select,
 textarea {
-  background: #fafbfc;
-  border: 1px solid #dfe1e6;
+  background: #070a13;
+  border: 1px solid rgb(33 231 255 / 25%);
   border-radius: 10px;
   color: var(--text);
   padding: 12px;

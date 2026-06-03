@@ -112,6 +112,28 @@ Ce panel utilise `localStorage`. Il ne modifie pas Firestore.
 └── .github/workflows/android-apk.yml# Build APK GitHub Actions
 ```
 
+## Logo et assets visuels
+
+Le logo officiel doit être placé dans :
+
+```txt
+logo/quizbit-logo.png
+```
+
+Puis lancer :
+
+```sh
+npm run logo
+```
+
+Cette commande génère automatiquement :
+
+- les icônes Android `ic_launcher` et `ic_launcher_round` dans tous les dossiers `mipmap-*` ;
+- le logo du splash Android `android/app/src/main/res/drawable-nodpi/logo_splash.png` ;
+- le logo runtime React Native `src/assets/logo.png`.
+
+Le thème mobile et les panels utilisent une palette sombre bleu/cyan/violet assortie au logo.
+
 ## Prérequis
 
 - Node.js `>= 22.11.0`
