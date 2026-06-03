@@ -78,14 +78,25 @@ button:disabled {
   font-weight: 800;
   text-transform: uppercase;
 }
-.brand-orb {
+.brand-logo {
   align-items: center;
-  background: linear-gradient(135deg, var(--cyan), var(--violet));
-  border-radius: 18px;
+  background: radial-gradient(
+    circle,
+    rgb(33 231 255 / 22%),
+    rgb(139 92 246 / 16%)
+  );
+  border: 1px solid var(--line);
+  border-radius: 20px;
   display: grid;
-  height: 52px;
+  height: 58px;
+  overflow: hidden;
   place-items: center;
-  width: 52px;
+  width: 58px;
+}
+.brand-logo img {
+  height: 54px;
+  object-fit: contain;
+  width: 54px;
 }
 .nav-list {
   display: grid;

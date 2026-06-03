@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import logoUrl from './assets/logo.png';
 import { initializeApp } from 'firebase/app';
 import {
   collection,
@@ -442,8 +443,8 @@ function Sidebar({ currentPage, onPage }) {
   return (
     <aside className="sidebar glass-panel">
       <div className="brand">
-        <div className="brand-orb">
-          <Sparkles size={24} />
+        <div className="brand-logo">
+          <img src={logoUrl} alt="QuizBit logo" />
         </div>
         <div>
           <strong>QuizBit</strong>

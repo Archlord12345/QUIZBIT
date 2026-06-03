@@ -38,7 +38,7 @@ class AIModel {
     theme: string,
     count: number,
   ): Promise<Question[]> {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.geminiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.geminiKey}`;
     const prompt = [
       `Genere ${count} questions de quiz en francais sur "${theme}".`,
       'Reponds uniquement avec un tableau JSON valide, sans markdown.',
@@ -93,7 +93,7 @@ class AIModel {
     correctAnswer: string,
   ): Promise<boolean> {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.geminiKey}`,
       {
         method: 'POST',
         headers: {
