@@ -40,8 +40,6 @@ const firebaseConfig = {
     process.env.REACT_APP_FIREBASE_MEASUREMENT_ID || 'G-4T8SFQHM4G',
 };
 
-const GEMINI_KEY = process.env.REACT_APP_GEMINI_API_KEY || '';
-const MISTRAL_KEY = process.env.REACT_APP_MISTRAL_API_KEY || '';
 const PAGE_SIZE = 50;
 const REQUEST_TIMEOUT_MS = 9000;
 
@@ -320,28 +318,10 @@ function App() {
   const testGemini = useCallback(async () => {
     setLoadingFlag('gemini', true);
     try {
-      if (!GEMINI_KEY)
-        throw new Error('Cle Gemini non configuree dans Vercel.');
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
-      const response = await withTimeout(
-        fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: 'Respond with OK' }] }],
-          }),
-        }),
-        'Gemini',
-      );
-      const data = await response.json();
-      if (!response.ok || !data.candidates) {
-        throw new Error(
-          data.error?.message || 'Candidates missing in response',
-        );
-      }
+      const message = await testServerEndpoint('/api/test-gemini');
       setTestResults(prev => ({
         ...prev,
-        gemini: { status: 'success', message: 'API Gemini OK' },
+        gemini: { status: 'success', message },
       }));
     } catch (err) {
       setTestResults(prev => ({
@@ -356,18 +336,10 @@ function App() {
   const testMistral = useCallback(async () => {
     setLoadingFlag('mistral', true);
     try {
-      if (!MISTRAL_KEY)
-        throw new Error('Cle Mistral non configuree dans Vercel.');
-      const response = await withTimeout(
-        fetch('https://api.mistral.ai/v1/models', {
-          headers: { Authorization: `Bearer ${MISTRAL_KEY}` },
-        }),
-        'Mistral',
-      );
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const message = await testServerEndpoint('/api/test-mistral');
       setTestResults(prev => ({
         ...prev,
-        mistral: { status: 'success', message: 'API Mistral OK' },
+        mistral: { status: 'success', message },
       }));
     } catch (err) {
       setTestResults(prev => ({
@@ -376,6 +348,24 @@ function App() {
       }));
     } finally {
       setLoadingFlag('mistral', false);
+    }
+  }, [setLoadingFlag]);
+
+  const testCloudinary = useCallback(async () => {
+    setLoadingFlag('cloudinary', true);
+    try {
+      const message = await testServerEndpoint('/api/test-cloudinary');
+      setTestResults(prev => ({
+        ...prev,
+        cloudinary: { status: 'success', message },
+      }));
+    } catch (err) {
+      setTestResults(prev => ({
+        ...prev,
+        cloudinary: { status: 'error', message: err.message },
+      }));
+    } finally {
+      setLoadingFlag('cloudinary', false);
     }
   }, [setLoadingFlag]);
 
@@ -423,6 +413,7 @@ function App() {
             onTestFirebase={testFirebase}
             onTestGemini={testGemini}
             onTestMistral={testMistral}
+            onTestCloudinary={testCloudinary}
           />
         ) : null}
       </main>
@@ -603,7 +594,14 @@ const DataTable = memo(({ children, headers }) => (
 ));
 
 const SettingsPage = memo(
-  ({ loading, onTestFirebase, onTestGemini, onTestMistral, results }) => (
+  ({
+    loading,
+    onTestCloudinary,
+    onTestFirebase,
+    onTestGemini,
+    onTestMistral,
+    results,
+  }) => (
     <div style={{ ...styles.card, maxWidth: 760 }}>
       <h3 style={{ marginTop: 0 }}>Diagnostics</h3>
       <TestRow
@@ -623,6 +621,12 @@ const SettingsPage = memo(
         loading={loading.mistral}
         onTest={onTestMistral}
         result={results.mistral}
+      />
+      <TestRow
+        label="Cloudinary Upload"
+        loading={loading.cloudinary}
+        onTest={onTestCloudinary}
+        result={results.cloudinary}
       />
     </div>
   ),
