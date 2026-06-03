@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, limit, query, orderBy, count } from 'firebase/firestore';
-import { LayoutDashboard, Users, MessageSquare, Settings, Database, Activity, CheckCircle, XCircle, Search } from 'lucide-react';
+import { getFirestore, collection, getDocs, limit, query, orderBy } from 'firebase/firestore';
+import { LayoutDashboard, Users, MessageSquare, Settings, Database, Activity, CheckCircle, XCircle } from 'lucide-react';
 
 const firebaseConfig = {
   apiKey: "AIzaSyB3-z7Zsu8dki3nUuiqHRAlJmbFRk1l5TY",
