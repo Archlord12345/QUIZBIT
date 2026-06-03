@@ -45,13 +45,6 @@ const AuthView = ({ onAuthenticated }: AuthViewProps) => {
     }
   };
 
-  const continueAsGuest = async () => {
-    const account = await AuthController.continueAsGuest(
-      displayName || 'Invite',
-    );
-    onAuthenticated(account);
-  };
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.logo}>QuizBit</Text>
@@ -113,16 +106,9 @@ const AuthView = ({ onAuthenticated }: AuthViewProps) => {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={continueAsGuest}
-        >
-          <Text style={styles.secondaryButtonText}>Continuer en invité</Text>
-        </TouchableOpacity>
-
         <Text style={styles.hint}>
-          Firebase Auth est utilisé si les variables Firebase sont configurées.
-          Sinon, l'app utilise un mode local pour tester le flux complet.
+          Firebase Auth et Firestore sont obligatoires : l'app mobile lit et
+          écrit uniquement les données réelles de ton projet Firebase.
         </Text>
       </View>
     </ScrollView>

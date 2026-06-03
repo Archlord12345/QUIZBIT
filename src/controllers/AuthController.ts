@@ -13,7 +13,6 @@ export type UserAccount = {
   email: string;
   displayName: string;
   avatarUrl?: string;
-  isGuest: boolean;
   gamesPlayed: number;
   totalScore: number;
   bestScore: number;
@@ -147,7 +146,6 @@ class AuthController {
       id,
       email,
       displayName,
-      isGuest: false,
       gamesPlayed: 0,
       totalScore: 0,
       bestScore: 0,
