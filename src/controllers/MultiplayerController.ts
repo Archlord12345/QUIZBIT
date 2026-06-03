@@ -11,7 +11,7 @@ class MultiplayerController {
     NetworkModel.startDiscovery();
   }
 
-  sendGameState(state: any) {
+  sendGameState(_state: any) {
     // Broadcast to all known peers
   }
 }

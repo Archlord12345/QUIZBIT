@@ -10,8 +10,8 @@ class NetworkModel {
 
   constructor() {
     this.zeroconf.on('start', () => console.log('Discovery started'));
-    this.zeroconf.on('found', (name) => console.log('Found peer:', name));
-    this.zeroconf.on('resolved', (service) => {
+    this.zeroconf.on('found', name => console.log('Found peer:', name));
+    this.zeroconf.on('resolved', service => {
       console.log('Resolved peer:', service.host, service.addresses);
       if (service.addresses && service.addresses.length > 0) {
         this.peers.push(service.addresses[0]);
@@ -32,7 +32,7 @@ class NetworkModel {
   }
 
   initSocket() {
-    this.socket = dgram.createSocket('udp4');
+    this.socket = dgram.createSocket({ type: 'udp4' });
     this.socket.bind(this.port);
     this.socket.on('message', (msg: any, rinfo: any) => {
       console.log(`Received message: ${msg} from ${rinfo.address}`);

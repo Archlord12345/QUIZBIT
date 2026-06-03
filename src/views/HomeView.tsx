@@ -1,30 +1,59 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { COLORS, SPACING } from '../utils/theme';
-import QuizController from '../controllers/QuizController';
+import QuizController, { QuizState } from '../controllers/QuizController';
 
-const { width } = Dimensions.get('window');
+type HomeViewProps = {
+  onQuizReady: (quiz: QuizState) => void;
+};
 
-const HomeView = ({ navigation }: any) => {
+const HomeView = ({ onQuizReady }: HomeViewProps) => {
   const [theme, setTheme] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleStart = async () => {
-    if (!theme) return;
+    const cleanTheme = theme.trim();
+    if (!cleanTheme || loading) {
+      return;
+    }
+
     setLoading(true);
-    await QuizController.initQuiz(theme, navigation);
-    setLoading(false);
+    setError('');
+
+    try {
+      const quiz = await QuizController.initQuiz(cleanTheme);
+      onQuizReady(quiz);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Impossible de creer le quiz pour le moment.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <Animated.View entering={FadeInUp.delay(200)} style={styles.header}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.header}>
         <Text style={styles.logo}>QuizBit</Text>
-        <Text style={styles.subtitle}>IA-Powered Quiz Master</Text>
-      </Animated.View>
+        <Text style={styles.subtitle}>Quiz IA jouable meme hors ligne</Text>
+      </View>
 
-      <Animated.View entering={FadeInDown.delay(400)} style={styles.card}>
+      <View style={styles.card}>
         <Text style={styles.label}>Entrez un thème</Text>
         <TextInput
           style={styles.input}
@@ -32,34 +61,42 @@ const HomeView = ({ navigation }: any) => {
           placeholderTextColor="#6B778C"
           value={theme}
           onChangeText={setTheme}
+          editable={!loading}
+          returnKeyType="done"
+          onSubmitEditing={handleStart}
         />
 
-        <TouchableOpacity 
-          style={[styles.button, !theme && styles.buttonDisabled]} 
-          onPress={handleStart}
-          disabled={loading || !theme}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? 'Génération...' : 'Commencer le Quiz'}
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.modeButton}>
-          <Text style={styles.modeText}>Mode Online</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.modeButton}>
-          <Text style={styles.modeText}>Multiplayer Local</Text>
+        <TouchableOpacity
+          style={[
+            styles.button,
+            (!theme.trim() || loading) && styles.buttonDisabled,
+          ]}
+          onPress={handleStart}
+          disabled={loading || !theme.trim()}
+        >
+          {loading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.buttonText}>Commencer le Quiz</Text>
+          )}
         </TouchableOpacity>
       </View>
-    </View>
+
+      <View style={styles.footer}>
+        <Text style={styles.modeText}>
+          Online si une clé Gemini est configurée
+        </Text>
+        <Text style={styles.modeText}>Fallback local actif sans connexion</Text>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: COLORS.primary,
     padding: SPACING.lg,
     justifyContent: 'center',
@@ -107,6 +144,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     backgroundColor: '#FAFBFC',
   },
+  errorText: {
+    color: COLORS.error,
+    fontSize: 14,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
   button: {
     backgroundColor: COLORS.accent,
     padding: 18,
@@ -122,21 +165,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
     marginTop: 40,
-  },
-  modeButton: {
-    borderWidth: 1,
-    borderColor: COLORS.secondary,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
+    gap: 8,
   },
   modeText: {
     color: 'white',
     fontSize: 14,
-  }
+    textAlign: 'center',
+  },
 });
 
 export default HomeView;
