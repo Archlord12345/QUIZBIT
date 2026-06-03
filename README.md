@@ -232,18 +232,18 @@ Sur une machine avec Android SDK configuré :
 
 ```sh
 cd android
-./gradlew assembleDebug
+./gradlew assembleRelease
 ```
 
 APK généré :
 
 ```txt
-android/app/build/outputs/apk/debug/app-debug.apk
+android/app/build/outputs/apk/release/app-release.apk
 ```
 
 ## Build APK avec GitHub Actions
 
-Le workflow suivant construit automatiquement un APK debug :
+Le workflow suivant construit automatiquement un APK release :
 
 ```txt
 .github/workflows/android-apk.yml
@@ -265,13 +265,13 @@ Le workflow :
 5. génère `.env` depuis les GitHub Secrets ;
 6. lance lint, typecheck, tests ;
 7. valide le bundle Android React Native ;
-8. lance `./gradlew assembleDebug` ;
+8. lance `./gradlew assembleRelease` ;
 9. upload l'APK en artifact.
 
 Artifact :
 
 ```txt
-quizbit-debug-apk-<run_number>
+quizbit-release-apk-<run_number>
 ```
 
 ## Panel admin Vercel
