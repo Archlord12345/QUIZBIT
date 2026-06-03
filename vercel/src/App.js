@@ -79,12 +79,15 @@ function App() {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] })
+        body: JSON.stringify({ contents: [{ parts: [{ text: "Respond with OK" }] }] })
       });
-      if (response.ok) {
+      const data = await response.json();
+      
+      if (response.ok && data.candidates) {
         setTestResults(prev => ({ ...prev, gemini: { status: 'success', message: 'API Gemini OK' } }));
       } else {
-        throw new Error(`HTTP ${response.status}`);
+        const msg = data.error?.message || 'Candidates missing in response';
+        throw new Error(msg);
       }
     } catch (e) {
       setTestResults(prev => ({ ...prev, gemini: { status: 'error', message: e.message } }));
