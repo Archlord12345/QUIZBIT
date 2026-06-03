@@ -19,5 +19,8 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "check": "node --check api/test-gemini.js && node --check api/test-mistral.js && node --check api/test-cloudinary.js"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
