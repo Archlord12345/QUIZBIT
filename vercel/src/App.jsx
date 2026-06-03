@@ -1005,7 +1005,82 @@ function SettingsPage({
           </div>
         ))}
       </Panel>
+      <AiPromptTester />
     </div>
+  );
+}
+
+function AiPromptTester() {
+  const [prompt, setPrompt] = useState(
+    'Créer un quiz sur les capitales africaines avec QCM et questions ouvertes',
+  );
+  const [count, setCount] = useState(5);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState(null);
+
+  const generate = async () => {
+    const cleanPrompt = prompt.trim();
+    if (!cleanPrompt || loading) return;
+
+    setLoading(true);
+    setError('');
+    setResult(null);
+    try {
+      const response = await fetch('/api/generate-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: cleanPrompt, count }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) {
+        throw new Error(data.message || `HTTP ${response.status}`);
+      }
+      setResult(data);
+    } catch (err) {
+      setError(err.message || 'Generation impossible.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Panel title="Test prompt IA">
+      <div className="ai-tester">
+        <label>
+          Prompt / thème
+          <textarea
+            value={prompt}
+            onChange={event => setPrompt(event.target.value)}
+            placeholder="Ex: Génère un quiz sur les planètes avec 3 QCM et 2 réponses ouvertes"
+          />
+        </label>
+        <label>
+          Nombre de questions
+          <input
+            min="1"
+            max="20"
+            type="number"
+            value={count}
+            onChange={event => setCount(Number(event.target.value || 5))}
+          />
+        </label>
+        <button
+          className="btn primary"
+          disabled={loading || !prompt.trim()}
+          onClick={generate}
+        >
+          {loading ? 'Generation...' : 'Tester la generation'}
+        </button>
+        {error ? <div className="ai-error">{error}</div> : null}
+        {result ? (
+          <div className="ai-result">
+            <div className="ai-model">Modèle: {result.model}</div>
+            <QuizPreview questions={result.questions} />
+          </div>
+        ) : null}
+      </div>
+    </Panel>
   );
 }
 

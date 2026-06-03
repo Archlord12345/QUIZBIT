@@ -204,6 +204,27 @@ Un exemple est fourni dans :
 vercel/.env.example
 ```
 
+## API Vercel utilisée par l'app mobile
+
+L'app mobile ne parle plus directement à Firebase Auth pour la création/connexion de compte. Elle appelle le serveur Vercel :
+
+```txt
+VERCEL_API_BASE_URL=https://quizbit-admin.vercel.app
+```
+
+Routes principales :
+
+```txt
+/api/auth-register
+/api/auth-login
+/api/user-update-avatar
+/api/user-update-stats
+/api/scores-record
+/api/scores-list
+```
+
+Ces routes utilisent Firebase côté serveur Vercel puis renvoient les données nécessaires à l'application.
+
 ## Lancer l'application mobile
 
 ### Metro
