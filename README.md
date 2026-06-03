@@ -18,6 +18,8 @@ QuizBit est une plateforme de quiz mobile avec génération de questions par IA,
 - Profils utilisateurs stockés dans Firestore.
 - Génération de quiz avec Google Gemini.
 - Questions QCM et questions ouvertes.
+- QCM avec 2 à 5 choix maximum.
+- Questions ouvertes : l'utilisateur saisit sa réponse et l'app l'analyse avec Gemini pour validation.
 - Scores sauvegardés dans Firestore.
 - Leaderboard global depuis Firestore.
 - Mode battle royale avec salles Firestore :
@@ -45,6 +47,7 @@ Il permet de consulter et diagnostiquer les données réelles Firestore :
 - dashboard global ;
 - utilisateurs ;
 - quiz ;
+- questions, réponses attendues, types de questions et choix QCM ;
 - scores ;
 - battle rooms ;
 - recherche dans les données chargées ;
@@ -324,6 +327,35 @@ Valider le panel local :
 cd local
 npm run check
 ```
+
+## Types de questions
+
+QuizBit supporte deux types de questions dans les quiz Firestore et dans le panel admin.
+
+### QCM (`mcq`)
+
+```ts
+{
+  id: string;
+  text: string;
+  type: 'mcq';
+  options: string[]; // 2 à 5 choix maximum
+  answer: string;   // doit correspondre exactement à un des choix
+}
+```
+
+### Réponse ouverte (`open`)
+
+```ts
+{
+  id: string;
+  text: string;
+  type: 'open';
+  answer: string; // réponse attendue
+}
+```
+
+Pour une question ouverte, l'utilisateur saisit lui-même sa réponse. L'app compare d'abord la réponse normalisée, puis utilise Gemini pour analyser les synonymes et formulations équivalentes.
 
 ## Collections Firestore attendues
 
