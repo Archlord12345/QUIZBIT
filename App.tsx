@@ -1,26 +1,16 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
 import HomeView from './src/views/HomeView';
 import QuizView from './src/views/QuizView';
-
-const Stack = createStackNavigator();
+import { QuizState } from './src/controllers/QuizController';
 
 const App = () => {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator 
-        initialRouteName="Home"
-        screenOptions={{
-          headerShown: false,
-          cardStyle: { backgroundColor: '#0052CC' }
-        }}
-      >
-        <Stack.Screen name="Home" component={HomeView} />
-        <Stack.Screen name="Quiz" component={QuizView} />
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
+  const [quiz, setQuiz] = React.useState<QuizState | null>(null);
+
+  if (quiz) {
+    return <QuizView initialQuiz={quiz} onExit={() => setQuiz(null)} />;
+  }
+
+  return <HomeView onQuizReady={setQuiz} />;
 };
 
 export default App;

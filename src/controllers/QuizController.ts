@@ -1,43 +1,63 @@
-import AIModel from '../models/AIModel';
+import AIModel, { Question } from '../models/AIModel';
+
+export type QuizState = {
+  theme: string;
+  questions: Question[];
+  hearts: number;
+  score: number;
+  currentIndex: number;
+};
 
 class QuizController {
-  private currentQuiz: any = null;
+  private currentQuiz: QuizState | null = null;
 
-  async initQuiz(theme: string, navigation: any) {
-    try {
-      const questions = await AIModel.generateQuestions(theme);
-      this.currentQuiz = {
-        theme,
-        questions,
-        hearts: 3,
-        score: 0,
-        currentIndex: 0
-      };
-      
-      navigation.navigate('Quiz', { quiz: this.currentQuiz });
-    } catch (error) {
-      console.error("Failed to init quiz", error);
+  async initQuiz(theme: string): Promise<QuizState> {
+    const questions = await AIModel.generateQuestions(theme);
+
+    if (questions.length === 0) {
+      throw new Error('Aucune question disponible pour ce theme.');
     }
+
+    this.currentQuiz = {
+      theme: theme.trim(),
+      questions,
+      hearts: 3,
+      score: 0,
+      currentIndex: 0,
+    };
+
+    return this.currentQuiz;
   }
 
-  async submitAnswer(answer: string, quizState: any, setQuizState: Function, onComplete: Function) {
+  async submitAnswer(
+    answer: string,
+    quizState: QuizState,
+    setQuizState: (state: QuizState) => void,
+    onComplete: (finalScore: number) => void,
+  ) {
     const currentQuestion = quizState.questions[quizState.currentIndex];
-    
-    let isCorrect = false;
-    if (currentQuestion.type === 'mcq') {
-      isCorrect = answer.toLowerCase() === currentQuestion.answer.toLowerCase();
-    } else {
-      isCorrect = await AIModel.validateAnswer(answer, currentQuestion.answer);
+
+    if (!currentQuestion) {
+      onComplete(quizState.score);
+      return;
     }
+
+    const isCorrect = await AIModel.validateAnswer(
+      answer,
+      currentQuestion.answer,
+    );
 
     if (isCorrect) {
       const newScore = quizState.score + 10;
       const nextIndex = quizState.currentIndex + 1;
-      
+
       if (nextIndex < quizState.questions.length) {
-        setQuizState({ ...quizState, score: newScore, currentIndex: nextIndex });
+        setQuizState({
+          ...quizState,
+          score: newScore,
+          currentIndex: nextIndex,
+        });
       } else {
-        // End of quiz or generate more (heart system)
         onComplete(newScore);
       }
     } else {
