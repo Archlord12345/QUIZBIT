@@ -121,7 +121,7 @@ Ce panel utilise `localStorage`. Il ne modifie pas Firestore.
 - Xcode/CocoaPods pour iOS
 - Projet Firebase avec Auth + Firestore
 - Clé Google Gemini
-- Compte Cloudinary si avatar upload souhaité
+- Compte Cloudinary si avatar upload souhaité, avec cloud name et API credentials
 - Compte Vercel pour le panel admin cloud
 
 ## Installation racine
@@ -149,6 +149,9 @@ FIREBASE_MEASUREMENT_ID=
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
 CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+CLOUDINARY_URL=
 CLOUDINARY_UPLOAD_PRESET=
 ```
 
@@ -165,6 +168,9 @@ REACT_APP_FIREBASE_MEASUREMENT_ID=
 GEMINI_API_KEY=
 MISTRAL_API_KEY=
 CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+CLOUDINARY_URL=
 CLOUDINARY_UPLOAD_PRESET=
 ```
 
