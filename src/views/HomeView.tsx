@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import LogoMark from '../components/LogoMark';
 import AuthController, { UserAccount } from '../controllers/AuthController';
 import QuizController, { QuizState } from '../controllers/QuizController';
 import { COLORS, SPACING } from '../utils/theme';
@@ -87,10 +88,7 @@ const HomeView = ({
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.header}>
-        <Text style={styles.logo}>QuizBit</Text>
-        <Text style={styles.subtitle}>
-          Quiz, comptes, scores et battle royale
-        </Text>
+        <LogoMark compact subtitle="Quiz, comptes, scores et battle royale" />
       </View>
 
       <View style={styles.profileCard}>

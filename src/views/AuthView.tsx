@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import LogoMark from '../components/LogoMark';
 import AuthController, { UserAccount } from '../controllers/AuthController';
 import { COLORS, SPACING } from '../utils/theme';
 
@@ -47,8 +48,7 @@ const AuthView = ({ onAuthenticated }: AuthViewProps) => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.logo}>QuizBit</Text>
-      <Text style={styles.subtitle}>Connexion, scores et battle royale</Text>
+      <LogoMark subtitle="Connexion, scores et battle royale" />
 
       <View style={styles.card}>
         <View style={styles.tabs}>

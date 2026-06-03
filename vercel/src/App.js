@@ -55,13 +55,13 @@ const styles = {
   app: {
     display: 'flex',
     minHeight: '100vh',
-    color: '#172B4D',
+    color: '#F8FBFF',
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
   },
   sidebar: {
     width: 260,
-    backgroundColor: '#0052CC',
+    backgroundColor: '#050816',
     color: 'white',
     padding: 20,
     position: 'sticky',
@@ -73,7 +73,7 @@ const styles = {
     flex: 1,
     padding: 40,
     overflowY: 'auto',
-    backgroundColor: '#F4F5F7',
+    backgroundColor: '#070A13',
   },
   navButton: {
     display: 'flex',
@@ -101,16 +101,18 @@ const styles = {
     alignItems: 'start',
   },
   card: {
-    backgroundColor: 'white',
+    backgroundColor: '#10162A',
     borderRadius: 12,
     padding: 24,
-    boxShadow: '0 4px 14px rgba(9, 30, 66, 0.08)',
+    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)',
+    border: '1px solid rgba(33, 231, 255, 0.14)',
   },
   tableWrap: {
-    backgroundColor: 'white',
+    backgroundColor: '#10162A',
     borderRadius: 12,
     overflow: 'auto',
-    boxShadow: '0 4px 14px rgba(9, 30, 66, 0.08)',
+    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)',
+    border: '1px solid rgba(33, 231, 255, 0.14)',
   },
   table: {
     width: '100%',
@@ -118,9 +120,9 @@ const styles = {
     borderCollapse: 'collapse',
   },
   th: {
-    backgroundColor: '#F9FAFB',
-    borderBottom: '1px solid #E5E7EB',
-    color: '#6B778C',
+    backgroundColor: '#0B1230',
+    borderBottom: '1px solid rgba(33, 231, 255, 0.16)',
+    color: '#94A3B8',
     fontSize: 12,
     letterSpacing: 0.5,
     padding: 14,
@@ -128,7 +130,7 @@ const styles = {
     textTransform: 'uppercase',
   },
   td: {
-    borderBottom: '1px solid #E5E7EB',
+    borderBottom: '1px solid rgba(33, 231, 255, 0.16)',
     padding: 14,
     verticalAlign: 'top',
   },
@@ -676,8 +678,8 @@ const Header = memo(
       }}
     >
       <div>
-        <h2 style={{ color: '#0747A6', fontSize: 28, margin: 0 }}>{title}</h2>
-        <p style={{ color: '#6B778C', marginTop: 6 }}>
+        <h2 style={{ color: '#21E7FF', fontSize: 28, margin: 0 }}>{title}</h2>
+        <p style={{ color: '#94A3B8', marginTop: 6 }}>
           Monitoring cloud, comptes, quiz, scores, battles et diagnostics.
         </p>
       </div>
@@ -686,13 +688,13 @@ const Header = memo(
           <>
             <button
               onClick={onExportCsv}
-              style={{ ...styles.button, backgroundColor: '#36B37E' }}
+              style={{ ...styles.button, backgroundColor: '#22C55E' }}
             >
               <Download size={16} style={{ verticalAlign: 'middle' }} /> CSV
             </button>
             <button
               onClick={onExportJson}
-              style={{ ...styles.button, backgroundColor: '#6554C0' }}
+              style={{ ...styles.button, backgroundColor: '#8B5CF6' }}
             >
               JSON
             </button>
@@ -735,7 +737,7 @@ const Toolbar = memo(({ count, onSearch, search, total }) => (
         style={{ ...styles.input, flex: 1 }}
       />
     </div>
-    <strong style={{ color: '#6B778C' }}>
+    <strong style={{ color: '#94A3B8' }}>
       {count}/{total} lignes
     </strong>
   </div>
@@ -838,7 +840,7 @@ const Panel = memo(({ children, title }) => (
 
 const CompactList = memo(({ rows }) => {
   if (!rows.length) {
-    return <div style={{ color: '#6B778C' }}>Aucune donnee chargee.</div>;
+    return <div style={{ color: '#94A3B8' }}>Aucune donnee chargee.</div>;
   }
   return (
     <div style={{ display: 'grid', gap: 10 }}>
@@ -846,14 +848,14 @@ const CompactList = memo(({ rows }) => {
         <div
           key={row.id}
           style={{
-            borderBottom: '1px solid #E5E7EB',
+            borderBottom: '1px solid rgba(33, 231, 255, 0.16)',
             display: 'grid',
             gap: 4,
             paddingBottom: 10,
           }}
         >
           <strong>{row.label}</strong>
-          <span style={{ color: '#6B778C', fontSize: 12 }}>
+          <span style={{ color: '#94A3B8', fontSize: 12 }}>
             {row.type} - {safeDate(row.date)}
           </span>
         </div>
@@ -864,7 +866,7 @@ const CompactList = memo(({ rows }) => {
 
 const StatCard = memo(({ color, title, value }) => (
   <div style={styles.card}>
-    <div style={{ color: '#6B778C', fontSize: 13, fontWeight: 800 }}>
+    <div style={{ color: '#94A3B8', fontSize: 13, fontWeight: 800 }}>
       {title}
     </div>
     <div style={{ color, fontSize: 38, fontWeight: 900, marginTop: 8 }}>
@@ -894,7 +896,7 @@ const DetailsPanel = memo(({ onClose, record }) => (
         onClick={onClose}
         style={{
           ...styles.button,
-          backgroundColor: '#97A0AF',
+          backgroundColor: '#334155',
           padding: '7px 10px',
         }}
       >
@@ -903,7 +905,7 @@ const DetailsPanel = memo(({ onClose, record }) => (
     </div>
     <pre
       style={{
-        backgroundColor: '#F4F5F7',
+        backgroundColor: '#070A13',
         borderRadius: 10,
         fontSize: 12,
         maxHeight: 520,
@@ -921,7 +923,7 @@ const EmptyRow = memo(({ colSpan }) => (
   <tr>
     <td
       colSpan={colSpan}
-      style={{ ...styles.td, color: '#6B778C', textAlign: 'center' }}
+      style={{ ...styles.td, color: '#94A3B8', textAlign: 'center' }}
     >
       Aucune donnee.
     </td>
@@ -962,7 +964,7 @@ const QuestionsTable = memo(({ onSelect, rows }) => (
         <tr key={row.id}>
           <td style={{ ...styles.td, minWidth: 170 }}>
             <strong>{row.theme || 'N/A'}</strong>
-            <div style={{ color: '#6B778C', fontSize: 12, marginTop: 6 }}>
+            <div style={{ color: '#94A3B8', fontSize: 12, marginTop: 6 }}>
               {row.id}
             </div>
           </td>
@@ -980,7 +982,7 @@ const QuestionsTable = memo(({ onSelect, rows }) => (
               />
             ) : null}
             {stats.tooManyChoices ? (
-              <div style={{ color: '#BF2600', fontSize: 12, marginTop: 8 }}>
+              <div style={{ color: '#FF4D6D', fontSize: 12, marginTop: 8 }}>
                 {stats.tooManyChoices} question(s) ont plus de 5 choix
               </div>
             ) : null}
@@ -1023,7 +1025,7 @@ const QuizQuestionsPreview = memo(({ questions }) => {
   const list = Array.isArray(questions) ? questions : [];
   if (!list.length) {
     return (
-      <span style={{ color: '#6B778C' }}>Aucune question dans ce quiz.</span>
+      <span style={{ color: '#94A3B8' }}>Aucune question dans ce quiz.</span>
     );
   }
 
@@ -1060,7 +1062,7 @@ const QuestionPreview = memo(({ index, question }) => {
   return (
     <article
       style={{
-        backgroundColor: '#F9FAFB',
+        backgroundColor: '#0B1230',
         border: '1px solid #E5E7EB',
         borderRadius: 12,
         padding: 12,
@@ -1070,7 +1072,7 @@ const QuestionPreview = memo(({ index, question }) => {
         <strong>#{index + 1}</strong>
         <QuestionTypePill type={type} />
         {hasTooManyChoices ? (
-          <span style={{ color: '#BF2600', fontSize: 12, fontWeight: 800 }}>
+          <span style={{ color: '#FF4D6D', fontSize: 12, fontWeight: 800 }}>
             Max 5 choix autorises
           </span>
         ) : null}
@@ -1078,7 +1080,7 @@ const QuestionPreview = memo(({ index, question }) => {
       <div style={{ fontWeight: 800, marginTop: 8 }}>
         {question?.text || 'Question manquante'}
       </div>
-      <div style={{ color: '#006644', marginTop: 8 }}>
+      <div style={{ color: '#86EFAC', marginTop: 8 }}>
         <strong>Reponse attendue:</strong> {answer}
       </div>
       {type === 'mcq' ? (
@@ -1099,7 +1101,7 @@ const QuestionPreview = memo(({ index, question }) => {
           ))}
         </div>
       ) : (
-        <div style={{ color: '#6B778C', fontSize: 12, marginTop: 8 }}>
+        <div style={{ color: '#94A3B8', fontSize: 12, marginTop: 8 }}>
           Question ouverte: l'utilisateur saisit sa reponse, puis l'app analyse
           la reponse avec Gemini avant validation.
         </div>
@@ -1203,7 +1205,7 @@ const ActionButton = memo(({ label, onClick }) => (
     onClick={onClick}
     style={{
       ...styles.button,
-      backgroundColor: '#0052CC',
+      backgroundColor: '#050816',
       padding: '8px 11px',
     }}
   >
@@ -1324,7 +1326,7 @@ const ConfigurationChecklist = memo(
             </tr>
           ))}
         </DataTable>
-        <p style={{ color: '#6B778C', lineHeight: 1.6 }}>
+        <p style={{ color: '#94A3B8', lineHeight: 1.6 }}>
           Les secrets Gemini, Mistral et Cloudinary doivent etre configures dans
           Vercel comme variables serveur. Les variables Firebase client doivent
           etre prefixees par REACT_APP_ pour le bundle admin.
@@ -1338,7 +1340,7 @@ const TestRow = memo(({ label, loading, onTest, result }) => (
   <div
     style={{
       alignItems: 'center',
-      borderBottom: '1px solid #E5E7EB',
+      borderBottom: '1px solid rgba(33, 231, 255, 0.16)',
       display: 'grid',
       gap: 14,
       gridTemplateColumns: '1fr auto 1.5fr',
