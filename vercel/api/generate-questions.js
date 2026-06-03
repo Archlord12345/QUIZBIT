@@ -6,15 +6,17 @@ module.exports = async (req, res) => {
     return res.status(405).json({ ok: false, message: 'Method not allowed' });
   }
   try {
-    const { count, prompt, theme } = req.body || {};
-    const result = await generateQuestions(prompt || theme, count || 5);
+    const { count, prompt, provider, theme } = req.body || {};
+    const result = await generateQuestions(
+      prompt || theme,
+      count || 5,
+      provider || 'auto',
+    );
     return res.status(200).json({ ok: true, ...result });
   } catch (error) {
-    return res
-      .status(502)
-      .json({
-        ok: false,
-        message: error.message || 'Generation Gemini impossible.',
-      });
+    return res.status(502).json({
+      ok: false,
+      message: error.message || 'Generation Gemini impossible.',
+    });
   }
 };

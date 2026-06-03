@@ -483,7 +483,8 @@ tr:hover td {
   text-transform: uppercase;
 }
 .ai-tester textarea,
-.ai-tester input {
+.ai-tester input,
+.ai-tester select {
   background: rgb(5 8 22 / 70%);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -510,4 +511,15 @@ tr:hover td {
   color: var(--cyan);
   font-size: 13px;
   font-weight: 900;
+}
+
+.ai-controls {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(120px, 180px) minmax(220px, 1fr);
+}
+@media (max-width: 720px) {
+  .ai-controls {
+    grid-template-columns: 1fr;
+  }
 }

@@ -11,6 +11,8 @@ export type Question = {
 type GenerateQuestionsResponse = {
   ok: boolean;
   model?: string;
+  provider?: 'gemini' | 'mistral';
+  fallbackUsed?: boolean;
   questions: Question[];
 };
 
