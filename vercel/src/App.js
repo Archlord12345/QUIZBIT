@@ -157,6 +157,15 @@ const withTimeout = (promise, label) =>
     ),
   ]);
 
+const testServerEndpoint = async endpoint => {
+  const response = await withTimeout(fetch(endpoint), endpoint);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.ok) {
+    throw new Error(data.message || `HTTP ${response.status}`);
+  }
+  return data.message || 'Test OK';
+};
+
 function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [testResults, setTestResults] = useState({});
