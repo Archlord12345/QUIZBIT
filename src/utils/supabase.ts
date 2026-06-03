@@ -1,7 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
-import Config from 'react-native-config';
 
-const supabaseUrl = Config.SUPABASE_URL;
-const supabaseAnonKey = Config.SUPABASE_ANON_KEY;
+const readRuntimeValue = (name: string): string => {
+  const maybeProcess = (
+    globalThis as unknown as {
+      process?: { env?: Record<string, string> };
+    }
+  ).process;
+  return maybeProcess?.env?.[name] || '';
+};
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabaseUrl = readRuntimeValue('SUPABASE_URL');
+const supabaseAnonKey = readRuntimeValue('SUPABASE_ANON_KEY');
+
+export const supabase =
+  supabaseUrl && supabaseAnonKey
+    ? createClient(supabaseUrl, supabaseAnonKey)
+    : null;

@@ -1,3 +1,5 @@
+import Config from 'react-native-config';
+
 export type Question = {
   id: string;
   text: string;
@@ -209,10 +211,14 @@ class AIModel {
   }
 
   private readRuntimeValue(name: string): string {
+    const nativeConfig = Config as unknown as Record<
+      string,
+      string | undefined
+    >;
     const maybeProcess = (
       globalThis as unknown as { process?: { env?: Record<string, string> } }
     ).process;
-    return maybeProcess?.env?.[name] || '';
+    return nativeConfig[name] || maybeProcess?.env?.[name] || '';
   }
 }
 
