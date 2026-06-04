@@ -1051,7 +1051,13 @@ function AiPromptTester() {
       const response = await fetch('/api/generate-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: cleanPrompt, count, provider }),
+        body: JSON.stringify({
+          prompt: cleanPrompt,
+          count,
+          provider,
+          panelAdminKey:
+            env.VITE_ADMIN_PANEL_KEY || env.REACT_APP_ADMIN_PANEL_KEY || '',
+        }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.ok) {

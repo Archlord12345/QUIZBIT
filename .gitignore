@@ -76,3 +76,6 @@ yarn-error.log
 .vercel
 !.env.example
 !**/.env.example
+
+# Données runtime serveur offline (seed versionné)
+local/data/store.json

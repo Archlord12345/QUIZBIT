@@ -245,6 +245,13 @@ textarea {
   text-align: center;
 }
 
+.hint-box {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 12px;
+}
+
 .notice {
   background: rgb(33 231 255 / 12%);
   border: 1px solid rgb(33 231 255 / 24%);

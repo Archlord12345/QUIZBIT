@@ -1,39 +1,59 @@
-# QuizBit Local Admin Panel
+# QuizBit Local Admin + API Offline
 
-Ce dossier contient le panel admin pour la version locale de QuizBit.
+Serveur **tout-en-un** pour jouer à QuizBit **sans Internet** : panel admin + API compatible avec l'app mobile.
 
-## Lancer
+## Démarrer
 
 ```sh
 cd local
-npm run start
+npm start
 ```
 
-Puis ouvrir `http://localhost:4173`.
+- **Panel admin** : http://localhost:3000/
+- **API mobile** : http://localhost:3000/api/…
+- **Émulateur Android** : http://10.0.2.2:3000
+- **Téléphone réel** : http://\<IP-de-ton-PC\>:3000 (configure l'IP dans l'app → Paramètres)
 
-## Stockage
+## Compte démo
 
-Le panel utilise `localStorage` et ne depend d'aucun service cloud.
+| Champ | Valeur |
+|-------|--------|
+| Email | `demo@local.quizbit` |
+| Mot de passe | `demo123` |
 
-Fonctions disponibles :
+## App mobile (mode offline)
 
-- dashboard local ;
-- gestion des quiz ;
-- gestion des joueurs ;
-- scores / leaderboard ;
-- rooms battle royale ;
-- import/export JSON complet ;
-- import direct des quiz JSON exportes depuis le panel Vercel pour jouer/tester offline ;
-- reset local.
+1. Lance `npm start` dans `local/`.
+2. Dans l'app : **Paramètres** → active **Mode offline**.
+3. Sur un vrai téléphone, saisis l'**IP LAN** de ton PC (pas `10.0.2.2`).
+4. Connecte-toi avec le compte démo ou crée un compte local.
+5. Joue : quiz solo, scores, battle royale (données dans `local/data/store.json`).
 
-## Importer un quiz exporté depuis Vercel
+## Panel admin
 
-1. Ouvrir le panel Vercel.
-2. Aller dans **Settings**.
-3. Générer un quiz dans **Test prompt IA**.
-4. Exporter le quiz en JSON.
-5. Revenir dans ce panel local.
-6. Ouvrir **Import / Export**.
-7. Cliquer sur **Importer quiz Vercel JSON**.
+- Dashboard, quiz, joueurs, scores, battle rooms
+- **Import / Export** JSON (quiz exportés depuis Vercel)
+- **Synchroniser avec le serveur** : pousse `localStorage` vers l'API
+- Au chargement, le panel récupère l'état du serveur (partagé avec l'app)
 
-Le quiz importé est stocké dans `localStorage` et reste disponible sans réseau.
+## Génération de questions offline
+
+L'API utilise les **quiz importés** dans le panel (ou le seed `Culture generale`).  
+Sans quiz correspondant, des questions locales génériques sont créées.
+
+L'audio vocal en mode offline utilise les quiz déjà présents (pas d'appel Gemini).
+
+## Panel Vercel (cloud)
+
+1. Settings → **Test prompt IA** (nécessite `ADMIN_PANEL_KEY` / `VITE_ADMIN_PANEL_KEY` sur Vercel)
+2. Exporter le quiz JSON
+3. Panel local → **Import / Export** → importer le fichier
+
+## Fichiers
+
+| Fichier | Rôle |
+|---------|------|
+| `server.mjs` | HTTP : static + `/api/*` |
+| `lib/offline-api.js` | Routes API offline |
+| `lib/store.js` | Persistance `data/store.json` |
+| `app.js` | UI panel (sync serveur) |

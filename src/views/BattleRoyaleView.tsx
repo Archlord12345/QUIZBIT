@@ -58,6 +58,13 @@ const BattleRoyaleView = ({
     Math.min(20, Math.floor(Number(questionCount) || 5)),
   );
 
+  useEffect(() => {
+    if (isRecording && recordMs >= MAX_VOICE_RECORD_MS) {
+      handleStopRecording();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recordMs, isRecording]);
+
   const createRoom = async () => {
     setLoading(true);
     setError('');

@@ -347,7 +347,11 @@ module.exports = async (req, res) => {
   }
 
   const idToken = String(body.idToken || '').trim();
-  if (!idToken) {
+  const panelAdminKey = String(body.panelAdminKey || '').trim();
+  const adminPanelKey = getEnv('ADMIN_PANEL_KEY', 'VITE_ADMIN_PANEL_KEY');
+  const isPanelAdmin = Boolean(adminPanelKey && panelAdminKey === adminPanelKey);
+
+  if (!isPanelAdmin && !idToken) {
     return res.status(401).json({
       ok: false,
       message: 'Connexion requise pour generer des questions.',
@@ -355,7 +359,9 @@ module.exports = async (req, res) => {
   }
 
   try {
-    await verifyIdToken(idToken);
+    if (!isPanelAdmin) {
+      await verifyIdToken(idToken);
+    }
     if (mediaPayload?.base64) {
       const allowed = [
         'audio/',

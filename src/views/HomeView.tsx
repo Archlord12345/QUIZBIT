@@ -84,6 +84,13 @@ const HomeView = ({
   const [isRecording, setIsRecording] = useState(false);
   const [recordMs, setRecordMs] = useState(0);
 
+  useEffect(() => {
+    if (isRecording && recordMs >= MAX_VOICE_RECORD_MS) {
+      handleStopRecording();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recordMs, isRecording]);
+
   const normalizedQuestionCount = Math.max(
     1,
     Math.min(20, Math.floor(Number(questionCount) || 5)),

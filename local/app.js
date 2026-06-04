@@ -1,6 +1,11 @@
 /* eslint-env browser */
 /* eslint-disable no-alert */
 const STORAGE_KEY = 'quizbit-local-admin-v1';
+const API_BASE =
+  window.QUIZBIT_LOCAL_API ||
+  (window.location.port === '4173'
+    ? 'http://localhost:3000'
+    : window.location.origin);
 
 const initialState = {
   quizzes: [],
@@ -33,6 +38,34 @@ function loadState() {
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  pushStateToServer().catch(() => undefined);
+}
+
+async function pullStateFromServer() {
+  try {
+    const response = await fetch(`${API_BASE}/api/admin/state`);
+    const data = await response.json();
+    if (data.ok && data.state) {
+      state = { ...initialState, ...data.state };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      return true;
+    }
+  } catch (error) {
+    console.warn('Sync serveur indisponible, localStorage utilise.', error);
+  }
+  return false;
+}
+
+async function pushStateToServer() {
+  const response = await fetch(`${API_BASE}/api/admin/state`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ state }),
+  });
+  const data = await response.json();
+  if (!response.ok || !data.ok) {
+    throw new Error(data.message || 'Sync serveur impossible.');
+  }
 }
 
 function uid(prefix) {
@@ -78,7 +111,7 @@ function render() {
       </aside>
       <main class="main">
         ${renderHeader()}
-        <div class="notice"><strong>Mode offline.</strong> Importe un quiz JSON exporte depuis Vercel, joue/teste sans cloud, puis conserve tout dans localStorage.</div>
+        <div class="notice"><strong>Mode offline.</strong> Serveur API: <code>${API_BASE}</code>. Les donnees sont synchronisees avec l app mobile. Importe un quiz JSON exporte depuis Vercel pour enrichir la banque locale.</div>
         ${renderPage()}
       </main>
     </div>
@@ -264,8 +297,10 @@ function renderTools() {
           Importer quiz Vercel JSON
           <input id="import-quiz-file" type="file" accept="application/json,.json" />
         </label>
+        <button class="button secondary" id="sync-server">Synchroniser avec le serveur</button>
         <button class="button danger" id="reset-local">Reset local</button>
       </div>
+      <p class="hint-box">Compte demo mobile: <strong>demo@local.quizbit</strong> / <strong>demo123</strong></p>
       <textarea id="json-box" placeholder="Colle ici un export complet local ou un quiz JSON exporté depuis le panel Vercel"></textarea>
     </section>
   `;
@@ -300,6 +335,13 @@ function bindPageActions() {
   document.getElementById('export-json')?.addEventListener('click', exportJson);
   document.getElementById('import-json')?.addEventListener('click', importJson);
   document.getElementById('reset-local')?.addEventListener('click', resetLocal);
+  document
+    .getElementById('sync-server')
+    ?.addEventListener('click', () =>
+      pushStateToServer()
+        .then(() => alert('Donnees synchronisees avec le serveur offline.'))
+        .catch(error => alert(error.message)),
+    );
   document
     .getElementById('import-quiz-file')
     ?.addEventListener('change', importQuizFile);
@@ -518,4 +560,4 @@ function resetLocal() {
   mutate({ ...initialState });
 }
 
-render();
+pullStateFromServer().finally(() => render());

@@ -1,7 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Switch, ScrollView } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getApiBaseUrl, setApiMode } from '../utils/api';
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Switch,
+  ScrollView,
+  Platform,
+} from 'react-native';
+import {
+  buildLocalApiUrl,
+  getApiBaseUrl,
+  getApiMode,
+  getOfflineApiHost,
+  setApiMode,
+  setOfflineApiHost,
+} from '../utils/api';
 import { COLORS, SPACING } from '../utils/theme';
 
 type SettingsViewProps = {
@@ -9,28 +24,33 @@ type SettingsViewProps = {
 };
 
 const SettingsView = ({ onBack }: SettingsViewProps) => {
-  const [isLocal, setIsLocal] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   const [apiUrl, setApiUrl] = useState('');
+  const [offlineHost, setOfflineHost] = useState(
+    Platform.OS === 'android' ? '10.0.2.2' : 'localhost',
+  );
+
+  const refresh = async () => {
+    setIsOffline((await getApiMode()) === 'local');
+    setApiUrl(await getApiBaseUrl());
+    setOfflineHost(await getOfflineApiHost());
+  };
 
   useEffect(() => {
-    const loadSettings = async () => {
-      const mode = await AsyncStorage.getItem('quizbit.apiMode');
-      setIsLocal(mode === 'local');
-      const url = await getApiBaseUrl();
-      setApiUrl(url);
-    };
-    loadSettings();
+    refresh();
   }, []);
 
-  const toggleMode = async (value: boolean) => {
-    if (value && !__DEV__) {
-      return;
+  const toggleOffline = async (value: boolean) => {
+    await setApiMode(value ? 'local' : 'remote');
+    setIsOffline(value);
+    setApiUrl(await getApiBaseUrl());
+  };
+
+  const saveOfflineHost = async () => {
+    await setOfflineApiHost(offlineHost);
+    if (isOffline) {
+      setApiUrl(await buildLocalApiUrl());
     }
-    const mode = value ? 'local' : 'remote';
-    await setApiMode(mode);
-    setIsLocal(value);
-    const url = await getApiBaseUrl();
-    setApiUrl(url);
   };
 
   return (
@@ -39,7 +59,7 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Retour</Text>
         </TouchableOpacity>
-        <View style={{ width: 70 }} />
+        <View style={styles.headerSpacer} />
       </View>
 
       <Text style={styles.pageTitle}>Paramètres</Text>
@@ -47,30 +67,50 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
       <View style={styles.card}>
         <View style={styles.settingRow}>
           <View style={styles.settingTextContainer}>
-            <Text style={styles.settingTitle}>Serveur Local</Text>
+            <Text style={styles.settingTitle}>Mode offline</Text>
             <Text style={styles.settingDescription}>
-              {__DEV__
-                ? 'Bascule sur le serveur local (dev uniquement). Ne modifie pas Firestore.'
-                : 'Disponible uniquement en build de developpement.'}
+              Utilise le serveur local QuizBit (quiz, scores, battle) sans Internet.
+              Lance: cd local && npm start
             </Text>
           </View>
           <Switch
-            value={isLocal}
-            onValueChange={toggleMode}
-            disabled={!__DEV__}
+            value={isOffline}
+            onValueChange={toggleOffline}
             trackColor={{ false: '#DFE1E6', true: COLORS.primary }}
             thumbColor="white"
           />
         </View>
-        
+
         <View style={styles.divider} />
-        
-        <View>
-          <Text style={styles.urlLabel}>URL de l'API active</Text>
-          <View style={styles.urlValueBox}>
-            <Text style={styles.urlText}>{apiUrl}</Text>
-          </View>
+
+        <Text style={styles.urlLabel}>IP / hôte du serveur local</Text>
+        <Text style={styles.settingDescription}>
+          Émulateur Android: 10.0.2.2 · Téléphone réel: IP de ton PC (ex. 192.168.1.42)
+        </Text>
+        <TextInput
+          style={styles.hostInput}
+          value={offlineHost}
+          onChangeText={setOfflineHost}
+          placeholder="10.0.2.2"
+          placeholderTextColor="#6B778C"
+          autoCapitalize="none"
+          onSubmitEditing={saveOfflineHost}
+          onBlur={saveOfflineHost}
+        />
+
+        <View style={styles.divider} />
+
+        <Text style={styles.urlLabel}>URL de l&apos;API active</Text>
+        <View style={styles.urlValueBox}>
+          <Text style={styles.urlText}>{apiUrl}</Text>
         </View>
+
+        {isOffline ? (
+          <Text style={styles.demoHint}>
+            Compte démo: demo@local.quizbit / demo123{'\n'}
+            Panel: http://localhost:3000
+          </Text>
+        ) : null}
       </View>
     </ScrollView>
   );
@@ -88,6 +128,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: SPACING.xl,
     marginTop: SPACING.sm,
+  },
+  headerSpacer: {
+    width: 70,
   },
   backButton: {
     padding: SPACING.md,
@@ -128,6 +171,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6B778C',
     lineHeight: 18,
+    marginBottom: 8,
   },
   divider: {
     height: 1,
@@ -141,6 +185,16 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 8,
   },
+  hostInput: {
+    backgroundColor: '#FAFBFC',
+    borderColor: '#DFE1E6',
+    borderRadius: 10,
+    borderWidth: 1,
+    color: COLORS.text,
+    fontSize: 16,
+    marginBottom: 8,
+    padding: 14,
+  },
   urlValueBox: {
     backgroundColor: '#F4F5F7',
     borderRadius: 12,
@@ -150,6 +204,13 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 14,
     fontWeight: '600',
+  },
+  demoHint: {
+    color: COLORS.violet,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 18,
+    marginTop: SPACING.md,
   },
 });
 

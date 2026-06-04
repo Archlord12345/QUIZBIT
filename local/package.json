@@ -1,10 +1,12 @@
 {
   "name": "quizbit-local-admin",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "description": "Panel admin local sans backend pour QuizBit",
   "scripts": {
-    "start": "python3 -m http.server 4173",
-    "check": "node --check app.js"
+    "start": "node server.mjs",
+    "start:static": "python3 -m http.server 4173",
+    "check": "node --check app.js && node --check server.mjs && node --check lib/offline-api.js"
   }
 }

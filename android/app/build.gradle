@@ -80,6 +80,7 @@ android {
 
     namespace "com.quizbit"
     defaultConfig {
+        manifestPlaceholders = [usesCleartextTraffic: "true"]
         applicationId "com.quizbit"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion

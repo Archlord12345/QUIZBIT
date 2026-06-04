@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",
-    "logo": "node tools/generate-logo-assets.mjs"
+    "logo": "node tools/generate-logo-assets.mjs",
+    "local:server": "npm start --prefix local"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.1.1",
