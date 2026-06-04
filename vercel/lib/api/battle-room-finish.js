@@ -1,4 +1,5 @@
 const { getDocument, setDocument } = require('../firebase-rest');
+const { assertAccountId, clampScore, verifyIdToken } = require('../auth-verify');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -13,11 +14,13 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const auth = await verifyIdToken(idToken);
+    assertAccountId(account, auth.uid);
     const room = await getDocument('battleRooms', cleanCode, idToken);
     if (!room) throw new Error('Salle battle royale introuvable dans Firestore.');
-    const numericScore = Number(score || 0);
+    const numericScore = clampScore(score);
     const players = (room.players || []).map(player =>
-      player.userId === account.id
+      player.userId === auth.uid
         ? {
             ...player,
             score: numericScore,

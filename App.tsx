@@ -29,6 +29,9 @@ export default function App() {
     const restore = async () => {
       try {
         const acc = await AuthController.restoreSession();
+        if (acc) {
+          await AuthController.setCurrentAccount(acc);
+        }
         setAccount(acc);
       } catch (err) {
         console.error("Session restoration failed:", err);
@@ -89,13 +92,22 @@ export default function App() {
                     onComplete={async (finalScore, completedQuiz) => {
                       try {
                         if (mode === 'battle_royale' && room) {
-                          await BattleRoyaleController.finishPlayer(room, account, finalScore);
+                          await BattleRoyaleController.finishPlayer(
+                            room,
+                            account,
+                            finalScore,
+                          );
+                          const refreshed = await AuthController.restoreSession();
+                          if (refreshed) setAccount(refreshed);
                         } else {
-                          await ScoreController.recordScore(account, completedQuiz.theme, finalScore, 'solo');
-                        }
-                        const updatedAccount = await AuthController.restoreSession();
-                        if (updatedAccount) {
-                          setAccount(updatedAccount);
+                          const { account: updated } =
+                            await ScoreController.recordScore(
+                              account,
+                              completedQuiz.theme,
+                              finalScore,
+                              'solo',
+                            );
+                          setAccount(updated);
                         }
                       } catch (err) {
                         console.error('onComplete error:', err);
@@ -156,7 +168,10 @@ export default function App() {
             {(props) => (
               <AuthView
                 {...props}
-                onAuthenticated={(acc) => setAccount(acc)}
+                onAuthenticated={async acc => {
+                  await AuthController.setCurrentAccount(acc);
+                  setAccount(acc);
+                }}
               />
             )}
           </Stack.Screen>

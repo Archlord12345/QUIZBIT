@@ -105,6 +105,7 @@ class BattleRoyaleController {
   ): Promise<void> {
     this.assertAuthenticated(account);
     await apiPost<{ ok: boolean }>('/api/battle-room-delete', {
+      account,
       code: room.code,
       idToken: account.idToken,
     });
@@ -118,6 +119,7 @@ class BattleRoyaleController {
       questionType: room.config.mode === 'timed_mcq' ? 'mcq' : 'mixed',
     });
     const response = await apiPost<BattleRoomResponse>('/api/battle-room-start', {
+      account: host,
       code: room.code,
       idToken: host?.idToken,
       questions,

@@ -1,4 +1,5 @@
 const { getDocument, setDocument } = require('../firebase-rest');
+const { assertUserId, clampScore, verifyIdToken } = require('../auth-verify');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -12,9 +13,11 @@ module.exports = async (req, res) => {
       .json({ ok: false, message: 'idToken et userId requis.' });
   }
   try {
-    const current = await getDocument('users', userId, idToken);
+    const auth = await verifyIdToken(idToken);
+    assertUserId(userId, auth.uid);
+    const current = await getDocument('users', auth.uid, idToken);
     if (!current) throw new Error('Profil utilisateur introuvable.');
-    const numericScore = Number(score || 0);
+    const numericScore = clampScore(score);
     const account = {
       ...current,
       gamesPlayed: Number(current.gamesPlayed || 0) + 1,
@@ -22,7 +25,7 @@ module.exports = async (req, res) => {
       bestScore: Math.max(Number(current.bestScore || 0), numericScore),
       updatedAt: new Date().toISOString(),
     };
-    await setDocument('users', userId, account, idToken);
+    await setDocument('users', auth.uid, account, idToken);
     return res.status(200).json({ ok: true, account: { ...account, idToken } });
   } catch (error) {
     return res

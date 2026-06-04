@@ -153,7 +153,7 @@ const HomeView = ({
             totalScore={account.totalScore}
             partiesPlayed={account.gamesPlayed}
             bestScore={account.bestScore}
-            streak={7}
+            streak={0}
           />
         </View>
 

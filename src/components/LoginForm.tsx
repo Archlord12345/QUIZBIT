@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import AuthController, { UserAccount } from '../controllers/AuthController';
-import { COLORS } from '../utils/theme';
 
 interface LoginFormProps {
   onSuccess: (account: UserAccount) => void;
@@ -9,9 +8,9 @@ interface LoginFormProps {
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const [isLoginMode, setIsLoginMode] = useState<boolean>(true);
-  const [email, setEmail] = useState<string>('leo@quizizz.app');
-  const [password, setPassword] = useState<string>('password123');
-  const [name, setName] = useState<string>('Léo Mendes');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [name, setName] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -43,19 +42,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       onSuccess(account);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur d\'authentification est survenue.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleMock = async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      const account = await AuthController.login('leo@quizizz.app', 'password123');
-      onSuccess(account);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Google login simulation failed.');
     } finally {
       setLoading(false);
     }
@@ -185,21 +171,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
               <Text style={styles.submitArrow}>→</Text>
             </>
           )}
-        </TouchableOpacity>
-
-        <View style={styles.divider}>
-          <View style={styles.line} />
-          <Text style={styles.dividerText}>OU</Text>
-          <View style={styles.line} />
-        </View>
-
-        <TouchableOpacity 
-          style={[styles.socialButton, loading && styles.disabledButton]} 
-          onPress={handleGoogleMock}
-          disabled={loading}
-        >
-          <Text style={styles.googleG}>G</Text>
-          <Text style={styles.socialButtonText}>Continuer avec Google</Text>
         </TouchableOpacity>
 
         <Text style={styles.footerText}>

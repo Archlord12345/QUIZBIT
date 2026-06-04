@@ -23,6 +23,9 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
   }, []);
 
   const toggleMode = async (value: boolean) => {
+    if (value && !__DEV__) {
+      return;
+    }
     const mode = value ? 'local' : 'remote';
     await setApiMode(mode);
     setIsLocal(value);
@@ -46,12 +49,15 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
           <View style={styles.settingTextContainer}>
             <Text style={styles.settingTitle}>Serveur Local</Text>
             <Text style={styles.settingDescription}>
-              Bascule sur le panel admin local (hors ligne). Ne modifie pas les données Firestore.
+              {__DEV__
+                ? 'Bascule sur le serveur local (dev uniquement). Ne modifie pas Firestore.'
+                : 'Disponible uniquement en build de developpement.'}
             </Text>
           </View>
-          <Switch 
-            value={isLocal} 
-            onValueChange={toggleMode} 
+          <Switch
+            value={isLocal}
+            onValueChange={toggleMode}
+            disabled={!__DEV__}
             trackColor={{ false: '#DFE1E6', true: COLORS.primary }}
             thumbColor="white"
           />

@@ -1,4 +1,5 @@
 const { getDocument } = require('../firebase-rest');
+const { verifyIdToken } = require('../auth-verify');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -13,6 +14,7 @@ module.exports = async (req, res) => {
   }
 
   try {
+    await verifyIdToken(idToken);
     const room = await getDocument('battleRooms', cleanCode, idToken);
     if (!room) throw new Error('Salle battle royale introuvable dans Firestore.');
     return res.status(200).json({ ok: true, room });

@@ -1,4 +1,5 @@
-const { addDocument } = require('../firebase-rest');
+const { addDocument, getDocument } = require('../firebase-rest');
+const { assertAccountId, clampScore, verifyIdToken } = require('../auth-verify');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -12,11 +13,15 @@ module.exports = async (req, res) => {
       .json({ ok: false, message: 'Compte authentifie requis.' });
   }
   try {
+    const auth = await verifyIdToken(idToken);
+    assertAccountId(account, auth.uid);
+    const profile = await getDocument('users', auth.uid, idToken);
     const scoreEntry = {
-      userId: account.id,
-      displayName: account.displayName || 'Player',
-      theme: String(theme || ''),
-      score: Number(score || 0),
+      userId: auth.uid,
+      displayName:
+        profile?.displayName || account.displayName || auth.displayName || 'Player',
+      theme: String(theme || '').trim().slice(0, 120),
+      score: clampScore(score),
       mode: mode === 'battle_royale' ? 'battle_royale' : 'solo',
       createdAt: new Date().toISOString(),
     };

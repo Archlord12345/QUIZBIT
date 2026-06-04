@@ -1,4 +1,5 @@
 const { getDocument, setDocument } = require('../firebase-rest');
+const { assertAccountId, verifyIdToken } = require('../auth-verify');
 
 const createPlayer = account => ({
   userId: account.id,
@@ -21,6 +22,8 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const auth = await verifyIdToken(idToken);
+    assertAccountId(account, auth.uid);
     const room = await getDocument('battleRooms', cleanCode, idToken);
     if (!room) throw new Error('Salle battle royale introuvable dans Firestore.');
     if (room.status !== 'waiting') throw new Error('Cette salle a deja demarre.');

@@ -1,4 +1,5 @@
 const { getDocument, setDocument } = require('../firebase-rest');
+const { assertAccountId, verifyIdToken } = require('../auth-verify');
 
 const cleanMessage = value =>
   String(value || '')
@@ -20,6 +21,8 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const auth = await verifyIdToken(idToken);
+    assertAccountId(account, auth.uid);
     const room = await getDocument('battleRooms', cleanCode, idToken);
     if (!room) throw new Error('Salle battle royale introuvable dans Firestore.');
     if (room.status !== 'waiting') {
@@ -28,7 +31,7 @@ module.exports = async (req, res) => {
 
     const message = {
       id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      userId: account.id,
+      userId: auth.uid,
       displayName: account.displayName || 'Player',
       text: messageText,
       createdAt: new Date().toISOString(),

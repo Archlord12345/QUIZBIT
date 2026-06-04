@@ -199,4 +199,5 @@ module.exports = {
   getDocument,
   listDocuments,
   setDocument,
+  firebaseApiKey,
 };

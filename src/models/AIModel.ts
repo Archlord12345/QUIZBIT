@@ -1,3 +1,4 @@
+import AuthController from '../controllers/AuthController';
 import { apiPost } from '../utils/api';
 
 export type QuestionType = 'mixed' | 'mcq' | 'open';
@@ -33,6 +34,14 @@ type ValidateAnswerResponse = {
 };
 
 class AIModel {
+  private requireIdToken(): string {
+    const account = AuthController.getCurrentAccount();
+    if (!account?.idToken) {
+      throw new Error('Session manquante. Reconnecte-toi pour utiliser l IA.');
+    }
+    return account.idToken;
+  }
+
   async generateQuestions(
     theme: string,
     options: QuizGenerationOptions = {},
@@ -51,6 +60,7 @@ class AIModel {
           Math.min(5, Math.floor(options.choiceCount || 4)),
         ),
         count,
+        idToken: this.requireIdToken(),
         openAnswerMode: options.openAnswerMode || 'flexible',
         prompt: options.mediaDescription
           ? `${cleanTheme}. ${options.mediaDescription}`
@@ -87,6 +97,7 @@ class AIModel {
       {
         correctAnswer,
         exactAnswer: Boolean(question?.exactAnswer),
+        idToken: this.requireIdToken(),
         questionText: question?.text || '',
         userAnswer,
       },

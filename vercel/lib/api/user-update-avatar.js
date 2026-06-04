@@ -1,4 +1,9 @@
 const { getDocument, setDocument } = require('../firebase-rest');
+const {
+  assertUserId,
+  isSafeAvatarUrl,
+  verifyIdToken,
+} = require('../auth-verify');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -11,15 +16,23 @@ module.exports = async (req, res) => {
       .status(400)
       .json({ ok: false, message: 'idToken, userId et avatarUrl requis.' });
   }
+  if (!isSafeAvatarUrl(avatarUrl)) {
+    return res.status(400).json({
+      ok: false,
+      message: 'URL avatar invalide. Utilise un upload Cloudinary HTTPS.',
+    });
+  }
   try {
-    const current = await getDocument('users', userId, idToken);
+    const auth = await verifyIdToken(idToken);
+    assertUserId(userId, auth.uid);
+    const current = await getDocument('users', auth.uid, idToken);
     if (!current) throw new Error('Profil utilisateur introuvable.');
     const account = {
       ...current,
       avatarUrl,
       updatedAt: new Date().toISOString(),
     };
-    await setDocument('users', userId, account, idToken);
+    await setDocument('users', auth.uid, account, idToken);
     return res.status(200).json({ ok: true, account: { ...account, idToken } });
   } catch (error) {
     return res

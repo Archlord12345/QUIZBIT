@@ -1,4 +1,5 @@
 const { listDocuments } = require('../firebase-rest');
+const { verifyIdToken } = require('../auth-verify');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -10,6 +11,7 @@ module.exports = async (req, res) => {
     return res.status(400).json({ ok: false, message: 'idToken requis.' });
   }
   try {
+    await verifyIdToken(idToken);
     const scores = await listDocuments('scores', idToken, 25, 'score desc');
     return res.status(200).json({
       ok: true,

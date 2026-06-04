@@ -136,6 +136,8 @@ const validateFlexible = async payload => {
   }
 };
 
+const { verifyIdToken } = require('../auth-verify');
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -143,6 +145,14 @@ module.exports = async (req, res) => {
   }
 
   const body = typeof req.body === 'object' && req.body ? req.body : {};
+  const idToken = String(body.idToken || '').trim();
+  if (!idToken) {
+    return res.status(401).json({
+      ok: false,
+      message: 'Connexion requise pour valider une reponse.',
+    });
+  }
+
   const userAnswer = String(body.userAnswer || '').trim();
   const correctAnswer = String(body.correctAnswer || '').trim();
   const exact = Boolean(body.exactAnswer);
@@ -151,6 +161,15 @@ module.exports = async (req, res) => {
     return res.status(400).json({
       ok: false,
       message: 'userAnswer et correctAnswer sont requis.',
+    });
+  }
+
+  try {
+    await verifyIdToken(idToken);
+  } catch (error) {
+    return res.status(401).json({
+      ok: false,
+      message: error.message || 'Session invalide.',
     });
   }
 

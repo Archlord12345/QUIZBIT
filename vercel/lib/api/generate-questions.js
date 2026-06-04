@@ -1,4 +1,5 @@
 const { getEnv } = require('../env');
+const { verifyIdToken } = require('../auth-verify');
 
 const requestWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
   const controller = new AbortController();
@@ -289,7 +290,16 @@ module.exports = async (req, res) => {
     return res.status(400).json({ ok: false, message: 'Prompt requis.' });
   }
 
+  const idToken = String(body.idToken || '').trim();
+  if (!idToken) {
+    return res.status(401).json({
+      ok: false,
+      message: 'Connexion requise pour generer des questions.',
+    });
+  }
+
   try {
+    await verifyIdToken(idToken);
     const result = await generateQuestions(prompt, count, provider, generationOptions);
     return res.status(200).json({ ok: true, ...result });
   } catch (error) {
