@@ -3,5 +3,11 @@
   "name": "quizbit-admin",
   "installCommand": "npm ci --prefix vercel",
   "buildCommand": "npm run build --prefix vercel",
-  "outputDirectory": "vercel/dist"
+  "outputDirectory": "vercel/dist",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index?path=:path*"
+    }
+  ]
 }

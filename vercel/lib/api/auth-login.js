@@ -2,7 +2,7 @@ const {
   firebaseAuthRequest,
   getDocument,
   setDocument,
-} = require('./firebase-rest');
+} = require('../firebase-rest');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {

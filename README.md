@@ -368,9 +368,7 @@ Valider le panel Vercel :
 
 ```sh
 cd vercel
-node --check api/test-gemini.js
-node --check api/test-mistral.js
-node --check api/test-cloudinary.js
+npm run check
 npm run build
 ```
 
@@ -496,9 +494,9 @@ https://quizbit-admin.vercel.app/
 Le dépôt contient deux configurations pour sécuriser le lien avec Vercel :
 
 - `vercel/vercel.json` si le projet Vercel utilise `vercel/` comme root directory ;
-- `vercel.json` + wrappers `api/` à la racine si le projet Vercel est lié à la racine du dépôt.
+- `vercel.json` + `api/index.js` à la racine si le projet Vercel est lié à la racine du dépôt.
 
-Dans les deux cas, le build cible le panel admin et garde les routes API de diagnostics disponibles.
+Dans les deux cas, le build cible le panel admin et garde les routes API de diagnostics disponibles. Les URLs publiques (`/api/auth-login`, `/api/test-gemini`, etc.) sont routées vers une seule Serverless Function Vercel (`/api/index`) afin de rester sous la limite du plan gratuit.
 
 Configurer les variables d'environnement Vercel avant déploiement pour que diagnostics et données Firestore fonctionnent correctement.
 
