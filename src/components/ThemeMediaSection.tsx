@@ -2,7 +2,8 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { ThemeMedia } from '../utils/themeMediaPicker';
 import { classifyThemeMedia } from '../utils/themeMediaPayload';
-import { COLORS } from '../utils/theme';
+import { COLORS, HELPER, PLACEHOLDER, LINE, INPUT_BG } from '../utils/theme';
+import { RADIUS, UI } from '../utils/ui';
 
 type ThemeMediaSectionProps = {
   themeMedia: ThemeMedia | null;
@@ -137,15 +138,15 @@ export const ThemeMediaSection = ({
 const styles = StyleSheet.create({
   wrap: { marginBottom: 14 },
   hint: {
-    color: '#5E6C84',
+    color: HELPER,
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 10,
   },
   voiceBtn: {
     alignItems: 'center',
-    backgroundColor: '#ee6845',
-    borderRadius: 14,
+    backgroundColor: COLORS.accent,
+    borderRadius: RADIUS.md,
     marginBottom: 10,
     padding: 16,
   },
@@ -156,7 +157,7 @@ const styles = StyleSheet.create({
   },
   recordingBox: {
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
+    backgroundColor: UI.errorBg,
     borderColor: COLORS.error,
     borderRadius: 14,
     borderWidth: 1,
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   recordingHint: {
-    color: '#6B778C',
+    color: PLACEHOLDER,
     fontSize: 12,
     textAlign: 'center',
   },
@@ -200,7 +201,7 @@ const styles = StyleSheet.create({
   },
   primaryMediaBtn: {
     alignItems: 'center',
-    backgroundColor: '#F3E8FF',
+    backgroundColor: UI.violetSoft,
     borderColor: COLORS.violet,
     borderRadius: 14,
     borderWidth: 1,
@@ -215,21 +216,21 @@ const styles = StyleSheet.create({
   pill: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: '#FAFBFC',
-    borderColor: '#DFE1E6',
+    backgroundColor: INPUT_BG,
+    borderColor: LINE,
     borderRadius: 10,
     borderWidth: 1,
     paddingVertical: 10,
   },
   pillText: { color: COLORS.text, fontSize: 12, fontWeight: '800' },
   badge: {
-    backgroundColor: '#EAF2FF',
+    backgroundColor: UI.chipBg,
     borderRadius: 14,
     gap: 4,
     padding: 12,
   },
   badgeTitle: { color: COLORS.primary, fontWeight: '900' },
-  badgeMeta: { color: '#5E6C84', fontSize: 12 },
+  badgeMeta: { color: HELPER, fontSize: 12 },
   badgeAudio: { color: COLORS.violet, fontSize: 12, fontWeight: '700' },
   remove: { color: COLORS.error, fontWeight: '900', marginTop: 6 },
   disabled: { opacity: 0.6 },

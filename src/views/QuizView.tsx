@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import QuizController, { QuizState } from '../controllers/QuizController';
 import { GameMode } from '../controllers/ScoreController';
-import { COLORS, SPACING } from '../utils/theme';
+import { COLORS, SPACING, HELPER, LINE, INPUT_BG } from '../utils/theme';
+import { RADIUS, SHADOW, UI } from '../utils/ui';
 
 type QuizViewProps = {
   initialQuiz: QuizState;
@@ -334,12 +335,12 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
   score: {
-    color: 'white',
+    color: COLORS.textOnDark,
     fontSize: 22,
     fontWeight: 'bold',
   },
   hearts: {
-    color: 'white',
+    color: COLORS.textOnDark,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -350,16 +351,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   questionCard: {
-    backgroundColor: 'white',
-    borderRadius: 25,
-    elevation: 10,
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: RADIUS.xl,
     justifyContent: 'center',
     minHeight: 400,
     padding: SPACING.xl,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
+    ...SHADOW.card,
   },
   progress: {
     color: COLORS.secondary,
@@ -378,9 +375,9 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   optionButton: {
-    backgroundColor: '#F0F2F5',
-    borderColor: '#E1E4E8',
-    borderRadius: 15,
+    backgroundColor: UI.surfaceMuted,
+    borderColor: LINE,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
     padding: 18,
   },
@@ -394,8 +391,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   input: {
-    backgroundColor: '#FAFBFC',
-    borderColor: '#DFE1E6',
+    backgroundColor: INPUT_BG,
+    borderColor: LINE,
     borderRadius: 10,
     borderWidth: 1,
     color: COLORS.text,
@@ -404,7 +401,7 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   answerMode: {
-    color: '#5E6C84',
+    color: HELPER,
     fontSize: 13,
     fontWeight: '700',
     marginBottom: 10,

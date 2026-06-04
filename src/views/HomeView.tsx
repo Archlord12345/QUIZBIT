@@ -26,7 +26,8 @@ import {
 import { ThemeMediaSection } from '../components/ThemeMediaSection';
 import VoiceController from '../controllers/VoiceController';
 import { MAX_VOICE_RECORD_MS } from '../utils/voiceRecorder';
-import { COLORS, SPACING } from '../utils/theme';
+import { COLORS, SPACING, HELPER, PLACEHOLDER, LINE, INPUT_BG } from '../utils/theme';
+import { RADIUS, SHADOW, UI } from '../utils/ui';
 import { Header } from '../components/Header';
 
 // Component Imports
@@ -239,7 +240,7 @@ const HomeView = ({
               title="Battle"
               subtitle="Royale"
               icon="⚔️"
-              iconColor="#ee6845"
+              iconColor={COLORS.accent}
               onClick={() => setActiveTab('battle')}
             />
           </View>
@@ -253,7 +254,7 @@ const HomeView = ({
               title="Classement"
               subtitle="Top 12 mondial"
               icon="🏆"
-              iconColor="#7a317a"
+              iconColor={COLORS.violet}
               onClick={() => setActiveTab('top')}
             />
           </View>
@@ -263,7 +264,7 @@ const HomeView = ({
               title="Défi du jour"
               subtitle="Cinéma 90's"
               icon="🔥"
-              iconColor="#ee6845"
+              iconColor={COLORS.accent}
               onClick={handleDailyChallenge}
             />
           </View>
@@ -318,7 +319,7 @@ const HomeView = ({
           <TextInput
             style={styles.input}
             placeholder="ex: Mathématiques, Science-Fiction..."
-            placeholderTextColor="#6B778C"
+            placeholderTextColor={PLACEHOLDER}
             value={theme}
             onChangeText={setTheme}
             editable={!loading}
@@ -365,7 +366,7 @@ const HomeView = ({
                 style={styles.input}
                 keyboardType="numeric"
                 placeholder="5"
-                placeholderTextColor="#6B778C"
+                placeholderTextColor={PLACEHOLDER}
                 value={questionCount}
                 onChangeText={value =>
                   setQuestionCount(clampNumber(value, 1, 20))
@@ -379,7 +380,7 @@ const HomeView = ({
                   style={styles.input}
                   keyboardType="numeric"
                   placeholder="4"
-                  placeholderTextColor="#6B778C"
+                  placeholderTextColor={PLACEHOLDER}
                   value={choiceCount}
                   onChangeText={value => setChoiceCount(clampNumber(value, 2, 5))}
                 />
@@ -524,11 +525,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
   },
   card: {
-    backgroundColor: 'white',
-    borderRadius: 20,
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: RADIUS.lg,
     marginBottom: 18,
     marginHorizontal: SPACING.lg,
     padding: SPACING.xl,
+    ...SHADOW.card,
   },
   label: {
     color: COLORS.text,
@@ -537,7 +539,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   cardText: {
-    color: '#5E6C84',
+    color: HELPER,
     lineHeight: 20,
     marginBottom: 14,
   },
@@ -555,7 +557,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   optionChip: {
-    borderColor: '#DFE1E6',
+    borderColor: LINE,
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: 14,
@@ -580,7 +582,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   helperText: {
-    color: '#6B778C',
+    color: PLACEHOLDER,
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 14,
@@ -599,7 +601,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   mediaBadge: {
-    backgroundColor: '#EAF2FF',
+    backgroundColor: UI.chipBg,
     borderRadius: 14,
     gap: 4,
     marginHorizontal: SPACING.lg,
@@ -611,7 +613,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   mediaBadgeText: {
-    color: '#5E6C84',
+    color: HELPER,
     fontSize: 12,
   },
   mediaRemove: {
@@ -620,8 +622,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   input: {
-    backgroundColor: '#FAFBFC',
-    borderColor: '#DFE1E6',
+    backgroundColor: INPUT_BG,
+    borderColor: LINE,
     borderRadius: 10,
     borderWidth: 1,
     color: COLORS.text,
@@ -642,7 +644,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   buttonDisabled: {
-    backgroundColor: '#B3D4FF',
+    backgroundColor: UI.disabled,
   },
   buttonText: {
     color: 'white',
@@ -686,7 +688,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '900',
-    color: 'white',
+    color: COLORS.textOnDark,
   },
   seeAllText: {
     fontSize: 12,
@@ -705,17 +707,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'white',
-    borderRadius: 14,
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
-    borderColor: '#e7e5e4',
+    borderColor: UI.lineMuted,
     paddingVertical: 10,
     gap: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
+    ...SHADOW.soft,
   },
   pillEmoji: {
     fontSize: 14,
@@ -723,7 +721,7 @@ const styles = StyleSheet.create({
   pillText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#2e1d33',
+    color: COLORS.text,
   },
 });
 

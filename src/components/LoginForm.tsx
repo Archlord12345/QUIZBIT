@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
 import AuthController, { UserAccount } from '../controllers/AuthController';
+import { COLORS, SPACING, PLACEHOLDER, HELPER } from '../utils/theme';
+import { RADIUS, SHADOW, UI } from '../utils/ui';
 
 interface LoginFormProps {
   onSuccess: (account: UserAccount) => void;
@@ -41,22 +51,31 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         : await AuthController.register(cleanEmail, password, name);
       onSuccess(account);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur d\'authentification est survenue.');
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Une erreur d'authentification est survenue.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.card}>
         <View style={styles.header}>
           <Text style={styles.title}>
             {isLoginMode ? 'Bon retour,' : 'Bienvenue,'} {'\n'}
-            <Text style={styles.titleHighlight}>{isLoginMode ? 'Champion.' : 'Futur Pro.'}</Text>
+            <Text style={styles.titleHighlight}>
+              {isLoginMode ? 'Champion.' : 'Futur Pro.'}
+            </Text>
           </Text>
           <Text style={styles.subtitle}>
-            {isLoginMode 
+            {isLoginMode
               ? 'Connecte-toi pour reprendre tes battles et lancer de nouveaux quiz.'
               : 'Crée un compte pour enregistrer tes scores et défier tes amis.'}
           </Text>
@@ -70,7 +89,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
               setIsLoginMode(true);
             }}
           >
-            <Text style={[styles.toggleText, isLoginMode && styles.toggleTextActive]}>Connexion</Text>
+            <Text style={[styles.toggleText, isLoginMode && styles.toggleTextActive]}>
+              Connexion
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.toggleButton, !isLoginMode && styles.toggleButtonActive]}
@@ -79,94 +100,79 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
               setIsLoginMode(false);
             }}
           >
-            <Text style={[styles.toggleText, !isLoginMode && styles.toggleTextActive]}>Créer un compte</Text>
+            <Text style={[styles.toggleText, !isLoginMode && styles.toggleTextActive]}>
+              Inscription
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {error && (
+        {error ? (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
-        )}
+        ) : null}
 
-        {!isLoginMode && (
+        {!isLoginMode ? (
           <View style={styles.inputContainer}>
-            <View style={styles.inputLeftIconContainer}>
-              <Text style={styles.inputLeftIcon}>👤</Text>
-            </View>
             <View style={styles.inputContentContainer}>
-              <Text style={styles.inputLabel}>NOM COMPLET</Text>
+              <Text style={styles.inputLabel}>NOM</Text>
               <TextInput
                 style={styles.inputFlex}
                 value={name}
                 onChangeText={setName}
-                placeholder="Ex. Léo Mendes"
-                placeholderTextColor="#a8a29e"
-                editable={!loading}
+                placeholder="Ton pseudo"
+                placeholderTextColor={PLACEHOLDER}
               />
             </View>
           </View>
-        )}
+        ) : null}
 
         <View style={styles.inputContainer}>
-          <View style={styles.inputLeftIconContainer}>
-            <Text style={styles.inputLeftIcon}>✉️</Text>
-          </View>
           <View style={styles.inputContentContainer}>
             <Text style={styles.inputLabel}>EMAIL</Text>
             <TextInput
               style={styles.inputFlex}
               value={email}
               onChangeText={setEmail}
-              placeholder="votre@email.com"
-              placeholderTextColor="#a8a29e"
               keyboardType="email-address"
               autoCapitalize="none"
-              editable={!loading}
+              placeholder="email@exemple.com"
+              placeholderTextColor={PLACEHOLDER}
             />
           </View>
         </View>
 
         <View style={styles.inputContainer}>
-          <View style={styles.inputLeftIconContainer}>
-            <Text style={styles.inputLeftIcon}>🔒</Text>
-          </View>
           <View style={styles.inputContentContainer}>
             <Text style={styles.inputLabel}>MOT DE PASSE</Text>
             <TextInput
               style={styles.inputFlex}
               value={password}
               onChangeText={setPassword}
-              placeholder="••••••••"
-              placeholderTextColor="#a8a29e"
               secureTextEntry={!showPassword}
-              editable={!loading}
+              placeholder="••••••••"
+              placeholderTextColor={PLACEHOLDER}
             />
           </View>
-          <TouchableOpacity 
-            onPress={() => setShowPassword(!showPassword)} 
-            disabled={loading}
+          <TouchableOpacity
             style={styles.inputRightIconContainer}
+            onPress={() => setShowPassword(!showPassword)}
           >
-            <Text style={styles.inputRightIcon}>{showPassword ? '🙈' : '👁️'}</Text>
+            <Text style={styles.inputRightIcon}>{showPassword ? '🙈' : '👁'}</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.forgotPassword} disabled={loading}>
-          <Text style={styles.forgotPasswordText}>Mot de passe oublié ?</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.submitButton, loading && styles.disabledButton]} 
+        <TouchableOpacity
+          style={[styles.submitButton, loading && styles.disabledButton]}
           onPress={handleSubmit}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="white" size="small" />
+            <ActivityIndicator color="#fff" />
           ) : (
             <>
               <Text style={styles.submitButtonText}>
-                {isLoginMode ? 'Se connecter' : 'Créer un compte'}
+                {isLoginMode ? 'Se connecter' : 'Créer mon compte'}
               </Text>
               <Text style={styles.submitArrow}>→</Text>
             </>
@@ -182,86 +188,103 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, justifyContent: 'center', padding: 16, backgroundColor: 'transparent' },
-  card: { backgroundColor: 'transparent', padding: 12 },
-  header: { marginBottom: 28 },
-  title: { fontSize: 36, fontWeight: 'bold', color: '#2e1d33', lineHeight: 42 },
-  titleHighlight: { color: '#ee6845' },
-  subtitle: { fontSize: 13, color: '#78716c', marginTop: 10, lineHeight: 18 },
-  toggleContainer: { flexDirection: 'row', backgroundColor: '#f5ecf4', borderRadius: 30, padding: 4, marginBottom: 28 },
-  toggleButton: { flex: 1, paddingVertical: 12, borderRadius: 26, alignItems: 'center' },
-  toggleButtonActive: { backgroundColor: '#7a317a' },
-  toggleText: { fontSize: 13, fontWeight: 'bold', color: '#78716c' },
-  toggleTextActive: { color: 'white' },
-  errorBox: { backgroundColor: '#fef2f2', padding: 12, borderRadius: 16, marginBottom: 16 },
-  errorText: { color: '#dc2626', fontSize: 12, fontWeight: 'bold' },
-  inputContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: 'white', 
-    borderRadius: 24, 
-    paddingHorizontal: 16, 
-    paddingVertical: 10, 
-    marginBottom: 16, 
-    borderWidth: 1, 
-    borderColor: '#e7e5e4',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1
+  container: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: SPACING.md,
+    backgroundColor: 'transparent',
   },
-  inputLeftIconContainer: {
-    marginRight: 12,
+  card: {
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: RADIUS.lg,
+    marginHorizontal: SPACING.sm,
+    padding: SPACING.lg,
+    ...SHADOW.card,
   },
-  inputLeftIcon: {
-    fontSize: 18,
-    color: '#78716c',
+  header: { marginBottom: SPACING.lg },
+  title: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: COLORS.text,
+    lineHeight: 38,
   },
-  inputContentContainer: {
-    flex: 1,
-    flexDirection: 'column',
+  titleHighlight: { color: COLORS.accent },
+  subtitle: {
+    fontSize: 13,
+    color: HELPER,
+    marginTop: SPACING.sm,
+    lineHeight: 18,
   },
-  inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#a8a29e', marginBottom: 2, letterSpacing: 0.5 },
-  inputFlex: { fontSize: 14, fontWeight: 'bold', color: '#2e1d33', padding: 0, height: 20 },
-  inputRightIconContainer: {
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: UI.chipBg,
+    borderRadius: RADIUS.pill,
     padding: 4,
+    marginBottom: SPACING.lg,
   },
-  inputRightIcon: {
-    fontSize: 16,
-    color: '#78716c',
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
   },
-  forgotPassword: { alignSelf: 'flex-end', marginBottom: 28, marginTop: -4 },
-  forgotPasswordText: { fontSize: 13, fontWeight: 'bold', color: '#ee6845' },
-  submitButton: { backgroundColor: '#7a317a', paddingVertical: 18, borderRadius: 30, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
-  submitButtonText: { color: 'white', fontSize: 15, fontWeight: 'bold' },
-  submitArrow: { fontSize: 15, color: 'white', fontWeight: 'bold' },
-  disabledButton: { opacity: 0.7 },
-  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 24 },
-  line: { flex: 1, height: 1, backgroundColor: '#e7e5e4' },
-  dividerText: { marginHorizontal: 16, fontSize: 11, fontWeight: 'bold', color: '#a8a29e' },
-  socialButton: { 
-    backgroundColor: 'white', 
-    borderWidth: 1, 
-    borderColor: '#e7e5e4', 
-    paddingVertical: 16, 
-    borderRadius: 30, 
+  toggleButtonActive: { backgroundColor: COLORS.primary },
+  toggleText: { fontSize: 13, fontWeight: '800', color: HELPER },
+  toggleTextActive: { color: COLORS.textOnDark },
+  errorBox: {
+    backgroundColor: UI.errorBg,
+    padding: 12,
+    borderRadius: RADIUS.md,
+    marginBottom: SPACING.md,
+  },
+  errorText: { color: COLORS.error, fontSize: 12, fontWeight: '800' },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 10,
+    marginBottom: SPACING.md,
+    borderWidth: 1,
+    borderColor: UI.line,
+    ...SHADOW.soft,
+  },
+  inputContentContainer: { flex: 1, flexDirection: 'column' },
+  inputLabel: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: PLACEHOLDER,
+    marginBottom: 2,
+    letterSpacing: 0.5,
+  },
+  inputFlex: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.text,
+    padding: 0,
+    height: 20,
+  },
+  inputRightIconContainer: { padding: 4 },
+  inputRightIcon: { fontSize: 16, color: HELPER },
+  submitButton: {
+    backgroundColor: COLORS.accent,
+    paddingVertical: 16,
+    borderRadius: RADIUS.pill,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8
+    gap: 8,
+    marginTop: SPACING.sm,
   },
-  googleG: {
-    fontSize: 16,
-    color: '#EA4335',
-    fontWeight: 'bold',
-  },
-  socialButtonText: { color: '#44403c', fontSize: 13, fontWeight: 'bold' },
+  submitButtonText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  submitArrow: { fontSize: 15, color: '#fff', fontWeight: '800' },
+  disabledButton: { opacity: 0.7 },
   footerText: {
     fontSize: 11,
-    color: '#78716c',
+    color: HELPER,
     textAlign: 'center',
-    marginTop: 28,
+    marginTop: SPACING.lg,
     lineHeight: 16,
   },
 });

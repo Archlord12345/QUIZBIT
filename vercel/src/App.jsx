@@ -412,7 +412,7 @@ export default function App() {
   return (
     <div className="admin-shell">
       <Sidebar currentPage={currentPage} onPage={setCurrentPage} />
-      <main className="admin-main">
+      <main className="admin-main qb-page">
         <Topbar
           loading={loading.stats || loading.data}
           page={currentPage}

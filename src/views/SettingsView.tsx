@@ -17,7 +17,8 @@ import {
   setApiMode,
   setOfflineApiHost,
 } from '../utils/api';
-import { COLORS, SPACING } from '../utils/theme';
+import { COLORS, SPACING, HELPER, PLACEHOLDER, LINE, INPUT_BG } from '../utils/theme';
+import { RADIUS, SHADOW, UI } from '../utils/ui';
 
 type SettingsViewProps = {
   onBack: () => void;
@@ -76,7 +77,7 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
           <Switch
             value={isOffline}
             onValueChange={toggleOffline}
-            trackColor={{ false: '#DFE1E6', true: COLORS.primary }}
+            trackColor={{ false: LINE, true: COLORS.primary }}
             thumbColor="white"
           />
         </View>
@@ -92,7 +93,7 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
           value={offlineHost}
           onChangeText={setOfflineHost}
           placeholder="10.0.2.2"
-          placeholderTextColor="#6B778C"
+          placeholderTextColor={PLACEHOLDER}
           autoCapitalize="none"
           onSubmitEditing={saveOfflineHost}
           onBlur={saveOfflineHost}
@@ -138,19 +139,20 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   backButtonText: {
-    color: 'white',
+    color: COLORS.textOnDark,
     fontWeight: '800',
   },
   pageTitle: {
-    color: 'white',
+    color: COLORS.textOnDark,
     fontSize: 32,
     fontWeight: '900',
     marginBottom: SPACING.lg,
   },
   card: {
-    backgroundColor: 'white',
-    borderRadius: 24,
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: RADIUS.lg,
     padding: SPACING.xl,
+    ...SHADOW.card,
   },
   settingRow: {
     flexDirection: 'row',
@@ -169,25 +171,25 @@ const styles = StyleSheet.create({
   },
   settingDescription: {
     fontSize: 13,
-    color: '#6B778C',
+    color: PLACEHOLDER,
     lineHeight: 18,
     marginBottom: 8,
   },
   divider: {
     height: 1,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: UI.surfaceMuted,
     marginVertical: SPACING.lg,
   },
   urlLabel: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#6B778C',
+    color: PLACEHOLDER,
     textTransform: 'uppercase',
     marginBottom: 8,
   },
   hostInput: {
-    backgroundColor: '#FAFBFC',
-    borderColor: '#DFE1E6',
+    backgroundColor: INPUT_BG,
+    borderColor: LINE,
     borderRadius: 10,
     borderWidth: 1,
     color: COLORS.text,
@@ -196,7 +198,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   urlValueBox: {
-    backgroundColor: '#F4F5F7',
+    backgroundColor: UI.surfaceSoft,
     borderRadius: 12,
     padding: 14,
   },

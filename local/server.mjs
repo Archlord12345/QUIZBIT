@@ -25,22 +25,26 @@ const getRouteName = req => {
   return segments.slice(apiIndex + 1).join('/') || 'health';
 };
 
-const SHARED_THEME = path.join(__dirname, '..', 'shared', 'panel-theme.css');
+const SHARED_DIR = path.join(__dirname, '..', 'shared');
 
-const serveSharedTheme = res => {
-  if (!fs.existsSync(SHARED_THEME)) {
+const serveSharedCss = (res, fileName) => {
+  const filePath = path.join(SHARED_DIR, fileName);
+  if (!fs.existsSync(filePath)) {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('Theme not found');
+    res.end('CSS not found');
     return;
   }
   res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
-  fs.createReadStream(SHARED_THEME).pipe(res);
+  fs.createReadStream(filePath).pipe(res);
 };
 
 const serveStatic = (req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   if (url.pathname === '/panel-theme.css') {
-    return serveSharedTheme(res);
+    return serveSharedCss(res, 'panel-theme.css');
+  }
+  if (url.pathname === '/panel-layout.css') {
+    return serveSharedCss(res, 'panel-layout.css');
   }
   let filePath = url.pathname === '/' ? '/index.html' : url.pathname;
   const safePath = path.normalize(filePath).replace(/^(\.\.[/\\])+/, '');

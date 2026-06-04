@@ -109,7 +109,7 @@ function render() {
           )
           .join('')}</nav>
       </aside>
-      <main class="main">
+      <main class="main qb-page">
         ${renderHeader()}
         <div class="notice"><strong>Mode offline.</strong> Serveur API: <code>${API_BASE}</code>. Les donnees sont synchronisees avec l app mobile. Importe un quiz JSON exporte depuis Vercel pour enrichir la banque locale.</div>
         ${renderPage()}

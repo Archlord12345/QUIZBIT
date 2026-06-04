@@ -29,3 +29,9 @@ export const SPACING = {
   lg: 24,
   xl: 32,
 };
+
+/** Alias alignés panels web (shared/panel-theme.css) */
+export const LINE = '#DFE1E6';
+export const INPUT_BG = '#FAFBFC';
+export const PLACEHOLDER = '#6B778C';
+export const HELPER = '#5E6C84';

@@ -168,7 +168,8 @@ textarea {
   margin-bottom: 18px;
 }
 
-.button {
+.button,
+.btn-accent {
   background: var(--qb-accent);
   border: 0;
   border-radius: 10px;
@@ -227,7 +228,8 @@ textarea {
   overflow: auto;
 }
 
-table {
+table,
+.qb-table {
   border-collapse: collapse;
   min-width: 760px;
   width: 100%;
@@ -262,13 +264,22 @@ tr:hover td {
 
 input,
 select,
-textarea {
+textarea,
+.qb-input {
   background: var(--qb-input-bg);
   border: 1px solid var(--qb-line-soft);
   border-radius: 10px;
   color: var(--qb-text);
-  padding: 12px;
+  padding: 12px 14px;
   width: 100%;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--line-strong);
+  box-shadow: 0 0 0 3px rgb(33 231 255 / 12%);
+  outline: 0;
 }
 
 input::placeholder,

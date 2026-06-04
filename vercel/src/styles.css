@@ -1,4 +1,5 @@
 @import '../../shared/panel-theme.css';
+@import '../../shared/panel-layout.css';
 
 * {
   box-sizing: border-box;
@@ -129,7 +130,11 @@ button:disabled {
 
 .admin-main {
   min-width: 0;
-  padding: 34px;
+  padding: 34px 34px 48px;
+}
+
+.admin-main.qb-page {
+  width: 100%;
 }
 
 .topbar {
@@ -676,12 +681,30 @@ tr:hover td {
 
 .offline-field textarea,
 .offline-options-grid input,
-.offline-options-grid select {
+.offline-options-grid select,
+.toolbar input,
+.ai-tester textarea,
+.ai-tester input {
   background: var(--qb-input-bg);
   border: 1px solid var(--qb-line-soft);
   border-radius: 10px;
   color: var(--qb-text);
   padding: 12px 14px;
+}
+
+.offline-field textarea:focus,
+.offline-options-grid input:focus,
+.offline-options-grid select:focus,
+.toolbar input:focus,
+.ai-tester textarea:focus,
+.ai-tester input:focus {
+  border-color: var(--line-strong);
+  box-shadow: 0 0 0 3px rgb(33 231 255 / 12%);
+  outline: 0;
+}
+
+table {
+  vertical-align: middle;
 }
 
 .offline-dropzone {
