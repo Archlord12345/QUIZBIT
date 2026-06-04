@@ -159,13 +159,15 @@ const BattleRoyaleView = ({
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Créer une salle</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Thème"
-          placeholderTextColor="#6B778C"
-          value={theme}
-          onChangeText={setTheme}
-        />
+        <FieldLabel label="Thème du jeu">
+          <TextInput
+            style={styles.input}
+            placeholder="Ex: React Native, capitales, sport..."
+            placeholderTextColor="#6B778C"
+            value={theme}
+            onChangeText={setTheme}
+          />
+        </FieldLabel>
         <Text style={styles.optionLabel}>Mode de jeu</Text>
         <View style={styles.segmentedRow}>
           <ModeChip
@@ -180,40 +182,48 @@ const BattleRoyaleView = ({
           />
         </View>
         <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.smallInput]}
-            keyboardType="numeric"
-            placeholder="Joueurs"
-            placeholderTextColor="#6B778C"
-            value={maxPlayers}
-            onChangeText={setMaxPlayers}
-          />
-          <TextInput
-            style={[styles.input, styles.smallInput]}
-            keyboardType="numeric"
-            placeholder="Nombre de questions"
-            placeholderTextColor="#6B778C"
-            value={questionCount}
-            onChangeText={value => setQuestionCount(clampNumber(value, 3, 20))}
-          />
+          <FieldLabel label="Nombre maximum de joueurs" style={styles.smallInput}>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              placeholder="10"
+              placeholderTextColor="#6B778C"
+              value={maxPlayers}
+              onChangeText={setMaxPlayers}
+            />
+          </FieldLabel>
+          <FieldLabel label="Nombre de questions" style={styles.smallInput}>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              placeholder="5"
+              placeholderTextColor="#6B778C"
+              value={questionCount}
+              onChangeText={value => setQuestionCount(clampNumber(value, 3, 20))}
+            />
+          </FieldLabel>
         </View>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          placeholder="Score minimum pour survivre"
-          placeholderTextColor="#6B778C"
-          value={eliminationScore}
-          onChangeText={setEliminationScore}
-        />
-        {battleMode === 'timed_mcq' ? (
+        <FieldLabel label="Score minimum pour survivre">
           <TextInput
             style={styles.input}
             keyboardType="numeric"
-            placeholder="Secondes par question"
+            placeholder="20"
             placeholderTextColor="#6B778C"
-            value={timeLimitSeconds}
-            onChangeText={setTimeLimitSeconds}
+            value={eliminationScore}
+            onChangeText={setEliminationScore}
           />
+        </FieldLabel>
+        {battleMode === 'timed_mcq' ? (
+          <FieldLabel label="Temps par question (secondes)">
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              placeholder="15"
+              placeholderTextColor="#6B778C"
+              value={timeLimitSeconds}
+              onChangeText={setTimeLimitSeconds}
+            />
+          </FieldLabel>
         ) : null}
         <TouchableOpacity style={styles.primaryButton} onPress={createRoom}>
           <Text style={styles.primaryButtonText}>Créer la salle</Text>
@@ -222,14 +232,16 @@ const BattleRoyaleView = ({
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Rejoindre une salle</Text>
-        <TextInput
-          style={styles.input}
-          autoCapitalize="characters"
-          placeholder="Code de salle"
-          placeholderTextColor="#6B778C"
-          value={joinCode}
-          onChangeText={setJoinCode}
-        />
+        <FieldLabel label="Code de salle à rejoindre">
+          <TextInput
+            style={styles.input}
+            autoCapitalize="characters"
+            placeholder="Ex: A1B2C3"
+            placeholderTextColor="#6B778C"
+            value={joinCode}
+            onChangeText={setJoinCode}
+          />
+        </FieldLabel>
         <TouchableOpacity style={styles.secondaryButton} onPress={joinRoom}>
           <Text style={styles.secondaryButtonText}>Rejoindre</Text>
         </TouchableOpacity>
@@ -289,14 +301,16 @@ const BattleRoyaleView = ({
               ) : (
                 <Text style={styles.chatEmpty}>Aucun message pour le moment.</Text>
               )}
-              <TextInput
-                style={styles.input}
-                maxLength={500}
-                placeholder="Message au lobby"
-                placeholderTextColor="#6B778C"
-                value={chatText}
-                onChangeText={setChatText}
-              />
+              <FieldLabel label="Message à envoyer au lobby">
+                <TextInput
+                  style={styles.input}
+                  maxLength={500}
+                  placeholder="Propose un thème, une règle ou une stratégie"
+                  placeholderTextColor="#6B778C"
+                  value={chatText}
+                  onChangeText={setChatText}
+                />
+              </FieldLabel>
               <TouchableOpacity
                 style={[styles.primaryButton, !chatText.trim() && styles.disabledButton]}
                 disabled={!chatText.trim()}
@@ -333,6 +347,21 @@ const BattleRoyaleView = ({
   );
 };
 
+
+const FieldLabel = ({
+  children,
+  label,
+  style,
+}: {
+  children: React.ReactNode;
+  label: string;
+  style?: object;
+}) => (
+  <View style={[styles.fieldGroup, style]}>
+    <Text style={styles.fieldLabel}>{label}</Text>
+    {children}
+  </View>
+);
 
 const clampNumber = (value: string, min: number, max: number) => {
   const numeric = Math.max(min, Math.min(max, Math.floor(Number(value) || min)));
@@ -485,6 +514,15 @@ const styles = StyleSheet.create({
   },
   modeChipTextActive: {
     color: COLORS.textOnDark,
+  },
+  fieldGroup: {
+    gap: 7,
+  },
+  fieldLabel: {
+    color: COLORS.text,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
   input: {
     backgroundColor: '#FAFBFC',

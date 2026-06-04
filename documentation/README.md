@@ -347,7 +347,7 @@ battleRooms
 ### Lobby et chat
 
 Après création ou après avoir rejoint une salle, l'utilisateur arrive dans le
-lobby. Le lobby affiche le code, les joueurs, le mode de jeu, le nombre de
+lobby. Le formulaire Battle Royale affiche un label explicite pour chaque champ : thème, mode, nombre maximum de joueurs, nombre de questions, score minimum, temps par question et code de salle. Le lobby affiche ensuite le code, les joueurs, le mode de jeu, le nombre de
 questions et les paramètres importants. Un bouton ouvre le chat du lobby pour
 permettre aux participants de discuter et se concerter sur le thème avant le
 lancement.
