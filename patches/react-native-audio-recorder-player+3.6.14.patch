@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-native-audio-recorder-player/android/src/main/java/com/dooboolab.audiorecorderplayer/RNAudioRecorderPlayerModule.kt b/node_modules/react-native-audio-recorder-player/android/src/main/java/com/dooboolab.audiorecorderplayer/RNAudioRecorderPlayerModule.kt
-index 7289614..a1b2c3d 100644
+index 7289614..b8e4f21 100644
 --- a/node_modules/react-native-audio-recorder-player/android/src/main/java/com/dooboolab.audiorecorderplayer/RNAudioRecorderPlayerModule.kt
 +++ b/node_modules/react-native-audio-recorder-player/android/src/main/java/com/dooboolab.audiorecorderplayer/RNAudioRecorderPlayerModule.kt
 @@ -44,13 +44,13 @@ class RNAudioRecorderPlayerModule(private val reactContext: ReactApplicationCont
@@ -7,14 +7,14 @@ index 7289614..a1b2c3d 100644
                          (ActivityCompat.checkSelfPermission(reactContext, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED ||
                          ActivityCompat.checkSelfPermission(reactContext, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED))  {
 -                    ActivityCompat.requestPermissions((currentActivity)!!, arrayOf(
-+                    ActivityCompat.requestPermissions((reactContext.currentActivity)!!, arrayOf(
++                    ActivityCompat.requestPermissions(reactContext.getCurrentActivity()!!, arrayOf(
                              Manifest.permission.RECORD_AUDIO,
                              Manifest.permission.WRITE_EXTERNAL_STORAGE), 0)
                      promise.reject("No permission granted.", "Try again after adding permission.")
                      return
                  } else if (ActivityCompat.checkSelfPermission(reactContext, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
 -                    ActivityCompat.requestPermissions((currentActivity)!!, arrayOf(Manifest.permission.RECORD_AUDIO), 0)
-+                    ActivityCompat.requestPermissions((reactContext.currentActivity)!!, arrayOf(Manifest.permission.RECORD_AUDIO), 0)
++                    ActivityCompat.requestPermissions(reactContext.getCurrentActivity()!!, arrayOf(Manifest.permission.RECORD_AUDIO), 0)
                      promise.reject("No permission granted.", "Try again after adding permission.")
                      return
                  }
@@ -23,7 +23,7 @@ index 7289614..a1b2c3d 100644
                          headers.put(key, httpHeaders.getString(key))
                      }
 -                    mediaPlayer!!.setDataSource(currentActivity!!.applicationContext, Uri.parse(path), headers)
-+                    mediaPlayer!!.setDataSource(reactContext.currentActivity!!.applicationContext, Uri.parse(path), headers)
++                    mediaPlayer!!.setDataSource(reactContext.applicationContext, Uri.parse(path), headers)
                  } else {
                      mediaPlayer!!.setDataSource(path)
                  }
