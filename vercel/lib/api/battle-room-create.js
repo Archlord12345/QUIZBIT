@@ -38,6 +38,7 @@ module.exports = async (req, res) => {
       status: 'waiting',
       config: normalizeConfig(config),
       players: [createPlayer(account)],
+      chatMessages: [],
       createdAt: new Date().toISOString(),
     };
     await setDocument('battleRooms', room.code, room, idToken);

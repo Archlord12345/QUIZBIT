@@ -1,6 +1,5 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { QUIZBIT_LOGO_URL } from '../utils/branding';
 import { COLORS, SPACING } from '../utils/theme';
 
 type LogoMarkProps = {
@@ -13,7 +12,7 @@ const LogoMark = ({ compact = false, subtitle }: LogoMarkProps) => (
     <Image
       accessibilityLabel="Logo QuizBit"
       resizeMode="contain"
-      source={{ uri: QUIZBIT_LOGO_URL }}
+      source={require('../assets/logo.png')}
       style={[styles.logo, compact && styles.logoCompact]}
     />
     {!compact ? <Text style={styles.title}>QuizBit</Text> : null}

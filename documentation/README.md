@@ -275,8 +275,10 @@ Fonctions :
 - affiche score et vies ;
 - affiche QCM ou QRO selon `question.type` ;
 - en QRO, affiche si la correction est souple ou exacte ;
+- anime l'entrée de chaque question ;
+- affiche un feedback animé en cas de réussite, d'échec ou de timeout ;
 - appelle `QuizController.submitAnswer()` ;
-- à la fin, affiche un récapitulatif complet :
+- à la fin, affiche un récapitulatif complet avec une animation d'entrée :
   - toutes les questions ;
   - toutes les réponses attendues ;
   - les choix QCM.
@@ -331,6 +333,9 @@ Routes :
 /api/battle-room-join
 /api/battle-room-start
 /api/battle-room-finish
+/api/battle-room-get
+/api/battle-room-chat
+/api/battle-room-delete
 ```
 
 Collection Firestore :
@@ -338,6 +343,22 @@ Collection Firestore :
 ```txt
 battleRooms
 ```
+
+### Lobby et chat
+
+Après création ou après avoir rejoint une salle, l'utilisateur arrive dans le
+lobby. Le lobby affiche le code, les joueurs, le mode de jeu, le nombre de
+questions et les paramètres importants. Un bouton ouvre le chat du lobby pour
+permettre aux participants de discuter et se concerter sur le thème avant le
+lancement.
+
+Règles du chat :
+
+- disponible uniquement quand la salle est en statut `waiting` ;
+- stocké dans `battleRooms/{code}.chatMessages` ;
+- rafraîchissable depuis le lobby ;
+- remis à zéro automatiquement quand le jeu est lancé ;
+- supprimé avec le lobby via `/api/battle-room-delete`.
 
 ### Modes Battle
 
@@ -450,6 +471,9 @@ Routes principales :
 /api/battle-room-join
 /api/battle-room-start
 /api/battle-room-finish
+/api/battle-room-get
+/api/battle-room-chat
+/api/battle-room-delete
 /api/test-gemini
 /api/test-mistral
 /api/test-cloudinary

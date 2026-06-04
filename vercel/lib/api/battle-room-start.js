@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
   try {
     const room = await getDocument('battleRooms', cleanCode, idToken);
     if (!room) throw new Error('Salle battle royale introuvable dans Firestore.');
-    const updatedRoom = { ...room, status: 'active', questions };
+    const updatedRoom = { ...room, status: 'active', questions, chatMessages: [] };
     await setDocument('battleRooms', cleanCode, updatedRoom, idToken);
     return res.status(200).json({ ok: true, room: updatedRoom });
   } catch (error) {

@@ -35,6 +35,8 @@ const BattleRoyaleView = ({
   const [timeLimitSeconds, setTimeLimitSeconds] = useState('15');
   const [joinCode, setJoinCode] = useState('');
   const [room, setRoom] = useState<BattleRoyaleRoom | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatText, setChatText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -95,6 +97,53 @@ const BattleRoyaleView = ({
       onStartBattle(activeRoom);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Demarrage impossible.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const refreshRoom = async () => {
+    if (!room) return;
+    setLoading(true);
+    setError('');
+    try {
+      setRoom(await BattleRoyaleController.getRoom(room.code, account));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Actualisation impossible.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendChatMessage = async () => {
+    const cleanText = chatText.trim();
+    if (!room || !cleanText || loading) return;
+    setLoading(true);
+    setError('');
+    try {
+      setRoom(
+        await BattleRoyaleController.sendChatMessage(room, account, cleanText),
+      );
+      setChatText('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Message impossible.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteLobby = async () => {
+    if (!room || loading) return;
+    setLoading(true);
+    setError('');
+    try {
+      await BattleRoyaleController.deleteRoom(room, account);
+      setRoom(null);
+      setChatOpen(false);
+      setChatText('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Suppression impossible.');
     } finally {
       setLoading(false);
     }
@@ -209,8 +258,65 @@ const BattleRoyaleView = ({
               {player.finished ? `${player.score} pts` : 'en attente'}
             </Text>
           ))}
+          <View style={styles.lobbyActions}>
+            <TouchableOpacity style={styles.secondaryButton} onPress={refreshRoom}>
+              <Text style={styles.secondaryButtonText}>Actualiser lobby</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => setChatOpen(previous => !previous)}
+            >
+              <Text style={styles.secondaryButtonText}>
+                {chatOpen ? 'Fermer le chat' : 'Ouvrir le chat'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {chatOpen && room.status === 'waiting' ? (
+            <View style={styles.chatCard}>
+              <Text style={styles.chatTitle}>Chat du lobby</Text>
+              <Text style={styles.chatHint}>
+                Discutez du thème avant le lancement. L'historique est remis à
+                zéro quand le jeu démarre.
+              </Text>
+              {(room.chatMessages || []).length ? (
+                (room.chatMessages || []).map(message => (
+                  <View key={message.id} style={styles.chatMessage}>
+                    <Text style={styles.chatAuthor}>{message.displayName}</Text>
+                    <Text style={styles.chatText}>{message.text}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.chatEmpty}>Aucun message pour le moment.</Text>
+              )}
+              <TextInput
+                style={styles.input}
+                maxLength={500}
+                placeholder="Message au lobby"
+                placeholderTextColor="#6B778C"
+                value={chatText}
+                onChangeText={setChatText}
+              />
+              <TouchableOpacity
+                style={[styles.primaryButton, !chatText.trim() && styles.disabledButton]}
+                disabled={!chatText.trim()}
+                onPress={sendChatMessage}
+              >
+                <Text style={styles.primaryButtonText}>Envoyer</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+          {chatOpen && room.status !== 'waiting' ? (
+            <Text style={styles.chatHint}>
+              Le chat est fermé car la partie a déjà démarré.
+            </Text>
+          ) : null}
+
           <TouchableOpacity style={styles.primaryButton} onPress={startBattle}>
             <Text style={styles.primaryButtonText}>Lancer le battle</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.dangerButton} onPress={deleteLobby}>
+            <Text style={styles.primaryButtonText}>Supprimer le lobby</Text>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -294,6 +400,53 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 16,
     padding: SPACING.lg,
+  },
+  lobbyActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  chatCard: {
+    backgroundColor: 'white',
+    borderColor: '#DFE1E6',
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 10,
+    padding: 12,
+  },
+  chatTitle: {
+    color: COLORS.primary,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  chatHint: {
+    color: '#5E6C84',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  chatMessage: {
+    backgroundColor: '#F4F5F7',
+    borderRadius: 12,
+    padding: 10,
+  },
+  chatAuthor: {
+    color: COLORS.primary,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  chatText: {
+    color: COLORS.text,
+    marginTop: 3,
+  },
+  chatEmpty: {
+    color: '#5E6C84',
+    fontStyle: 'italic',
+  },
+  dangerButton: {
+    alignItems: 'center',
+    backgroundColor: COLORS.error,
+    borderRadius: 10,
+    padding: 15,
   },
   sectionTitle: {
     color: COLORS.text,

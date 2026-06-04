@@ -152,6 +152,20 @@ const addDocument = async (collection, data, idToken) => {
   return { id: documentIdFromName(body.name), ...fromFields(body.fields) };
 };
 
+const deleteDocument = async (collection, id, idToken) => {
+  const response = await fetch(`${firestoreBaseUrl()}/${collection}/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(idToken),
+  });
+  if (response.status === 404) return;
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(
+      body?.error?.message || `Firestore HTTP ${response.status}`,
+    );
+  }
+};
+
 const listDocuments = async (
   collection,
   idToken,
@@ -180,6 +194,7 @@ const listDocuments = async (
 
 module.exports = {
   addDocument,
+  deleteDocument,
   firebaseAuthRequest,
   getDocument,
   listDocuments,

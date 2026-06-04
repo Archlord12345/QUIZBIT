@@ -13,6 +13,14 @@ export type BattleRoyaleConfig = {
   timeLimitSeconds: number;
 };
 
+export type BattleRoyaleChatMessage = {
+  id: string;
+  userId: string;
+  displayName: string;
+  text: string;
+  createdAt: string;
+};
+
 export type BattleRoyalePlayer = {
   userId: string;
   displayName: string;
@@ -29,6 +37,7 @@ export type BattleRoyaleRoom = {
   config: BattleRoyaleConfig;
   players: BattleRoyalePlayer[];
   questions?: Question[];
+  chatMessages?: BattleRoyaleChatMessage[];
   winnerId?: string;
   createdAt: string;
 };
@@ -63,6 +72,42 @@ class BattleRoyaleController {
       idToken: account.idToken,
     });
     return response.room;
+  }
+
+
+  async getRoom(code: string, account: UserAccount): Promise<BattleRoyaleRoom> {
+    this.assertAuthenticated(account);
+    const response = await apiPost<BattleRoomResponse>('/api/battle-room-get', {
+      code: code.trim().toUpperCase(),
+      idToken: account.idToken,
+    });
+    return response.room;
+  }
+
+  async sendChatMessage(
+    room: BattleRoyaleRoom,
+    account: UserAccount,
+    text: string,
+  ): Promise<BattleRoyaleRoom> {
+    this.assertAuthenticated(account);
+    const response = await apiPost<BattleRoomResponse>('/api/battle-room-chat', {
+      account,
+      code: room.code,
+      idToken: account.idToken,
+      text,
+    });
+    return response.room;
+  }
+
+  async deleteRoom(
+    room: BattleRoyaleRoom,
+    account: UserAccount,
+  ): Promise<void> {
+    this.assertAuthenticated(account);
+    await apiPost<{ ok: boolean }>('/api/battle-room-delete', {
+      code: room.code,
+      idToken: account.idToken,
+    });
   }
 
   async startRoom(room: BattleRoyaleRoom, host?: UserAccount): Promise<BattleRoyaleRoom> {
