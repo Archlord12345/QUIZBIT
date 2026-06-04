@@ -20,6 +20,11 @@ textarea {
 }
 
 button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+button:disabled.is-loading {
   cursor: wait;
   opacity: 0.65;
 }
@@ -612,6 +617,12 @@ tr:hover td {
 .offline-studio {
   display: grid;
   gap: 18px;
+}
+
+.offline-hint {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0 0 10px;
 }
 
 .offline-progress {

@@ -3,6 +3,8 @@ const env = import.meta.env;
 const SESSION_PANEL_KEY = 'quizbit_panel_admin_key';
 const SESSION_ID_TOKEN = 'quizbit_admin_id_token';
 
+export const PANEL_KEY_CHANGED_EVENT = 'quizbit-panel-key-changed';
+
 export const getBuildPanelKey = () =>
   env.VITE_ADMIN_PANEL_KEY || env.REACT_APP_ADMIN_PANEL_KEY || '';
 
@@ -21,6 +23,9 @@ export const setSessionPanelKey = value => {
     const clean = String(value || '').trim();
     if (clean) sessionStorage.setItem(SESSION_PANEL_KEY, clean);
     else sessionStorage.removeItem(SESSION_PANEL_KEY);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event(PANEL_KEY_CHANGED_EVENT));
+    }
   } catch {
     // ignore
   }

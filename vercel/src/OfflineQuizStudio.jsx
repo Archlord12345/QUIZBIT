@@ -5,7 +5,12 @@ import {
   formatBytes,
   MEDIA_ACCEPT,
 } from './utils/mediaPayload.web.js';
-import { getPanelAdminKey, getStoredIdToken, postPanelApi } from './panelApi.js';
+import {
+  getPanelAdminKey,
+  getStoredIdToken,
+  PANEL_KEY_CHANGED_EVENT,
+  postPanelApi,
+} from './panelApi.js';
 
 const MAX_QUESTIONS = 50;
 
@@ -83,7 +88,8 @@ export default function OfflineQuizStudio() {
   const [choiceCount, setChoiceCount] = useState(4);
   const [questionType, setQuestionType] = useState('mixed');
   const [openAnswerMode, setOpenAnswerMode] = useState('flexible');
-  const [provider, setProvider] = useState('auto');
+  const [provider, setProvider] = useState('mistral');
+  const [adminKey, setAdminKey] = useState(() => getPanelAdminKey());
   const [mediaMeta, setMediaMeta] = useState(null);
   const [mediaPayload, setMediaPayload] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -94,7 +100,16 @@ export default function OfflineQuizStudio() {
   const [acceptFilter, setAcceptFilter] = useState('any');
   const progressTimerRef = useRef(null);
 
-  const panelAdminKey = getPanelAdminKey();
+  useEffect(() => {
+    const syncAdminKey = () => setAdminKey(getPanelAdminKey());
+    syncAdminKey();
+    window.addEventListener('focus', syncAdminKey);
+    window.addEventListener(PANEL_KEY_CHANGED_EVENT, syncAdminKey);
+    return () => {
+      window.removeEventListener('focus', syncAdminKey);
+      window.removeEventListener(PANEL_KEY_CHANGED_EVENT, syncAdminKey);
+    };
+  }, []);
 
   const stopProgressTimer = useCallback(() => {
     if (progressTimerRef.current) {
@@ -162,8 +177,11 @@ export default function OfflineQuizStudio() {
       setError('Indique un thème ou charge un fichier (audio, vidéo, image, PDF, texte).');
       return;
     }
+    const panelAdminKey = getPanelAdminKey();
     if (!panelAdminKey) {
-      setError('Configuration admin manquante. Vérifie Paramètres ou les variables Vercel.');
+      setError(
+        'Clé admin panel manquante. Va dans Paramètres → « Enregistrer la clé » (identique à ADMIN_PANEL_KEY sur Vercel) ou redéploie le panel avec VITE_ADMIN_PANEL_KEY.',
+      );
       return;
     }
 
@@ -262,7 +280,6 @@ export default function OfflineQuizStudio() {
     choiceCount,
     questionType,
     openAnswerMode,
-    panelAdminKey,
     startProgressTimer,
     stopProgressTimer,
   ]);
@@ -307,7 +324,25 @@ export default function OfflineQuizStudio() {
     await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
   };
 
-  const canGenerate = Boolean((theme.trim() || mediaPayload) && !loading && panelAdminKey);
+  const hasInput = Boolean(theme.trim() || mediaPayload);
+  const canGenerate = hasInput && !loading;
+
+  const handleGenerateClick = () => {
+    if (!hasInput) {
+      setError(
+        'Indique un thème dans le champ texte ou charge un fichier (audio, image, PDF…).',
+      );
+      return;
+    }
+    if (!getPanelAdminKey()) {
+      setError(
+        'Clé admin panel manquante. Paramètres → cle admin → Enregistrer, ou configure VITE_ADMIN_PANEL_KEY sur Vercel puis redéploie.',
+      );
+      return;
+    }
+    setError('');
+    generate();
+  };
 
   return (
     <div className="offline-studio">
@@ -448,12 +483,25 @@ export default function OfflineQuizStudio() {
             </label>
           </div>
 
+          {!hasInput ? (
+            <p className="offline-hint">
+              Saisis un thème ou ajoute un fichier pour activer la génération.
+            </p>
+          ) : null}
+          {hasInput && !adminKey ? (
+            <div className="ai-error">
+              Clé admin absente pour cette session. Ouvre{' '}
+              <strong>Paramètres</strong>, colle la même valeur que{' '}
+              <code>ADMIN_PANEL_KEY</code> sur Vercel, puis{' '}
+              <strong>Enregistrer la clé</strong>.
+            </div>
+          ) : null}
           <div className="ai-actions">
             <button
               type="button"
-              className="btn primary"
+              className={`btn primary${loading ? ' is-loading' : ''}`}
               disabled={!canGenerate}
-              onClick={generate}
+              onClick={handleGenerateClick}
             >
               {loading ? `Génération… ${progress}%` : 'Générer le questionnaire'}
             </button>
