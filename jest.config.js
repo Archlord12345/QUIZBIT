@@ -25,5 +25,7 @@ module.exports = {
     '^firebase/firestore$': '<rootDir>/__mocks__/firebaseFirestore.js',
     '^react-native-image-picker$':
       '<rootDir>/__mocks__/react-native-image-picker.js',
+    '^react-native-audio-recorder-player$':
+      '<rootDir>/__mocks__/react-native-audio-recorder-player.js',
   },
 };
