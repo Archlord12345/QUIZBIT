@@ -176,10 +176,13 @@ const BattleRoyaleView = ({
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Battle Royale</Text>
+      <Text style={styles.title}>
+        {room ? `Salle : ${room.code}` : 'Battle Royale'}
+      </Text>
       <Text style={styles.subtitle}>
-        Configure une salle, invite les joueurs avec le code, puis lance le
-        quiz.
+        {room
+          ? 'Attends que tous les joueurs soient connectés dans le lobby, discute dans le chat et prépare-toi !'
+          : 'Configure une salle, invite les joueurs avec le code, puis lance le quiz.'}
       </Text>
 
       {!room ? (
