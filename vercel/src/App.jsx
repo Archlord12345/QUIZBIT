@@ -973,6 +973,24 @@ function SettingsPage({
       results.cloudinary?.message || 'Non teste',
     ],
   ];
+
+  const requiredEnv = [
+    'FIREBASE_API_KEY / REACT_APP_FIREBASE_API_KEY',
+    'FIREBASE_PROJECT_ID / REACT_APP_FIREBASE_PROJECT_ID',
+    'FIREBASE_AUTH_DOMAIN / REACT_APP_FIREBASE_AUTH_DOMAIN',
+    'GEMINI_API_KEY',
+    'MISTRAL_API_KEY',
+    'CLOUDINARY_CLOUD_NAME',
+    'CLOUDINARY_UPLOAD_PRESET',
+  ];
+  const apiRoutes = [
+    '/api/auth-login',
+    '/api/generate-questions',
+    '/api/validate-answer',
+    '/api/battle-room-create',
+    '/api/battle-room-chat',
+    '/api/scores-list',
+  ];
   return (
     <div className="settings-grid">
       <Panel title="Diagnostics">
@@ -1017,6 +1035,28 @@ function SettingsPage({
             <small>{detail}</small>
           </div>
         ))}
+        <div className="setup-card">
+          <strong>Checklist déploiement Vercel</strong>
+          <p>
+            Configure ces variables dans Vercel, puis redéploie depuis main.
+            Les routes API sont regroupées derrière une seule fonction pour le
+            plan gratuit.
+          </p>
+          <div className="setup-list">
+            {requiredEnv.map(item => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
+        </div>
+        <div className="setup-card">
+          <strong>Routes critiques disponibles</strong>
+          <p>Ces endpoints doivent répondre avant de publier l APK mobile.</p>
+          <div className="setup-list compact">
+            {apiRoutes.map(route => (
+              <span key={route}>{route}</span>
+            ))}
+          </div>
+        </div>
       </Panel>
       <AiPromptTester />
     </div>

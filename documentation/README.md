@@ -389,7 +389,7 @@ Pages :
 - Users : comptes/profils ;
 - Scores : leaderboard et historique ;
 - Battle Rooms : salles Firestore ;
-- Settings : diagnostics et test IA.
+- Settings : diagnostics, checklist de configuration Vercel, routes critiques et test IA.
 
 ### Diagnostics Settings
 
@@ -427,7 +427,7 @@ Pages :
 - Joueurs ;
 - Scores ;
 - Battle Rooms ;
-- Import / Export.
+- Import / Export, avec une carte Configuration locale qui explique le stockage, l import offline et le flux Vercel -> local.
 
 ### Import quiz Vercel
 

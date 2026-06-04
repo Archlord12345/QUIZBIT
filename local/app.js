@@ -256,6 +256,28 @@ function renderBattleRooms() {
 function renderTools() {
   return `
     <section class="card">
+      <h2>Configuration locale</h2>
+      <div class="setup-grid">
+        <div class="setup-tile">
+          <strong>Stockage</strong>
+          <span>localStorage navigateur, aucun cloud requis.</span>
+        </div>
+        <div class="setup-tile">
+          <strong>Import offline</strong>
+          <span>Accepte les exports quiz JSON du panel Vercel.</span>
+        </div>
+        <div class="setup-tile">
+          <strong>Usage</strong>
+          <span>Démo, tests, préparation de quiz sans Firebase.</span>
+        </div>
+      </div>
+      <ol class="setup-steps">
+        <li>Génère un quiz dans le panel Vercel Settings.</li>
+        <li>Exporte le fichier JSON offline.</li>
+        <li>Importe ce fichier ici pour l ajouter à la liste locale.</li>
+      </ol>
+    </section>
+    <section class="card">
       <h2>Import / Export</h2>
       <div class="actions">
         <button class="button" id="export-json">Exporter tout le local</button>
