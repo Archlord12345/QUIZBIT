@@ -135,7 +135,11 @@ class NetworkModel {
   }
 
   unpublishService(): void {
-    try { this.zeroconf.unpublishService('quizbit'); } catch {}
+    try { 
+      // Zeroconf might not have unpublishService, 
+      // stop() is the standard way to stop services.
+      this.zeroconf.stop(); 
+    } catch {}
   }
 
   // -------------------------------------------------------------------------
