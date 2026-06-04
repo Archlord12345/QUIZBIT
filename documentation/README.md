@@ -333,6 +333,9 @@ Routes :
 /api/battle-room-join
 /api/battle-room-start
 /api/battle-room-finish
+/api/battle-room-get
+/api/battle-room-chat
+/api/battle-room-delete
 ```
 
 Collection Firestore :
@@ -340,6 +343,22 @@ Collection Firestore :
 ```txt
 battleRooms
 ```
+
+### Lobby et chat
+
+Après création ou après avoir rejoint une salle, l'utilisateur arrive dans le
+lobby. Le lobby affiche le code, les joueurs, le mode de jeu, le nombre de
+questions et les paramètres importants. Un bouton ouvre le chat du lobby pour
+permettre aux participants de discuter et se concerter sur le thème avant le
+lancement.
+
+Règles du chat :
+
+- disponible uniquement quand la salle est en statut `waiting` ;
+- stocké dans `battleRooms/{code}.chatMessages` ;
+- rafraîchissable depuis le lobby ;
+- remis à zéro automatiquement quand le jeu est lancé ;
+- supprimé avec le lobby via `/api/battle-room-delete`.
 
 ### Modes Battle
 
@@ -452,6 +471,9 @@ Routes principales :
 /api/battle-room-join
 /api/battle-room-start
 /api/battle-room-finish
+/api/battle-room-get
+/api/battle-room-chat
+/api/battle-room-delete
 /api/test-gemini
 /api/test-mistral
 /api/test-cloudinary
