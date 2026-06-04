@@ -1,4 +1,10 @@
 const handlers = {
+  'admin-firestore-list': require('../lib/api/admin-firestore-list'),
+  'admin-firestore-stats': require('../lib/api/admin-firestore-stats'),
+  'admin-save-quiz': require('../lib/api/admin-save-quiz'),
+  'admin-firestore-list': require('../lib/api/admin-firestore-list'),
+  'admin-firestore-stats': require('../lib/api/admin-firestore-stats'),
+  'admin-save-quiz': require('../lib/api/admin-save-quiz'),
   'auth-login': require('../lib/api/auth-login'),
   'auth-register': require('../lib/api/auth-register'),
   'battle-room-create': require('../lib/api/battle-room-create'),

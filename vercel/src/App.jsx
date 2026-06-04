@@ -26,6 +26,13 @@ import {
 } from 'lucide-react';
 import OfflineQuizStudio from './OfflineQuizStudio.jsx';
 import {
+  getPanelAdminKey,
+  getStoredIdToken,
+  postPanelApi,
+  setSessionPanelKey,
+  setStoredIdToken,
+} from './panelApi.js';
+import {
   Area,
   AreaChart,
   Bar,
@@ -197,10 +204,15 @@ export default function App() {
   }, []);
 
   const fetchStats = useCallback(async () => {
-    if (!db) return;
     setLoadingFlag('stats', true);
     setError('');
     try {
+      if (getPanelAdminKey()) {
+        const data = await postPanelApi('admin-firestore-stats');
+        setStats(data.stats);
+        return;
+      }
+      if (!db) return;
       const [quizSnap, userSnap, scoreSnap, roomSnap] = await Promise.all([
         getCountFromServer(collection(db, 'quizzes')),
         getCountFromServer(collection(db, 'users')),
@@ -215,7 +227,7 @@ export default function App() {
       });
     } catch (err) {
       console.error(err);
-      setError('Impossible de charger les statistiques Firestore.');
+      setError(err.message || 'Impossible de charger les statistiques Firestore.');
     } finally {
       setLoadingFlag('stats', false);
     }
@@ -224,16 +236,37 @@ export default function App() {
   const fetchCollection = useCallback(
     async page => {
       const config = COLLECTIONS[page];
-      if (!db || !config) return;
+      if (!config) return;
       setLoadingFlag('data', true);
       setError('');
       try {
-        const request = query(
-          collection(db, config.name),
-          orderBy(config.order, 'desc'),
-          limit(PAGE_SIZE),
-        );
-        const snap = await getDocs(request);
+        if (getPanelAdminKey()) {
+          const data = await postPanelApi('admin-firestore-list', {
+            collection: config.name,
+          });
+          const rows = data.rows || [];
+          if (page === 'questions') setQuizzes(rows);
+          if (page === 'users') setUsers(rows);
+          if (page === 'scores') setScores(rows);
+          if (page === 'battle') setBattleRooms(rows);
+          return;
+        }
+
+        if (!db) return;
+        let snap;
+        try {
+          snap = await getDocs(
+            query(
+              collection(db, config.name),
+              orderBy(config.order, 'desc'),
+              limit(PAGE_SIZE),
+            ),
+          );
+        } catch {
+          snap = await getDocs(
+            query(collection(db, config.name), limit(PAGE_SIZE)),
+          );
+        }
         const rows = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         if (page === 'questions') setQuizzes(rows);
         if (page === 'users') setUsers(rows);
@@ -241,7 +274,7 @@ export default function App() {
         if (page === 'battle') setBattleRooms(rows);
       } catch (err) {
         console.error(err);
-        setError(`Impossible de charger ${config.label}.`);
+        setError(err.message || `Impossible de charger ${config.label}.`);
       } finally {
         setLoadingFlag('data', false);
       }
@@ -353,12 +386,16 @@ export default function App() {
   const diagnostics = {
     firebase: () =>
       runDiagnostic('firebase', async () => {
+        if (getPanelAdminKey()) {
+          const data = await postPanelApi('admin-firestore-stats');
+          return `Firestore OK via API (${data.stats.players} joueurs, ${data.stats.quizzes} quiz)`;
+        }
         if (!db) throw new Error('Firebase non configure.');
         await withTimeout(
           getCountFromServer(collection(db, 'users')),
           'Firebase',
         );
-        return 'Connection Firestore OK';
+        return 'Connection Firestore OK (client)';
       }),
     auth: () =>
       runDiagnostic('auth', () => testServerEndpoint('/api/firebase-auth')),
@@ -393,8 +430,13 @@ export default function App() {
         {error ? <Banner tone="error">{error}</Banner> : null}
         {!firebaseEnabled ? (
           <Banner>
-            Firebase n'est pas configure. Les donnees cloud ne peuvent pas etre
-            chargees.
+            Firebase client non configure (variables VITE_FIREBASE_* au build).
+          </Banner>
+        ) : null}
+        {!getPanelAdminKey() ? (
+          <Banner>
+            Cle admin panel absente : configure VITE_ADMIN_PANEL_KEY sur Vercel ou
+            saisis-la dans Parametres pour charger Quiz, Users et Scores.
           </Banner>
         ) : null}
         <AnimatePresence mode="wait">
@@ -1022,8 +1064,109 @@ function SettingsPage({
           </div>
         ))}
       </Panel>
+      <FirestoreAccessPanel />
       <AiPromptTester />
     </div>
+  );
+}
+
+function FirestoreAccessPanel() {
+  const [panelKey, setPanelKey] = useState(getPanelAdminKey());
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const hasToken = Boolean(getStoredIdToken());
+
+  const savePanelKey = () => {
+    setSessionPanelKey(panelKey);
+    setMessage('Cle panel enregistree pour cette session.');
+  };
+
+  const loginFirestore = async () => {
+    setLoading(true);
+    setMessage('');
+    try {
+      const response = await fetch('/api/auth-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) {
+        throw new Error(data.message || `HTTP ${response.status}`);
+      }
+      setStoredIdToken(data.account?.idToken || '');
+      setMessage(
+        `Connecte en tant que ${data.account?.displayName || data.account?.email}.`,
+      );
+    } catch (err) {
+      setMessage(err.message || 'Connexion impossible.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logoutFirestore = () => {
+    setStoredIdToken('');
+    setMessage('Session Firestore retiree.');
+  };
+
+  return (
+    <Panel title="Acces Firestore (panel admin)">
+      <div className="ai-tester">
+        <div className="ai-note">
+          Les lectures passent par l&apos;API securisee avec ADMIN_PANEL_KEY. Si
+          PANEL_FIRESTORE_EMAIL/PASSWORD ne sont pas sur Vercel, connecte un
+          compte Firebase autorise a lire les collections.
+        </div>
+        <label>
+          Cle admin panel (session)
+          <input
+            type="password"
+            value={panelKey}
+            onChange={e => setPanelKey(e.target.value)}
+            placeholder="Identique a ADMIN_PANEL_KEY"
+          />
+        </label>
+        <button type="button" className="btn ghost" onClick={savePanelKey}>
+          Enregistrer la cle
+        </button>
+        <label>
+          Email Firebase (optionnel)
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="admin@exemple.com"
+          />
+        </label>
+        <label>
+          Mot de passe
+          <input
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+          />
+        </label>
+        <div className="ai-actions">
+          <button
+            type="button"
+            className="btn primary"
+            disabled={loading}
+            onClick={loginFirestore}
+          >
+            {loading ? 'Connexion…' : 'Connecter Firestore'}
+          </button>
+          {hasToken ? (
+            <button type="button" className="btn ghost" onClick={logoutFirestore}>
+              Deconnecter
+            </button>
+          ) : null}
+        </div>
+        {message ? <div className="ai-note">{message}</div> : null}
+      </div>
+    </Panel>
   );
 }
 

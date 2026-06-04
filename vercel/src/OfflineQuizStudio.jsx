@@ -5,6 +5,7 @@ import {
   formatBytes,
   MEDIA_ACCEPT,
 } from './utils/mediaPayload.web.js';
+import { getPanelAdminKey, getStoredIdToken, postPanelApi } from './panelApi.js';
 
 const env = import.meta.env;
 const BUILD_PANEL_KEY =
@@ -198,6 +199,22 @@ export default function OfflineQuizStudio() {
         );
       }
       setResult(data);
+
+      if (getPanelAdminKey()) {
+        try {
+          await postPanelApi('admin-save-quiz', {
+            theme: cleanTheme || 'Quiz importé',
+            questions: data.questions,
+            provider: data.provider,
+            model: data.model,
+            format: 'quizbit-quiz-v1',
+            source: 'offline-studio',
+            idToken: getStoredIdToken() || undefined,
+          });
+        } catch (saveErr) {
+          console.warn('Sauvegarde Firestore quiz:', saveErr);
+        }
+      }
     } catch (err) {
       setError(
         err.name === 'AbortError'
