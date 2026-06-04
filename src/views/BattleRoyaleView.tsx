@@ -13,6 +13,12 @@ import BattleRoyaleController, {
 } from '../controllers/BattleRoyaleController';
 import { UserAccount } from '../controllers/AuthController';
 import { COLORS, SPACING } from '../utils/theme';
+import { pickThemeMedia, ThemeMedia } from '../utils/themeMediaPicker';
+import {
+  buildThemeMediaPayload,
+  themeLabelFromMedia,
+} from '../utils/themeMediaPayload';
+import { ThemeMediaSection } from '../components/ThemeMediaSection';
 
 type BattleRoyaleViewProps = {
   account: UserAccount;
@@ -28,6 +34,7 @@ const BattleRoyaleView = ({
   onStartBattle,
 }: BattleRoyaleViewProps) => {
   const [theme, setTheme] = useState('Culture générale');
+  const [themeMedia, setThemeMedia] = useState<ThemeMedia | null>(null);
   const [battleMode, setBattleMode] = useState<'classic' | 'timed_mcq'>(
     'classic',
   );
@@ -86,6 +93,22 @@ const BattleRoyaleView = ({
     }
   };
 
+  const handleBattleThemeMedia = async () => {
+    setError('');
+    try {
+      const media = await pickThemeMedia('audio');
+      if (!media) return;
+      setThemeMedia(media);
+      if (!theme.trim() || theme === 'Culture générale') {
+        setTheme(themeLabelFromMedia(media));
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Chargement audio impossible.',
+      );
+    }
+  };
+
   const startBattle = async () => {
     if (!room) {
       return;
@@ -94,7 +117,12 @@ const BattleRoyaleView = ({
     setLoading(true);
     setError('');
     try {
-      const activeRoom = await BattleRoyaleController.startRoom(room);
+      const mediaPayload = await buildThemeMediaPayload(themeMedia);
+      const activeRoom = await BattleRoyaleController.startRoom(
+        room,
+        account,
+        mediaPayload,
+      );
       setRoom(activeRoom);
       onStartBattle(activeRoom);
     } catch (err) {
@@ -200,6 +228,15 @@ const BattleRoyaleView = ({
                 onChangeText={setTheme}
               />
             </FieldLabel>
+            <ThemeMediaSection
+              themeMedia={themeMedia}
+              loading={loading}
+              onPickAudio={handleBattleThemeMedia}
+              onPickImage={handleBattleThemeMedia}
+              onPickDocument={handleBattleThemeMedia}
+              onPickAny={handleBattleThemeMedia}
+              onRemove={() => setThemeMedia(null)}
+            />
             <Text style={styles.optionLabel}>Mode de jeu</Text>
             <View style={styles.segmentedRow}>
               <ModeChip

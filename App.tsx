@@ -144,6 +144,7 @@ export default function App() {
               {(props) => (
                 <LeaderboardView
                   {...props}
+                  account={account}
                   onBack={() => props.navigation.goBack()}
                 />
               )}

@@ -51,8 +51,11 @@ class ScoreController {
     return { account: updatedAccount, scoreEntry: savedScore.scoreEntry };
   }
 
-  async getLeaderboard(mode?: GameMode): Promise<ScoreEntry[]> {
-    const account = AuthController.getCurrentAccount();
+  async getLeaderboard(
+    mode?: GameMode,
+    accountOverride?: UserAccount,
+  ): Promise<ScoreEntry[]> {
+    const account = accountOverride || AuthController.getCurrentAccount();
     if (!account?.idToken) {
       throw new Error('Session Vercel/Firebase manquante. Reconnecte-toi.');
     }

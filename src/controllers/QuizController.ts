@@ -23,7 +23,7 @@ class QuizController {
     }
 
     this.currentQuiz = {
-      theme: theme.trim(),
+      theme: theme.trim() || 'Quiz depuis support media',
       questions,
       hearts: 3,
       score: 0,

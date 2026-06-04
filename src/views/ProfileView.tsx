@@ -17,6 +17,7 @@ import LogoMark from '../components/LogoMark';
 type ProfileViewProps = {
   account: UserAccount;
   navigation: NativeStackNavigationProp<any>;
+  onBack?: () => void;
   onAccountUpdated: (account: UserAccount) => void;
   onSignOut: () => void;
 };
@@ -24,6 +25,7 @@ type ProfileViewProps = {
 const ProfileView = ({
   account,
   navigation,
+  onBack,
   onAccountUpdated,
   onSignOut,
 }: ProfileViewProps) => {
@@ -55,7 +57,10 @@ const ProfileView = ({
   return (
     <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => (onBack ? onBack() : navigation.goBack())}
+          style={styles.backButton}
+        >
           <Text style={styles.backButtonText}>← Retour</Text>
         </TouchableOpacity>
         <LogoMark compact />

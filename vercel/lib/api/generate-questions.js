@@ -132,7 +132,42 @@ const buildPrompt = (prompt, count, mode = 'array', options = {}) => {
   ].join(' ');
 };
 
-const generateWithGemini = async (prompt, count, options = {}) => {
+const buildGeminiParts = (prompt, count, options = {}, mediaPayload = null) => {
+  const geminiPrompt = buildPrompt(prompt, count, 'array', options);
+  const parts = [{ text: geminiPrompt }];
+
+  if (!mediaPayload || typeof mediaPayload !== 'object') {
+    return parts;
+  }
+
+  if (mediaPayload.textContent) {
+    parts.push({
+      text: `Contenu du support (${mediaPayload.fileName || 'fichier'}):\n${String(mediaPayload.textContent).slice(0, 8000)}`,
+    });
+    return parts;
+  }
+
+  if (mediaPayload.base64 && mediaPayload.mimeType) {
+    const category = mediaPayload.category || '';
+    const instruction =
+      category === 'audio'
+        ? 'Ecoute cet extrait audio. Deduis le theme principal, puis genere les questions en francais sur ce contenu.'
+        : category === 'image'
+        ? 'Analyse cette image et genere des questions en francais liees a son contenu.'
+        : 'Analyse ce media et genere des questions en francais pertinentes.';
+    parts.push({ text: instruction });
+    parts.push({
+      inline_data: {
+        mime_type: mediaPayload.mimeType,
+        data: mediaPayload.base64,
+      },
+    });
+  }
+
+  return parts;
+};
+
+const generateWithGemini = async (prompt, count, options = {}, mediaPayload = null) => {
   const key = getEnv('GEMINI_API_KEY', 'REACT_APP_GEMINI_API_KEY');
   if (!key) {
     throw new Error('GEMINI_API_KEY manquante dans Vercel.');
@@ -144,7 +179,7 @@ const generateWithGemini = async (prompt, count, options = {}) => {
     'gemini-1.5-pro-latest',
   ];
   const errors = [];
-  const geminiPrompt = buildPrompt(prompt, count, 'array', options);
+  const parts = buildGeminiParts(prompt, count, options, mediaPayload);
 
   for (const model of models) {
     const response = await requestWithTimeout(
@@ -153,9 +188,10 @@ const generateWithGemini = async (prompt, count, options = {}) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: geminiPrompt }] }],
+          contents: [{ parts }],
         }),
       },
+      mediaPayload?.category === 'audio' ? 45000 : 15000,
     );
     const data = await response.json().catch(() => ({}));
 
@@ -250,15 +286,28 @@ const generateWithMistral = async (prompt, count, options = {}) => {
   throw new Error(errors[0] || 'Generation Mistral impossible.');
 };
 
-const generateQuestions = async (prompt, count, provider, options = {}) => {
-  if (provider === 'gemini') return generateWithGemini(prompt, count, options);
-  if (provider === 'mistral') return generateWithMistral(prompt, count, options);
+const enrichPromptWithMedia = (prompt, mediaPayload) => {
+  if (!mediaPayload?.textContent) return prompt;
+  return `${prompt}\n\nContenu texte du support:\n${String(mediaPayload.textContent).slice(0, 8000)}`;
+};
+
+const generateQuestions = async (prompt, count, provider, options = {}, mediaPayload = null) => {
+  const enrichedPrompt = enrichPromptWithMedia(prompt, mediaPayload);
+  const preferGemini = Boolean(
+    mediaPayload?.base64 && ['audio', 'image', 'video'].includes(mediaPayload.category),
+  );
+
+  if (preferGemini || provider === 'gemini') {
+    return generateWithGemini(enrichedPrompt, count, options, mediaPayload);
+  }
+  if (provider === 'mistral') return generateWithMistral(enrichedPrompt, count, options);
 
   try {
-    return await generateWithGemini(prompt, count, options);
+    return await generateWithGemini(enrichedPrompt, count, options, mediaPayload);
   } catch (geminiError) {
+    if (preferGemini) throw geminiError;
     try {
-      const fallback = await generateWithMistral(prompt, count, options);
+      const fallback = await generateWithMistral(enrichedPrompt, count, options);
       return {
         ...fallback,
         fallbackFrom: 'gemini',
@@ -285,9 +334,16 @@ module.exports = async (req, res) => {
     ? body.provider
     : 'auto';
   const generationOptions = normalizeGenerationOptions(body);
+  const mediaPayload =
+    body.mediaPayload && typeof body.mediaPayload === 'object'
+      ? body.mediaPayload
+      : null;
 
-  if (!prompt) {
-    return res.status(400).json({ ok: false, message: 'Prompt requis.' });
+  if (!prompt && !mediaPayload) {
+    return res.status(400).json({
+      ok: false,
+      message: 'Theme texte ou support media requis.',
+    });
   }
 
   const idToken = String(body.idToken || '').trim();
@@ -300,7 +356,29 @@ module.exports = async (req, res) => {
 
   try {
     await verifyIdToken(idToken);
-    const result = await generateQuestions(prompt, count, provider, generationOptions);
+    if (mediaPayload?.base64) {
+      const allowed = [
+        'audio/',
+        'image/',
+        'video/',
+        'application/pdf',
+        'text/',
+      ];
+      const mime = String(mediaPayload.mimeType || '');
+      if (!allowed.some(prefix => mime.startsWith(prefix))) {
+        return res.status(400).json({
+          ok: false,
+          message: 'Type de media non supporte pour la generation.',
+        });
+      }
+    }
+    const result = await generateQuestions(
+      prompt || 'Quiz base sur le support media fourni',
+      count,
+      provider,
+      generationOptions,
+      mediaPayload,
+    );
     return res.status(200).json({ ok: true, ...result });
   } catch (error) {
     return res.status(502).json({

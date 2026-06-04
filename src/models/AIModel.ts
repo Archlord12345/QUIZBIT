@@ -1,5 +1,6 @@
 import AuthController from '../controllers/AuthController';
 import { apiPost } from '../utils/api';
+import type { ThemeMediaPayload } from '../utils/themeMediaPayload';
 
 export type QuestionType = 'mixed' | 'mcq' | 'open';
 export type OpenAnswerMode = 'flexible' | 'exact';
@@ -16,6 +17,7 @@ export type Question = {
 export type QuizGenerationOptions = {
   choiceCount?: number;
   mediaDescription?: string;
+  mediaPayload?: ThemeMediaPayload | null;
   count?: number;
   openAnswerMode?: OpenAnswerMode;
   questionType?: QuestionType;
@@ -47,11 +49,13 @@ class AIModel {
     options: QuizGenerationOptions = {},
   ): Promise<Question[]> {
     const cleanTheme = theme.trim();
-    if (!cleanTheme) {
-      throw new Error('Theme manquant.');
+    const hasMedia = Boolean(options.mediaPayload);
+    if (!cleanTheme && !hasMedia) {
+      throw new Error('Indique un theme ou charge un support audio/document.');
     }
 
     const count = Math.max(1, Math.min(20, Math.floor(options.count || 5)));
+    const themeLine = cleanTheme || 'Theme deduit du support fourni';
     const response = await apiPost<GenerateQuestionsResponse>(
       '/api/generate-questions',
       {
@@ -61,10 +65,11 @@ class AIModel {
         ),
         count,
         idToken: this.requireIdToken(),
+        mediaPayload: options.mediaPayload || undefined,
         openAnswerMode: options.openAnswerMode || 'flexible',
         prompt: options.mediaDescription
-          ? `${cleanTheme}. ${options.mediaDescription}`
-          : cleanTheme,
+          ? `${themeLine}. ${options.mediaDescription}`
+          : themeLine,
         questionType: options.questionType || 'mixed',
       },
     );

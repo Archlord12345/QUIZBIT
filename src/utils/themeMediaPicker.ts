@@ -29,7 +29,41 @@ const requestAndroidMediaPermissions = async () => {
   return result === PermissionsAndroid.RESULTS.GRANTED;
 };
 
-export const pickThemeMedia = async (): Promise<ThemeMedia | null> => {
+export type ThemeMediaPickKind = 'any' | 'audio' | 'image' | 'document';
+
+const pickTypesForKind = (kind: ThemeMediaPickKind) => {
+  switch (kind) {
+    case 'audio':
+      return [types.audio];
+    case 'image':
+      return [types.images];
+    case 'document':
+      return [
+        types.doc,
+        types.docx,
+        types.pdf,
+        types.plainText,
+        types.ppt,
+        types.pptx,
+      ];
+    default:
+      return [
+        types.audio,
+        types.doc,
+        types.docx,
+        types.images,
+        types.pdf,
+        types.plainText,
+        types.ppt,
+        types.pptx,
+        types.video,
+      ];
+  }
+};
+
+export const pickThemeMedia = async (
+  kind: ThemeMediaPickKind = 'any',
+): Promise<ThemeMedia | null> => {
   const granted = await requestAndroidMediaPermissions();
   if (!granted) {
     throw new Error(
@@ -39,17 +73,7 @@ export const pickThemeMedia = async (): Promise<ThemeMedia | null> => {
 
   const [file] = await pick({
     allowMultiSelection: false,
-    type: [
-      types.audio,
-      types.doc,
-      types.docx,
-      types.images,
-      types.pdf,
-      types.plainText,
-      types.ppt,
-      types.pptx,
-      types.video,
-    ],
+    type: pickTypesForKind(kind),
   });
 
   if (!file?.uri) return null;
@@ -64,10 +88,17 @@ export const pickThemeMedia = async (): Promise<ThemeMedia | null> => {
 
 export const describeThemeMedia = (media: ThemeMedia | null) => {
   if (!media) return '';
+  const mime = String(media.type || '').toLowerCase();
+  if (mime.startsWith('audio/')) {
+    return `Support audio: ${media.name}. Analyse le contenu parle (paroles, sujet, mots-cles) pour definir le theme et les questions.`;
+  }
+  if (mime.startsWith('image/')) {
+    return `Support image: ${media.name}. Analyse le visuel pour definir le theme du quiz.`;
+  }
   return [
-    `Support fourni par l utilisateur: ${media.name}.`,
-    media.type ? `Type MIME: ${media.type}.` : '',
-    'Utilise ce support comme contexte de theme si son nom ou son type indique un sujet.',
+    `Support fourni: ${media.name}.`,
+    media.type ? `Type: ${media.type}.` : '',
+    'Utilise ce support comme contexte principal du quiz.',
   ]
     .filter(Boolean)
     .join(' ');

@@ -1,4 +1,5 @@
 import AIModel, { Question } from '../models/AIModel';
+import type { ThemeMediaPayload } from '../utils/themeMediaPayload';
 import { apiPost } from '../utils/api';
 import { UserAccount } from './AuthController';
 
@@ -111,11 +112,16 @@ class BattleRoyaleController {
     });
   }
 
-  async startRoom(room: BattleRoyaleRoom, host?: UserAccount): Promise<BattleRoyaleRoom> {
+  async startRoom(
+    room: BattleRoyaleRoom,
+    host?: UserAccount,
+    mediaPayload?: ThemeMediaPayload | null,
+  ): Promise<BattleRoyaleRoom> {
     if (host) this.assertAuthenticated(host);
     const questions = await AIModel.generateQuestions(room.config.theme, {
       choiceCount: 4,
       count: room.config.questionCount,
+      mediaPayload: mediaPayload || undefined,
       questionType: room.config.mode === 'timed_mcq' ? 'mcq' : 'mixed',
     });
     const response = await apiPost<BattleRoomResponse>('/api/battle-room-start', {

@@ -1,28 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import ScoreController, { GameMode, ScoreEntry } from '../controllers/ScoreController';
-import AuthController from '../controllers/AuthController';
+import { UserAccount } from '../controllers/AuthController';
 import { LeaderboardCard } from '../components/LeaderboardCard';
 import { LeaderboardUser } from '../types';
 import { COLORS } from '../utils/theme';
 
 type LeaderboardViewProps = {
+  account: UserAccount;
   onBack: () => void;
 };
 
-const LeaderboardView = ({ onBack }: LeaderboardViewProps) => {
+const LeaderboardView = ({ account, onBack }: LeaderboardViewProps) => {
   const [mode, setMode] = useState<GameMode | undefined>(undefined);
   const [scores, setScores] = useState<ScoreEntry[]>([]);
   const [loading, setLoading] = useState(false);
-
-  const currentAccount = AuthController.getCurrentAccount();
+  const [error, setError] = useState('');
 
   const loadScores = async () => {
     setLoading(true);
+    setError('');
     try {
-      setScores(await ScoreController.getLeaderboard(mode));
+      setScores(await ScoreController.getLeaderboard(mode, account));
     } catch (e) {
-      console.error(e);
+      setError(
+        e instanceof Error ? e.message : 'Impossible de charger le classement.',
+      );
     } finally {
       setLoading(false);
     }
@@ -48,7 +57,7 @@ const LeaderboardView = ({ onBack }: LeaderboardViewProps) => {
     name: score.displayName,
     score: score.score,
     initials: getInitials(score.displayName),
-    isCurrentUser: score.userId === currentAccount?.id,
+    isCurrentUser: score.userId === account.id,
     change: 0, // Stable trend change indicator
   }));
 
@@ -57,6 +66,16 @@ const LeaderboardView = ({ onBack }: LeaderboardViewProps) => {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={COLORS.secondary} size="large" />
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadScores}>
+            <Text style={styles.retryText}>Réessayer</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onBack}>
+            <Text style={styles.backLink}>Retour</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <LeaderboardCard
@@ -81,6 +100,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    gap: 16,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: COLORS.accent,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  retryText: { color: 'white', fontWeight: '800' },
+  backLink: { color: COLORS.secondary, fontWeight: '800' },
 });
 
 export default LeaderboardView;

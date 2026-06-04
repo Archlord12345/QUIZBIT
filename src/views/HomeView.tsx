@@ -17,7 +17,13 @@ import {
   describeThemeMedia,
   pickThemeMedia,
   ThemeMedia,
+  ThemeMediaPickKind,
 } from '../utils/themeMediaPicker';
+import {
+  buildThemeMediaPayload,
+  themeLabelFromMedia,
+} from '../utils/themeMediaPayload';
+import { ThemeMediaSection } from '../components/ThemeMediaSection';
 import { COLORS, SPACING } from '../utils/theme';
 import { Header } from '../components/Header';
 
@@ -79,9 +85,26 @@ const HomeView = ({
     Math.min(20, Math.floor(Number(questionCount) || 5)),
   );
 
+  const canStartQuiz = Boolean(theme.trim() || themeMedia);
+
+  const runQuizGeneration = async (themeInput: string) => {
+    const mediaPayload = await buildThemeMediaPayload(themeMedia);
+    const quiz = await QuizController.initQuiz(themeInput, {
+      choiceCount: Number(choiceCount),
+      count: normalizedQuestionCount,
+      mediaDescription: describeThemeMedia(themeMedia),
+      mediaPayload,
+      openAnswerMode,
+      questionType,
+    });
+    onQuizReady(quiz);
+  };
+
   const handleStart = async () => {
-    const cleanTheme = theme.trim();
-    if (!cleanTheme || loading) {
+    if (!canStartQuiz || loading) {
+      if (!canStartQuiz) {
+        setError('Indique un thème ou charge un fichier audio.');
+      }
       return;
     }
 
@@ -89,14 +112,12 @@ const HomeView = ({
     setError('');
 
     try {
-      const quiz = await QuizController.initQuiz(cleanTheme, {
-        choiceCount: Number(choiceCount),
-        count: normalizedQuestionCount,
-        mediaDescription: describeThemeMedia(themeMedia),
-        openAnswerMode,
-        questionType,
-      });
-      onQuizReady(quiz);
+      const cleanTheme =
+        theme.trim() || themeLabelFromMedia(themeMedia) || 'Quiz audio';
+      if (!theme.trim() && themeMedia) {
+        setTheme(cleanTheme);
+      }
+      await runQuizGeneration(cleanTheme);
     } catch (err) {
       setError(
         err instanceof Error
@@ -108,11 +129,15 @@ const HomeView = ({
     }
   };
 
-  const handleThemeMedia = async () => {
+  const handleThemeMedia = async (kind: ThemeMediaPickKind = 'any') => {
     setError('');
     try {
-      const media = await pickThemeMedia();
-      if (media) setThemeMedia(media);
+      const media = await pickThemeMedia(kind);
+      if (!media) return;
+      setThemeMedia(media);
+      if (!theme.trim()) {
+        setTheme(themeLabelFromMedia(media));
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Chargement du support impossible.',
@@ -124,11 +149,7 @@ const HomeView = ({
     setLoading(true);
     setError('');
     try {
-      const quiz = await QuizController.initQuiz("Cinéma des années 90", {
-        count: 5,
-        questionType: 'mixed',
-      });
-      onQuizReady(quiz);
+      await runQuizGeneration('Cinéma des années 90');
     } catch (err) {
       setError(
         err instanceof Error
@@ -207,42 +228,20 @@ const HomeView = ({
         {/* Section: Support de thème */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Support de thème</Text>
-          <TouchableOpacity onPress={handleThemeMedia} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => handleThemeMedia('any')} activeOpacity={0.7}>
             <Text style={styles.seeAllText}>Voir tout {'>'}</Text>
           </TouchableOpacity>
         </View>
 
-        {themeMedia ? (
-          <View style={styles.mediaBadge}>
-            <Text style={styles.mediaBadgeTitle}>{themeMedia.name}</Text>
-            <Text style={styles.mediaBadgeText}>
-              {themeMedia.type || 'type inconnu'}
-              {themeMedia.size ? ` · ${Math.round(themeMedia.size / 1024)} Ko` : ''}
-            </Text>
-            <TouchableOpacity onPress={() => setThemeMedia(null)}>
-              <Text style={styles.mediaRemove}>Retirer</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
-
-        <View style={styles.pillsRow}>
-          <TouchableOpacity style={styles.pillButton} onPress={handleThemeMedia} activeOpacity={0.8}>
-            <Text style={styles.pillEmoji}>🖼️</Text>
-            <Text style={styles.pillText}>Image</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.pillButton} onPress={handleThemeMedia} activeOpacity={0.8}>
-            <Text style={styles.pillEmoji}>🎧</Text>
-            <Text style={styles.pillText}>Audio</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.pillButton} onPress={handleThemeMedia} activeOpacity={0.8}>
-            <Text style={styles.pillEmoji}>📹</Text>
-            <Text style={styles.pillText}>Vidéo</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.pillButton} onPress={handleThemeMedia} activeOpacity={0.8}>
-            <Text style={styles.pillEmoji}>📄</Text>
-            <Text style={styles.pillText}>PDF</Text>
-          </TouchableOpacity>
-        </View>
+        <ThemeMediaSection
+          themeMedia={themeMedia}
+          loading={loading}
+          onPickAudio={() => handleThemeMedia('audio')}
+          onPickImage={() => handleThemeMedia('image')}
+          onPickDocument={() => handleThemeMedia('document')}
+          onPickAny={() => handleThemeMedia('any')}
+          onRemove={() => setThemeMedia(null)}
+        />
       </ScrollView>
     );
   };
@@ -278,23 +277,15 @@ const HomeView = ({
             returnKeyType="done"
             onSubmitEditing={handleStart}
           />
-          <TouchableOpacity style={styles.mediaButton} onPress={handleThemeMedia}>
-            <Text style={styles.mediaButtonText}>
-              Charger un support de thème (audio, vidéo, image, document)
-            </Text>
-          </TouchableOpacity>
-          {themeMedia ? (
-            <View style={styles.mediaBadge}>
-              <Text style={styles.mediaBadgeTitle}>{themeMedia.name}</Text>
-              <Text style={styles.mediaBadgeText}>
-                {themeMedia.type || 'type inconnu'}
-                {themeMedia.size ? ` · ${Math.round(themeMedia.size / 1024)} Ko` : ''}
-              </Text>
-              <TouchableOpacity onPress={() => setThemeMedia(null)}>
-                <Text style={styles.mediaRemove}>Retirer</Text>
-              </TouchableOpacity>
-            </View>
-          ) : null}
+          <ThemeMediaSection
+            themeMedia={themeMedia}
+            loading={loading}
+            onPickAudio={() => handleThemeMedia('audio')}
+            onPickImage={() => handleThemeMedia('image')}
+            onPickDocument={() => handleThemeMedia('document')}
+            onPickAny={() => handleThemeMedia('any')}
+            onRemove={() => setThemeMedia(null)}
+          />
 
           <Text style={styles.optionLabel}>Format des questions</Text>
           <View style={styles.segmentedRow}>
@@ -371,10 +362,10 @@ const HomeView = ({
           <TouchableOpacity
             style={[
               styles.button,
-              (!theme.trim() || loading) && styles.buttonDisabled,
+              (!canStartQuiz || loading) && styles.buttonDisabled,
             ]}
             onPress={handleStart}
-            disabled={loading || !theme.trim()}
+            disabled={loading || !canStartQuiz}
           >
             {loading ? (
               <ActivityIndicator color="white" />
@@ -405,6 +396,7 @@ const HomeView = ({
       case 'top':
         return (
           <LeaderboardView
+            account={account}
             onBack={() => setActiveTab('home')}
           />
         );
@@ -413,6 +405,7 @@ const HomeView = ({
           <ProfileView
             account={account}
             navigation={navigation as any}
+            onBack={() => setActiveTab('home')}
             onAccountUpdated={onAccountUpdated}
             onSignOut={onSignOut}
           />
