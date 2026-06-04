@@ -19,7 +19,7 @@ QuizBit est une plateforme de quiz mobile avec génération de questions par IA,
 - Génération de quiz avec Google Gemini.
 - Questions QCM et questions ouvertes.
 - QCM avec 2 à 5 choix maximum.
-- Questions ouvertes : l'utilisateur saisit sa réponse et l'app l'analyse avec Gemini pour validation.
+- Questions ouvertes : l'utilisateur saisit sa réponse et l'app l'analyse avec Gemini/Mistral pour validation. Chaque mode de jeu demande un nombre de questions défini avant lancement.
 - Scores sauvegardés dans Firestore.
 - Leaderboard global depuis Firestore.
 - Mode battle royale avec salles Firestore :

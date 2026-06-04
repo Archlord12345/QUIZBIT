@@ -176,7 +176,7 @@ Le joueur peut configurer :
 - thème texte ;
 - support de thème natif : image, audio, vidéo, PDF, document, présentation ;
 - type de quiz : Mixte, QCM, QRO ;
-- nombre de questions ;
+- nombre de questions, obligatoire avant lancement pour chaque mode ;
 - nombre de choix QCM, limité entre 2 et 5 ;
 - correction QRO : Souple ou Nom exact.
 
@@ -342,11 +342,13 @@ battleRooms
 ### Modes Battle
 
 1. **Classique**
+   - nombre de questions défini avant création de la salle ;
    - questions mixtes ;
    - score minimum pour survivre ;
    - pas de timer obligatoire.
 
 2. **QCM chronométré**
+   - nombre de questions défini avant création de la salle ;
    - questions obligatoirement QCM ;
    - durée par question définie au départ, par exemple 15 secondes ;
    - si le joueur répond faux, il passe directement à la question suivante ;

@@ -38,6 +38,11 @@ const BattleRoyaleView = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const normalizedQuestionCount = Math.max(
+    3,
+    Math.min(20, Math.floor(Number(questionCount) || 5)),
+  );
+
   const createRoom = async () => {
     setLoading(true);
     setError('');
@@ -46,7 +51,7 @@ const BattleRoyaleView = ({
         mode: battleMode,
         theme,
         maxPlayers: Number(maxPlayers),
-        questionCount: Number(questionCount),
+        questionCount: normalizedQuestionCount,
         eliminationScore: Number(eliminationScore),
         timeLimitSeconds: Number(timeLimitSeconds),
       });
@@ -137,10 +142,10 @@ const BattleRoyaleView = ({
           <TextInput
             style={[styles.input, styles.smallInput]}
             keyboardType="numeric"
-            placeholder="Questions"
+            placeholder="Nombre de questions"
             placeholderTextColor="#6B778C"
             value={questionCount}
-            onChangeText={setQuestionCount}
+            onChangeText={value => setQuestionCount(clampNumber(value, 3, 20))}
           />
         </View>
         <TextInput
@@ -186,7 +191,7 @@ const BattleRoyaleView = ({
           <Text style={styles.roomCode}>Code: {room.code}</Text>
           <Text style={styles.roomInfo}>Statut: {room.status}</Text>
           <Text style={styles.roomInfo}>
-            Thème: {room.config.theme} | Questions: {room.config.questionCount}
+            Thème: {room.config.theme} | Questions prévues: {room.config.questionCount}
           </Text>
           <Text style={styles.roomInfo}>
             Mode: {room.config.mode === 'timed_mcq' ? 'QCM chronométré' : 'Classique'}
@@ -222,6 +227,11 @@ const BattleRoyaleView = ({
   );
 };
 
+
+const clampNumber = (value: string, min: number, max: number) => {
+  const numeric = Math.max(min, Math.min(max, Math.floor(Number(value) || min)));
+  return String(numeric);
+};
 
 const ModeChip = ({
   active,

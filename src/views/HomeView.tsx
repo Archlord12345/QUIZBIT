@@ -30,6 +30,12 @@ type HomeViewProps = {
   onSignOut: () => void;
 };
 
+const questionTypeLabel = {
+  mixed: 'Mixte',
+  mcq: 'QCM',
+  open: 'QRO',
+};
+
 const HomeView = ({
   account,
   onAccountUpdated,
@@ -49,6 +55,11 @@ const HomeView = ({
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [error, setError] = useState('');
 
+  const normalizedQuestionCount = Math.max(
+    1,
+    Math.min(20, Math.floor(Number(questionCount) || 5)),
+  );
+
   const handleStart = async () => {
     const cleanTheme = theme.trim();
     if (!cleanTheme || loading) {
@@ -61,7 +72,7 @@ const HomeView = ({
     try {
       const quiz = await QuizController.initQuiz(cleanTheme, {
         choiceCount: Number(choiceCount),
-        count: Number(questionCount),
+        count: normalizedQuestionCount,
         mediaDescription: describeThemeMedia(themeMedia),
         openAnswerMode,
         questionType,
@@ -162,9 +173,10 @@ const HomeView = ({
       <View style={styles.card}>
         <Text style={styles.label}>Quiz solo intelligent</Text>
         <Text style={styles.cardText}>
-          Choisis un thème, puis précise le format. Les QCM ont au maximum 5
-          choix et les réponses ouvertes peuvent être corrigées souplement par
-          IA ou strictement pour les noms exacts.
+          Choisis un thème, puis définis obligatoirement le nombre de questions
+          avant de lancer le mode {questionTypeLabel[questionType]}. Les QCM ont
+          au maximum 5 choix et les QRO peuvent être corrigées souplement ou
+          strictement.
         </Text>
         <TextInput
           style={styles.input}
@@ -215,7 +227,7 @@ const HomeView = ({
 
         <View style={styles.settingsRow}>
           <View style={styles.settingBox}>
-            <Text style={styles.optionLabel}>Questions</Text>
+            <Text style={styles.optionLabel}>Nombre de questions</Text>
             <TextInput
               style={styles.input}
               keyboardType="numeric"
@@ -277,7 +289,7 @@ const HomeView = ({
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text style={styles.buttonText}>Générer et commencer</Text>
+            <Text style={styles.buttonText}>Générer {normalizedQuestionCount} questions</Text>
           )}
         </TouchableOpacity>
       </View>
