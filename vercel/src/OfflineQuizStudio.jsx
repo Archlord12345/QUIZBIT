@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   buildMediaPayloadFromFile,
   categoryLabel,
@@ -7,19 +7,7 @@ import {
 } from './utils/mediaPayload.web.js';
 import { getPanelAdminKey, getStoredIdToken, postPanelApi } from './panelApi.js';
 
-const env = import.meta.env;
-const BUILD_PANEL_KEY =
-  env.VITE_ADMIN_PANEL_KEY || env.REACT_APP_ADMIN_PANEL_KEY || '';
-const SESSION_KEY = 'quizbit_panel_admin_key';
 const MAX_QUESTIONS = 50;
-
-const readSessionKey = () => {
-  try {
-    return sessionStorage.getItem(SESSION_KEY) || '';
-  } catch {
-    return '';
-  }
-};
 
 const downloadFile = (filename, content, mimeType) => {
   const blob = new Blob([content], { type: mimeType });
@@ -89,25 +77,9 @@ export default function OfflineQuizStudio() {
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [acceptFilter, setAcceptFilter] = useState('any');
-  const [sessionKey, setSessionKey] = useState(readSessionKey);
 
-  const panelAdminKey = useMemo(
-    () => (BUILD_PANEL_KEY || sessionKey).trim(),
-    [sessionKey],
-  );
-  const keyFromBuild = Boolean(BUILD_PANEL_KEY.trim());
+  const panelAdminKey = getPanelAdminKey();
   const previewCount = result?.questions?.length ?? 0;
-
-  const persistSessionKey = value => {
-    const clean = value.trim();
-    setSessionKey(clean);
-    try {
-      if (clean) sessionStorage.setItem(SESSION_KEY, clean);
-      else sessionStorage.removeItem(SESSION_KEY);
-    } catch {
-      // ignore private mode
-    }
-  };
 
   const pickFile = filter => {
     setAcceptFilter(filter);
@@ -151,9 +123,7 @@ export default function OfflineQuizStudio() {
       return;
     }
     if (!panelAdminKey) {
-      setError(
-        'Clé admin requise : définis VITE_ADMIN_PANEL_KEY au build Vercel, ou saisis la clé ci-dessous (identique à ADMIN_PANEL_KEY).',
-      );
+      setError('Configuration admin manquante. Vérifie Paramètres ou les variables Vercel.');
       return;
     }
 
@@ -279,37 +249,6 @@ export default function OfflineQuizStudio() {
 
   return (
     <div className="offline-studio">
-      <section className="panel glass-panel offline-intro">
-        <p>
-          Questionnaires <strong>quizbit-quiz-v1</strong> pour le panel local et l&apos;app
-          hors ligne. Supports : audio, vidéo, image, PDF, texte (max {MAX_QUESTIONS}{' '}
-          questions).
-        </p>
-        {keyFromBuild ? (
-          <div className="ai-note">Clé admin détectée au build (VITE_ADMIN_PANEL_KEY).</div>
-        ) : panelAdminKey ? (
-          <div className="ai-note">Clé admin en session (valide pour cette fenêtre).</div>
-        ) : (
-          <div className="offline-key-box">
-            <label className="offline-field">
-              Clé admin panel
-              <input
-                type="password"
-                value={sessionKey}
-                onChange={e => persistSessionKey(e.target.value)}
-                placeholder="Même valeur que ADMIN_PANEL_KEY sur Vercel"
-                autoComplete="off"
-              />
-            </label>
-            <p className="offline-key-hint">
-              Sans <code>VITE_ADMIN_PANEL_KEY</code> au déploiement, saisis ici la clé
-              définie dans les variables Vercel (<code>ADMIN_PANEL_KEY</code>), puis
-              clique Générer.
-            </p>
-          </div>
-        )}
-      </section>
-
       <div className="offline-grid">
         <section className="panel glass-panel">
           <h2>1. Thème et support</h2>

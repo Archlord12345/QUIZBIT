@@ -614,26 +614,6 @@ tr:hover td {
   gap: 18px;
 }
 
-.offline-intro h2 {
-  display: none;
-}
-
-.offline-key-box {
-  margin-top: 14px;
-}
-
-.offline-key-hint {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.55;
-  margin: 8px 0 0;
-}
-
-.offline-key-hint code {
-  color: var(--cyan);
-  font-size: 11px;
-}
-
 .offline-preview-head {
   align-items: center;
   display: flex;
@@ -655,12 +635,6 @@ tr:hover td {
   font-size: 13px;
   font-weight: 900;
   padding: 6px 14px;
-}
-
-.offline-intro p {
-  color: var(--muted);
-  line-height: 1.6;
-  margin: 0;
 }
 
 .offline-grid {

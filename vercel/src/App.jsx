@@ -433,12 +433,6 @@ export default function App() {
             Firebase client non configure (variables VITE_FIREBASE_* au build).
           </Banner>
         ) : null}
-        {!getPanelAdminKey() ? (
-          <Banner>
-            Cle admin panel absente : configure VITE_ADMIN_PANEL_KEY sur Vercel ou
-            saisis-la dans Parametres pour charger Quiz, Users et Scores.
-          </Banner>
-        ) : null}
         <AnimatePresence mode="wait">
           <motion.section
             key={currentPage}
