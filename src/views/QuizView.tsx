@@ -100,6 +100,11 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
           </View>
         ) : (
           <View>
+            <Text style={styles.answerMode}>
+              {currentQuestion.exactAnswer
+                ? 'Réponse exacte requise : orthographe stricte.'
+                : 'Réponse libre : l IA accepte synonymes et petites fautes.'}
+            </Text>
             <TextInput
               style={styles.input}
               placeholder="Tape ta réponse"
@@ -214,6 +219,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 15,
     padding: 15,
+  },
+  answerMode: {
+    color: '#5E6C84',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 10,
+    textAlign: 'center',
   },
   submitButton: {
     alignItems: 'center',

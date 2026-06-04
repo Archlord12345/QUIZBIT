@@ -35,22 +35,30 @@ const parseQuestionsJson = (text, providerLabel) => {
   return JSON.parse(clean.slice(start, end + 1));
 };
 
-const normalizeQuestion = (item, index) => {
+const normalizeQuestion = (item, index, config = {}) => {
   if (!item || typeof item !== 'object') return null;
   const text = String(item.text || '').trim();
   const answer = String(item.answer || '').trim();
   const requestedType = item.type === 'open' ? 'open' : 'mcq';
+  const requestedQuestionType = config.questionType || 'mixed';
+  const choiceCount = Math.max(2, Math.min(5, Number(config.choiceCount || 4)));
+  const exactAnswer = config.openAnswerMode === 'exact';
   const rawOptions = Array.isArray(item.options)
     ? item.options.map(option => String(option).trim()).filter(Boolean)
     : [];
 
   if (!text || !answer) return null;
 
-  if (requestedType === 'open' || rawOptions.length < 2) {
+  if (requestedQuestionType === 'mcq' && (requestedType === 'open' || rawOptions.length < 2)) {
+    return null;
+  }
+
+  if (requestedQuestionType === 'open' || requestedType === 'open' || rawOptions.length < 2) {
     return {
       id: String(item.id || `open-${index + 1}`),
       text,
       answer,
+      exactAnswer,
       type: 'open',
     };
   }
@@ -63,14 +71,14 @@ const normalizeQuestion = (item, index) => {
     id: String(item.id || `mcq-${index + 1}`),
     text,
     answer,
-    options: options.slice(0, 5),
+    options: options.slice(0, choiceCount),
     type: 'mcq',
   };
 };
 
-const normalizeQuestions = (text, count, providerLabel) => {
+const normalizeQuestions = (text, count, providerLabel, options = {}) => {
   const questions = parseQuestionsJson(text, providerLabel)
-    .map(normalizeQuestion)
+    .map((item, index) => normalizeQuestion(item, index, options))
     .filter(Boolean)
     .slice(0, count);
 
@@ -81,26 +89,49 @@ const normalizeQuestions = (text, count, providerLabel) => {
   return questions;
 };
 
-const buildPrompt = (prompt, count, mode = 'array') => {
+const normalizeGenerationOptions = body => {
+  const questionType = ['mcq', 'open', 'mixed'].includes(body.questionType)
+    ? body.questionType
+    : 'mixed';
+  return {
+    questionType,
+    choiceCount: Math.max(2, Math.min(5, Number(body.choiceCount || 4))),
+    openAnswerMode: body.openAnswerMode === 'exact' ? 'exact' : 'flexible',
+  };
+};
+
+const buildPrompt = (prompt, count, mode = 'array', options = {}) => {
+  const questionType = options.questionType || 'mixed';
+  const choiceCount = Math.max(2, Math.min(5, Number(options.choiceCount || 4)));
+  const exactAnswer = options.openAnswerMode === 'exact';
   const schema =
     mode === 'object'
-      ? '{"questions":[{"id":"1","text":"Question","options":["A","B","C"],"answer":"A","type":"mcq"},{"id":"2","text":"Question ouverte","answer":"Reponse attendue","type":"open"}]}'
-      : '[{"id":"1","text":"Question","options":["A","B","C"],"answer":"A","type":"mcq"},{"id":"2","text":"Question ouverte","answer":"Reponse attendue","type":"open"}]';
+      ? '{"questions":[{"id":"1","text":"Question","options":["A","B","C"],"answer":"A","type":"mcq"},{"id":"2","text":"Question ouverte","answer":"Reponse attendue","type":"open","exactAnswer":false}]}'
+      : '[{"id":"1","text":"Question","options":["A","B","C"],"answer":"A","type":"mcq"},{"id":"2","text":"Question ouverte","answer":"Reponse attendue","type":"open","exactAnswer":false}]';
+
+  const typeInstruction =
+    questionType === 'mcq'
+      ? `Genere uniquement des QCM. Chaque question doit contenir exactement ${choiceCount} options distinctes et answer doit correspondre exactement a une option.`
+      : questionType === 'open'
+      ? `Genere uniquement des questions a reponse ouverte. N ajoute jamais options. exactAnswer doit valoir ${exactAnswer ? 'true' : 'false'}.`
+      : `Melange QCM et questions ouvertes quand le theme le permet. Les QCM doivent avoir exactement ${choiceCount} options.`;
 
   return [
     `Genere ${count} questions de quiz en francais pour ce prompt: "${prompt}".`,
     mode === 'object'
       ? 'Reponds uniquement avec un objet JSON valide, sans markdown, contenant la cle questions.'
       : 'Reponds uniquement avec un tableau JSON valide, sans markdown.',
+    typeInstruction,
     'Types autorises:',
-    'mcq: choix multiples avec options de 2 a 5 choix maximum, answer doit correspondre exactement a une option.',
-    'open: reponse ouverte sans options, answer contient la reponse attendue.',
+    `mcq: choix multiples avec exactement ${choiceCount} options maximum 5, answer doit correspondre exactement a une option.`,
+    exactAnswer
+      ? 'open: reponse ouverte sans options, answer contient un nom/terme exact attendu; l orthographe doit etre stricte.'
+      : 'open: reponse ouverte sans options, answer contient la reponse attendue; les synonymes et petites fautes pourront etre acceptes a la correction.',
     `Schema: ${schema}.`,
-    'Melange des questions mcq et open quand le theme le permet.',
   ].join(' ');
 };
 
-const generateWithGemini = async (prompt, count) => {
+const generateWithGemini = async (prompt, count, options = {}) => {
   const key = getEnv('GEMINI_API_KEY', 'REACT_APP_GEMINI_API_KEY');
   if (!key) {
     throw new Error('GEMINI_API_KEY manquante dans Vercel.');
@@ -112,7 +143,7 @@ const generateWithGemini = async (prompt, count) => {
     'gemini-1.5-pro-latest',
   ];
   const errors = [];
-  const geminiPrompt = buildPrompt(prompt, count, 'array');
+  const geminiPrompt = buildPrompt(prompt, count, 'array', options);
 
   for (const model of models) {
     const response = await requestWithTimeout(
@@ -133,7 +164,7 @@ const generateWithGemini = async (prompt, count) => {
         return {
           provider: 'gemini',
           model,
-          questions: normalizeQuestions(text, count, 'Gemini'),
+          questions: normalizeQuestions(text, count, 'Gemini', options),
         };
       } catch (error) {
         errors.push(`${model}: ${toErrorMessage(error)}`);
@@ -159,7 +190,7 @@ const mistralTextFromResponse = data => {
   return String(content || '');
 };
 
-const generateWithMistral = async (prompt, count) => {
+const generateWithMistral = async (prompt, count, options = {}) => {
   const key = getEnv('MISTRAL_API_KEY', 'REACT_APP_MISTRAL_API_KEY');
   if (!key) {
     throw new Error('MISTRAL_API_KEY manquante dans Vercel.');
@@ -167,7 +198,7 @@ const generateWithMistral = async (prompt, count) => {
 
   const models = ['mistral-small-latest', 'open-mistral-nemo', 'mistral-large-latest'];
   const errors = [];
-  const mistralPrompt = buildPrompt(prompt, count, 'object');
+  const mistralPrompt = buildPrompt(prompt, count, 'object', options);
 
   for (const model of models) {
     const response = await requestWithTimeout(
@@ -201,7 +232,7 @@ const generateWithMistral = async (prompt, count) => {
         return {
           provider: 'mistral',
           model,
-          questions: normalizeQuestions(mistralTextFromResponse(data), count, 'Mistral'),
+          questions: normalizeQuestions(mistralTextFromResponse(data), count, 'Mistral', options),
         };
       } catch (error) {
         errors.push(`${model}: ${toErrorMessage(error)}`);
@@ -218,15 +249,15 @@ const generateWithMistral = async (prompt, count) => {
   throw new Error(errors[0] || 'Generation Mistral impossible.');
 };
 
-const generateQuestions = async (prompt, count, provider) => {
-  if (provider === 'gemini') return generateWithGemini(prompt, count);
-  if (provider === 'mistral') return generateWithMistral(prompt, count);
+const generateQuestions = async (prompt, count, provider, options = {}) => {
+  if (provider === 'gemini') return generateWithGemini(prompt, count, options);
+  if (provider === 'mistral') return generateWithMistral(prompt, count, options);
 
   try {
-    return await generateWithGemini(prompt, count);
+    return await generateWithGemini(prompt, count, options);
   } catch (geminiError) {
     try {
-      const fallback = await generateWithMistral(prompt, count);
+      const fallback = await generateWithMistral(prompt, count, options);
       return {
         ...fallback,
         fallbackFrom: 'gemini',
@@ -252,13 +283,14 @@ module.exports = async (req, res) => {
   const provider = ['gemini', 'mistral'].includes(body.provider)
     ? body.provider
     : 'auto';
+  const generationOptions = normalizeGenerationOptions(body);
 
   if (!prompt) {
     return res.status(400).json({ ok: false, message: 'Prompt requis.' });
   }
 
   try {
-    const result = await generateQuestions(prompt, count, provider);
+    const result = await generateQuestions(prompt, count, provider, generationOptions);
     return res.status(200).json({ ok: true, ...result });
   } catch (error) {
     return res.status(502).json({

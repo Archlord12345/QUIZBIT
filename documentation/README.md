@@ -74,12 +74,16 @@ Le quiz solo appelle :
 ```
 
 Le serveur tente Gemini en premier. Si Gemini échoue ou dépasse son quota, il
-bascule automatiquement sur Mistral.
+bascule automatiquement sur Mistral. Le joueur peut choisir le format avant la génération : mixte, QCM ou QRO. Les QCM demandent un nombre de choix borné de 2 à 5. Les QRO peuvent être corrigées en mode souple (synonymes et petites fautes acceptés) ou en mode exact pour les noms/termes où l orthographe doit correspondre.
+
+### Correction des réponses ouvertes
+
+La route `/api/validate-answer` corrige les QRO. En mode `flexible`, elle accepte les synonymes, formulations équivalentes et petites fautes d orthographe via IA. En mode `exact`, elle effectue une comparaison stricte côté serveur, adaptée aux noms propres ou termes exacts.
 
 ## 4. Battle Royale
 
-Le mode Battle Royale utilise Firestore côté mobile pour créer et mettre à jour
-les salles dans la collection :
+Le mode Battle Royale utilise les routes API Vercel pour créer et mettre à jour
+les salles Firestore dans la collection :
 
 ```txt
 battleRooms
@@ -157,8 +161,13 @@ Routes principales :
 ```txt
 /api/auth-register
 /api/auth-login
+/api/battle-room-create
+/api/battle-room-join
+/api/battle-room-start
+/api/battle-room-finish
 /api/firebase-auth
 /api/generate-questions
+/api/validate-answer
 /api/scores-record
 /api/scores-list
 /api/user-update-avatar

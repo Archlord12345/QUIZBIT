@@ -1,4 +1,4 @@
-import AIModel, { Question } from '../models/AIModel';
+import AIModel, { Question, QuizGenerationOptions } from '../models/AIModel';
 
 export type QuizState = {
   theme: string;
@@ -11,8 +11,11 @@ export type QuizState = {
 class QuizController {
   private currentQuiz: QuizState | null = null;
 
-  async initQuiz(theme: string): Promise<QuizState> {
-    const questions = await AIModel.generateQuestions(theme);
+  async initQuiz(
+    theme: string,
+    options: QuizGenerationOptions = {},
+  ): Promise<QuizState> {
+    const questions = await AIModel.generateQuestions(theme, options);
 
     if (questions.length === 0) {
       throw new Error('Aucune question disponible pour ce theme.');
@@ -45,6 +48,7 @@ class QuizController {
     const isCorrect = await AIModel.validateAnswer(
       answer,
       currentQuestion.answer,
+      currentQuestion,
     );
 
     if (isCorrect) {

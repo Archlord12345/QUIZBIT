@@ -1,6 +1,10 @@
 const handlers = {
   'auth-login': require('../lib/api/auth-login'),
   'auth-register': require('../lib/api/auth-register'),
+  'battle-room-create': require('../lib/api/battle-room-create'),
+  'battle-room-finish': require('../lib/api/battle-room-finish'),
+  'battle-room-join': require('../lib/api/battle-room-join'),
+  'battle-room-start': require('../lib/api/battle-room-start'),
   'firebase-auth': require('../lib/api/test-firebase-auth'),
   'generate-questions': require('../lib/api/generate-questions'),
   'scores-list': require('../lib/api/scores-list'),
@@ -10,6 +14,7 @@ const handlers = {
   'test-mistral': require('../lib/api/test-mistral'),
   'user-update-avatar': require('../lib/api/user-update-avatar'),
   'user-update-stats': require('../lib/api/user-update-stats'),
+  'validate-answer': require('../lib/api/validate-answer'),
 };
 
 const getRouteName = req => {
