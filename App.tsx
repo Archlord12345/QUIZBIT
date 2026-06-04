@@ -25,7 +25,23 @@ const App = () => {
   const [account, setAccount] = React.useState<UserAccount | null>(null);
   const [screen, setScreen] = React.useState<AppScreen>('home');
   const [activeQuiz, setActiveQuiz] = React.useState<ActiveQuiz | null>(null);
+  const [restoringSession, setRestoringSession] = React.useState(true);
   const [savingScore, setSavingScore] = React.useState(false);
+
+  React.useEffect(() => {
+    let mounted = true;
+    AuthController.restoreSession()
+      .then(savedAccount => {
+        if (mounted && savedAccount) setAccount(savedAccount);
+      })
+      .finally(() => {
+        if (mounted) setRestoringSession(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleAuthenticated = (nextAccount: UserAccount) => {
     setAccount(nextAccount);
@@ -70,6 +86,7 @@ const App = () => {
         finalScore,
         activeQuiz.mode,
       );
+      await AuthController.setCurrentAccount(result.account);
       setAccount(result.account);
 
       if (activeQuiz.mode === 'battle_royale' && activeQuiz.battleRoom) {
@@ -84,17 +101,24 @@ const App = () => {
     }
   };
 
-  if (!account) {
-    return <AuthView onAuthenticated={handleAuthenticated} />;
-  }
-
-  if (savingScore) {
+  if (restoringSession || savingScore) {
     return (
       <View style={styles.loadingContainer}>
-        <LogoMark compact subtitle="Sauvegarde du score..." />
+        <LogoMark
+          compact
+          subtitle={
+            restoringSession
+              ? 'Restauration de ta session...'
+              : 'Sauvegarde du score...'
+          }
+        />
         <ActivityIndicator color="#21E7FF" size="large" />
       </View>
     );
+  }
+
+  if (!account) {
+    return <AuthView onAuthenticated={handleAuthenticated} />;
   }
 
   if (activeQuiz) {

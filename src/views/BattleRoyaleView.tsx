@@ -91,14 +91,19 @@ const BattleRoyaleView = ({
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.eyebrow}>Mode multijoueur</Text>
       <Text style={styles.title}>Battle Royale</Text>
       <Text style={styles.subtitle}>
-        Configure une salle, invite les joueurs avec le code, puis lance le
-        quiz.
+        Crée une salle synchronisée dans Firestore, partage le code et démarre
+        un quiz éliminatoire quand tout le monde est prêt.
       </Text>
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Créer une salle</Text>
+        <Text style={styles.helpText}>
+          Le thème génère les questions via l'API IA. Le score minimum décide
+          qui survit à la fin de la partie.
+        </Text>
         <TextInput
           style={styles.input}
           placeholder="Thème"
@@ -132,13 +137,23 @@ const BattleRoyaleView = ({
           value={eliminationScore}
           onChangeText={setEliminationScore}
         />
-        <TouchableOpacity style={styles.primaryButton} onPress={createRoom}>
-          <Text style={styles.primaryButtonText}>Créer la salle</Text>
+        <TouchableOpacity
+          style={[styles.primaryButton, loading && styles.disabledButton]}
+          disabled={loading}
+          onPress={createRoom}
+        >
+          <Text style={styles.primaryButtonText}>
+            {loading ? 'Création...' : 'Créer la salle'}
+          </Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Rejoindre une salle</Text>
+        <Text style={styles.helpText}>
+          Entre le code partagé par l'hôte. Les joueurs restent en attente tant
+          que la partie n'est pas lancée.
+        </Text>
         <TextInput
           style={styles.input}
           autoCapitalize="characters"
@@ -147,7 +162,14 @@ const BattleRoyaleView = ({
           value={joinCode}
           onChangeText={setJoinCode}
         />
-        <TouchableOpacity style={styles.secondaryButton} onPress={joinRoom}>
+        <TouchableOpacity
+          style={[
+            styles.secondaryButton,
+            (loading || !joinCode.trim()) && styles.disabledButton,
+          ]}
+          disabled={loading || !joinCode.trim()}
+          onPress={joinRoom}
+        >
           <Text style={styles.secondaryButtonText}>Rejoindre</Text>
         </TouchableOpacity>
       </View>
@@ -155,7 +177,11 @@ const BattleRoyaleView = ({
       {room ? (
         <View style={styles.roomCard}>
           <Text style={styles.roomCode}>Code: {room.code}</Text>
-          <Text style={styles.roomInfo}>Statut: {room.status}</Text>
+          <Text style={styles.roomStatus}>
+            {room.status === 'waiting'
+              ? 'Salle en attente de joueurs'
+              : 'Partie en cours'}
+          </Text>
           <Text style={styles.roomInfo}>
             Thème: {room.config.theme} | Questions: {room.config.questionCount}
           </Text>
@@ -169,8 +195,14 @@ const BattleRoyaleView = ({
               {player.finished ? `${player.score} pts` : 'en attente'}
             </Text>
           ))}
-          <TouchableOpacity style={styles.primaryButton} onPress={startBattle}>
-            <Text style={styles.primaryButtonText}>Lancer le battle</Text>
+          <TouchableOpacity
+            style={[styles.primaryButton, loading && styles.disabledButton]}
+            disabled={loading}
+            onPress={startBattle}
+          >
+            <Text style={styles.primaryButtonText}>
+              {loading ? 'Préparation...' : 'Lancer le battle'}
+            </Text>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -200,8 +232,18 @@ const styles = StyleSheet.create({
     marginTop: 32,
     textAlign: 'center',
   },
+  eyebrow: {
+    color: COLORS.secondary,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1.6,
+    marginTop: 32,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
   subtitle: {
     color: COLORS.secondary,
+    lineHeight: 21,
     marginBottom: 20,
     marginTop: 8,
     textAlign: 'center',
@@ -224,6 +266,10 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 18,
     fontWeight: '800',
+  },
+  helpText: {
+    color: '#5E6C84',
+    lineHeight: 20,
   },
   input: {
     backgroundColor: '#FAFBFC',
@@ -262,6 +308,9 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '800',
   },
+  disabledButton: {
+    opacity: 0.55,
+  },
   roomCode: {
     color: COLORS.primary,
     fontSize: 28,
@@ -270,6 +319,11 @@ const styles = StyleSheet.create({
   },
   roomInfo: {
     color: COLORS.text,
+  },
+  roomStatus: {
+    color: COLORS.success,
+    fontWeight: '900',
+    textAlign: 'center',
   },
   playerLine: {
     color: COLORS.text,

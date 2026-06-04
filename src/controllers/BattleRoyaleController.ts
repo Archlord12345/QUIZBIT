@@ -1,6 +1,10 @@
 import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
 import AIModel, { Question } from '../models/AIModel';
-import { db, firebaseEnabled } from '../utils/firebase';
+import {
+  db,
+  firebaseEnabled,
+  firebaseMissingConfigMessage,
+} from '../utils/firebase';
 import { UserAccount } from './AuthController';
 
 export type BattleRoyaleConfig = {
@@ -170,9 +174,7 @@ class BattleRoyaleController {
 
   private assertFirestoreReady() {
     if (!firebaseEnabled || !db) {
-      throw new Error(
-        'Firestore doit etre configure pour utiliser les battles reels.',
-      );
+      throw new Error(firebaseMissingConfigMessage);
     }
   }
 }

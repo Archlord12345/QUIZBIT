@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +12,7 @@ import {
 import LogoMark from '../components/LogoMark';
 import AuthController, { UserAccount } from '../controllers/AuthController';
 import QuizController, { QuizState } from '../controllers/QuizController';
+import { pickAvatarFromLibrary } from '../utils/avatarPicker';
 import { COLORS, SPACING } from '../utils/theme';
 
 type HomeViewProps = {
@@ -31,7 +33,6 @@ const HomeView = ({
   onSignOut,
 }: HomeViewProps) => {
   const [theme, setTheme] = useState('');
-  const [avatarUri, setAvatarUri] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [error, setError] = useState('');
@@ -60,22 +61,23 @@ const HomeView = ({
   };
 
   const handleAvatarUpload = async () => {
-    if (!avatarUri.trim() || uploadingAvatar) {
+    if (uploadingAvatar) {
       return;
     }
 
     setUploadingAvatar(true);
     setError('');
     try {
+      const avatar = await pickAvatarFromLibrary();
+      if (!avatar) return;
       const updatedAccount = await AuthController.updateAvatar(
         account,
-        avatarUri,
+        avatar.uri,
       );
       onAccountUpdated(updatedAccount);
-      setAvatarUri('');
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Upload avatar impossible.',
+        err instanceof Error ? err.message : 'Selection avatar impossible.',
       );
     } finally {
       setUploadingAvatar(false);
@@ -92,36 +94,46 @@ const HomeView = ({
       </View>
 
       <View style={styles.profileCard}>
-        <Text style={styles.profileName}>{account.displayName}</Text>
-        <Text style={styles.profileMeta}>{account.email}</Text>
+        <View style={styles.profileTop}>
+          {account.avatarUrl ? (
+            <Image source={{ uri: account.avatarUrl }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarInitial}>
+                {account.displayName.slice(0, 1).toUpperCase()}
+              </Text>
+            </View>
+          )}
+          <View style={styles.profileIdentity}>
+            <Text style={styles.profileName}>{account.displayName}</Text>
+            <Text style={styles.profileMeta}>{account.email}</Text>
+            <Text style={styles.profileHint}>
+              Session sauvegardée localement et synchronisée avec Firebase.
+            </Text>
+          </View>
+        </View>
         <View style={styles.statsRow}>
           <Stat label="Parties" value={account.gamesPlayed} />
           <Stat label="Total" value={account.totalScore} />
           <Stat label="Best" value={account.bestScore} />
         </View>
-        <Text style={styles.profileMeta}>
-          Avatar: {account.avatarUrl ? account.avatarUrl : 'non configure'}
-        </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="URI image avatar pour Cloudinary"
-          placeholderTextColor="#6B778C"
-          value={avatarUri}
-          onChangeText={setAvatarUri}
-        />
         <TouchableOpacity
           style={[styles.secondaryButton, uploadingAvatar && styles.disabled]}
-          disabled={uploadingAvatar || !avatarUri.trim()}
+          disabled={uploadingAvatar}
           onPress={handleAvatarUpload}
         >
           <Text style={styles.secondaryButtonText}>
-            {uploadingAvatar ? 'Upload...' : 'Sauvegarder avatar'}
+            {uploadingAvatar ? 'Upload...' : 'Choisir une photo de profil'}
           </Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Quiz solo</Text>
+        <Text style={styles.label}>Quiz solo intelligent</Text>
+        <Text style={styles.cardText}>
+          Choisis un thème, QuizBit génère des QCM et questions ouvertes avec
+          fallback Gemini vers Mistral.
+        </Text>
         <TextInput
           style={styles.input}
           placeholder="ex: Mathématiques, Science-Fiction..."
@@ -146,7 +158,7 @@ const HomeView = ({
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text style={styles.buttonText}>Commencer le Quiz</Text>
+            <Text style={styles.buttonText}>Générer et commencer</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -154,11 +166,16 @@ const HomeView = ({
       <View style={styles.actionsGrid}>
         <TouchableOpacity style={styles.modeButton} onPress={onBattle}>
           <Text style={styles.modeTitle}>Battle Royale</Text>
-          <Text style={styles.modeText}>Créer ou rejoindre une salle</Text>
+          <Text style={styles.modeText}>
+            Crée une salle Firestore, partage le code et lance un quiz en
+            élimination.
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.modeButton} onPress={onLeaderboard}>
           <Text style={styles.modeTitle}>Scores</Text>
-          <Text style={styles.modeText}>Voir le leaderboard</Text>
+          <Text style={styles.modeText}>
+            Consulte les meilleurs scores synchronisés depuis le serveur.
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -200,10 +217,38 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     backgroundColor: 'white',
-    borderRadius: 20,
+    borderRadius: 24,
     gap: 12,
     marginBottom: 18,
     padding: SPACING.lg,
+  },
+  profileTop: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 14,
+  },
+  avatar: {
+    borderRadius: 36,
+    height: 72,
+    width: 72,
+  },
+  avatarPlaceholder: {
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.secondary,
+    borderRadius: 36,
+    borderWidth: 2,
+    height: 72,
+    justifyContent: 'center',
+    width: 72,
+  },
+  avatarInitial: {
+    color: COLORS.textOnDark,
+    fontSize: 28,
+    fontWeight: '900',
+  },
+  profileIdentity: {
+    flex: 1,
   },
   profileName: {
     color: COLORS.text,
@@ -213,6 +258,12 @@ const styles = StyleSheet.create({
   profileMeta: {
     color: '#6B778C',
     fontSize: 13,
+  },
+  profileHint: {
+    color: COLORS.success,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 4,
   },
   statsRow: {
     flexDirection: 'row',
@@ -246,6 +297,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 10,
+  },
+  cardText: {
+    color: '#5E6C84',
+    lineHeight: 20,
+    marginBottom: 14,
   },
   input: {
     backgroundColor: '#FAFBFC',

@@ -48,9 +48,14 @@ const AuthView = ({ onAuthenticated }: AuthViewProps) => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <LogoMark subtitle="Connexion, scores et battle royale" />
+      <LogoMark subtitle="Quiz IA, scores cloud et battle royale" />
 
       <View style={styles.card}>
+        <Text style={styles.heading}>Bienvenue dans QuizBit</Text>
+        <Text style={styles.description}>
+          Connecte-toi pour retrouver ton profil, ton avatar et tes scores sur
+          tous tes lancements. La session reste sauvegardée sur ce téléphone.
+        </Text>
         <View style={styles.tabs}>
           <TouchableOpacity
             style={[styles.tab, mode === 'login' && styles.tabActive]}
@@ -107,8 +112,8 @@ const AuthView = ({ onAuthenticated }: AuthViewProps) => {
         </TouchableOpacity>
 
         <Text style={styles.hint}>
-          Firebase Auth et Firestore sont obligatoires : l'app mobile lit et
-          écrit uniquement les données réelles de ton projet Firebase.
+          Connexion sécurisée via Firebase Auth. QuizBit n'utilise aucune donnée
+          fictive : comptes, scores et battles sont synchronisés.
         </Text>
       </View>
     </ScrollView>
@@ -137,9 +142,20 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: 'white',
-    borderRadius: 20,
+    borderRadius: 26,
     padding: SPACING.xl,
     gap: 14,
+  },
+  heading: {
+    color: COLORS.text,
+    fontSize: 24,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  description: {
+    color: '#5E6C84',
+    lineHeight: 20,
+    textAlign: 'center',
   },
   tabs: {
     flexDirection: 'row',

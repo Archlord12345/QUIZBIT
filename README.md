@@ -217,17 +217,13 @@ Routes principales :
 ```txt
 /api/auth-register
 /api/auth-login
-/api/firebase-auth
 /api/user-update-avatar
 /api/user-update-stats
-/api/generate-questions
 /api/scores-record
 /api/scores-list
 ```
 
-Ces routes utilisent Firebase côté serveur Vercel puis renvoient les données nécessaires à l'application. La route `/api/generate-questions` essaie Gemini en premier, puis bascule automatiquement sur Mistral si Gemini échoue ou dépasse son quota.
-
-Si `/api/auth-login` ou `/api/auth-register` renvoie une erreur liée à `CONFIGURATION_NOT_FOUND`, le serveur Vercel est joignable mais Firebase Authentication n'est pas actif/configuré pour ce projet. Dans Firebase Console, activer **Authentication** puis le fournisseur **Email/Mot de passe**, et vérifier que les variables Firebase de Vercel pointent vers le même projet.
+Ces routes utilisent Firebase côté serveur Vercel puis renvoient les données nécessaires à l'application.
 
 ## Lancer l'application mobile
 
@@ -325,15 +321,12 @@ npm run build
 ### Routes API de diagnostic
 
 ```txt
-/api/firebase-auth
 /api/test-gemini
 /api/test-mistral
 /api/test-cloudinary
 ```
 
 Ces routes sont utilisées par la page Settings du panel admin.
-
-Le test prompt IA utilise aussi `/api/generate-questions`. Le bouton principal lance le mode automatique Gemini puis Mistral, et le bouton Mistral permet de forcer manuellement la génération avec Mistral.
 
 ## Panel admin local
 
@@ -508,6 +501,12 @@ Le dépôt contient deux configurations pour sécuriser le lien avec Vercel :
 Dans les deux cas, le build cible le panel admin et garde les routes API de diagnostics disponibles.
 
 Configurer les variables d'environnement Vercel avant déploiement pour que diagnostics et données Firestore fonctionnent correctement.
+
+## Documentation complète
+
+Le dossier `documentation/` décrit le fonctionnement du projet de A à Z :
+architecture, configuration Firebase/Vercel, génération IA, avatars,
+Battle Royale, session persistante et déploiement.
 
 ## Pull request
 
