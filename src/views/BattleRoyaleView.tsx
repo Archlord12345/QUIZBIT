@@ -286,38 +286,47 @@ const BattleRoyaleView = ({
 
           {chatOpen && room.status === 'waiting' ? (
             <View style={styles.chatCard}>
-              <Text style={styles.chatTitle}>Chat du lobby</Text>
-              <Text style={styles.chatHint}>
-                Discutez du thème avant le lancement. L'historique est remis à
-                zéro quand le jeu démarre.
-              </Text>
-              {(room.chatMessages || []).length ? (
-                (room.chatMessages || []).map(message => (
-                  <View key={message.id} style={styles.chatMessage}>
-                    <Text style={styles.chatAuthor}>{message.displayName}</Text>
-                    <Text style={styles.chatText}>{message.text}</Text>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.chatEmpty}>Aucun message pour le moment.</Text>
-              )}
-              <FieldLabel label="Message à envoyer au lobby">
+              <View style={styles.chatHeader}>
+                <Text style={styles.chatTitle}>Chat du lobby</Text>
+                <Text style={styles.chatHint}>
+                  L'historique est remis à zéro quand le jeu démarre.
+                </Text>
+              </View>
+              <ScrollView style={styles.chatScrollView} contentContainerStyle={styles.chatScrollContent}>
+                {(room.chatMessages || []).length ? (
+                  (room.chatMessages || []).map(message => {
+                    const isMe = message.userId === account.id;
+                    return (
+                      <View key={message.id} style={[styles.chatMessage, isMe ? styles.chatMessageMe : styles.chatMessageOther]}>
+                        {!isMe && <Text style={styles.chatAuthor}>{message.displayName}</Text>}
+                        <Text style={styles.chatText}>{message.text}</Text>
+                        <Text style={styles.chatTime}>
+                          {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </Text>
+                      </View>
+                    );
+                  })
+                ) : (
+                  <Text style={styles.chatEmpty}>Aucun message pour le moment.</Text>
+                )}
+              </ScrollView>
+              <View style={styles.chatInputRow}>
                 <TextInput
-                  style={styles.input}
+                  style={styles.chatInputWhatsApp}
                   maxLength={500}
-                  placeholder="Propose un thème, une règle ou une stratégie"
-                  placeholderTextColor="#6B778C"
+                  placeholder="Message..."
+                  placeholderTextColor="#8696A0"
                   value={chatText}
                   onChangeText={setChatText}
                 />
-              </FieldLabel>
-              <TouchableOpacity
-                style={[styles.primaryButton, !chatText.trim() && styles.disabledButton]}
-                disabled={!chatText.trim()}
-                onPress={sendChatMessage}
-              >
-                <Text style={styles.primaryButtonText}>Envoyer</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.sendButtonWhatsApp, !chatText.trim() && styles.disabledButton]}
+                  disabled={!chatText.trim()}
+                  onPress={sendChatMessage}
+                >
+                  <Text style={styles.sendButtonWhatsAppText}>▶</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ) : null}
           {chatOpen && room.status !== 'waiting' ? (
@@ -436,40 +445,109 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   chatCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#EFEAE2',
     borderColor: '#DFE1E6',
     borderRadius: 16,
     borderWidth: 1,
-    gap: 10,
+    height: 400,
+    overflow: 'hidden',
+  },
+  chatHeader: {
+    backgroundColor: '#075E54',
     padding: 12,
   },
   chatTitle: {
-    color: COLORS.primary,
+    color: 'white',
     fontSize: 16,
     fontWeight: '900',
   },
   chatHint: {
-    color: '#5E6C84',
+    color: '#D1D7DB',
     fontSize: 12,
     lineHeight: 18,
   },
+  chatScrollView: {
+    flex: 1,
+  },
+  chatScrollContent: {
+    padding: 12,
+    gap: 8,
+  },
   chatMessage: {
-    backgroundColor: '#F4F5F7',
     borderRadius: 12,
-    padding: 10,
+    padding: 8,
+    paddingHorizontal: 12,
+    maxWidth: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  chatMessageMe: {
+    backgroundColor: '#DCF8C6',
+    alignSelf: 'flex-end',
+    borderTopRightRadius: 0,
+  },
+  chatMessageOther: {
+    backgroundColor: '#FFFFFF',
+    alignSelf: 'flex-start',
+    borderTopLeftRadius: 0,
   },
   chatAuthor: {
-    color: COLORS.primary,
+    color: '#075E54',
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: 'bold',
+    marginBottom: 2,
   },
   chatText: {
-    color: COLORS.text,
-    marginTop: 3,
+    color: '#111B21',
+    fontSize: 14,
+  },
+  chatTime: {
+    color: '#667781',
+    fontSize: 10,
+    alignSelf: 'flex-end',
+    marginTop: 4,
   },
   chatEmpty: {
     color: '#5E6C84',
     fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 20,
+    backgroundColor: '#FFF',
+    padding: 10,
+    borderRadius: 12,
+    alignSelf: 'center',
+  },
+  chatInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#F0F2F5',
+    gap: 8,
+  },
+  chatInputWhatsApp: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#111B21',
+  },
+  sendButtonWhatsApp: {
+    backgroundColor: '#00A884',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendButtonWhatsAppText: {
+    color: 'white',
+    fontSize: 16,
+    marginLeft: 2,
   },
   dangerButton: {
     alignItems: 'center',

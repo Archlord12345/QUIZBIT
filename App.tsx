@@ -1,5 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LogoMark from './src/components/LogoMark';
 import AuthController, { UserAccount } from './src/controllers/AuthController';
 import BattleRoyaleController, {
@@ -13,17 +15,16 @@ import HomeView from './src/views/HomeView';
 import LeaderboardView from './src/views/LeaderboardView';
 import QuizView from './src/views/QuizView';
 
-type AppScreen = 'home' | 'battle' | 'leaderboard';
-
 type ActiveQuiz = {
   state: QuizState;
   mode: GameMode;
   battleRoom?: BattleRoyaleRoom;
 };
 
+const Stack = createNativeStackNavigator();
+
 const App = () => {
   const [account, setAccount] = React.useState<UserAccount | null>(null);
-  const [screen, setScreen] = React.useState<AppScreen>('home');
   const [activeQuiz, setActiveQuiz] = React.useState<ActiveQuiz | null>(null);
   const [restoringSession, setRestoringSession] = React.useState(true);
   const [savingScore, setSavingScore] = React.useState(false);
@@ -45,14 +46,12 @@ const App = () => {
 
   const handleAuthenticated = (nextAccount: UserAccount) => {
     setAccount(nextAccount);
-    setScreen('home');
   };
 
   const handleSignOut = async () => {
     await AuthController.signOut();
     setAccount(null);
     setActiveQuiz(null);
-    setScreen('home');
   };
 
   const handleBattleStart = (room: BattleRoyaleRoom) => {
@@ -121,47 +120,65 @@ const App = () => {
     );
   }
 
-  if (!account) {
-    return <AuthView onAuthenticated={handleAuthenticated} />;
-  }
-
-  if (activeQuiz) {
-    return (
-      <QuizView
-        initialQuiz={activeQuiz.state}
-        mode={activeQuiz.mode}
-        onComplete={handleQuizComplete}
-        onExit={() => {
-          setActiveQuiz(null);
-          setScreen(activeQuiz.mode === 'battle_royale' ? 'battle' : 'home');
-        }}
-      />
-    );
-  }
-
-  if (screen === 'battle') {
-    return (
-      <BattleRoyaleView
-        account={account}
-        onBack={() => setScreen('home')}
-        onStartBattle={handleBattleStart}
-      />
-    );
-  }
-
-  if (screen === 'leaderboard') {
-    return <LeaderboardView onBack={() => setScreen('home')} />;
-  }
-
   return (
-    <HomeView
-      account={account}
-      onAccountUpdated={setAccount}
-      onBattle={() => setScreen('battle')}
-      onLeaderboard={() => setScreen('leaderboard')}
-      onQuizReady={quiz => setActiveQuiz({ state: quiz, mode: 'solo' })}
-      onSignOut={handleSignOut}
-    />
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {!account ? (
+          <Stack.Screen name="Auth">
+            {props => <AuthView {...props} onAuthenticated={handleAuthenticated} />}
+          </Stack.Screen>
+        ) : (
+          <>
+            <Stack.Screen name="Home">
+              {props => (
+                <HomeView
+                  {...props}
+                  account={account}
+                  onAccountUpdated={setAccount}
+                  onBattle={() => props.navigation.navigate('Battle')}
+                  onLeaderboard={() => props.navigation.navigate('Leaderboard')}
+                  onQuizReady={quiz => setActiveQuiz({ state: quiz, mode: 'solo' })}
+                  onSignOut={handleSignOut}
+                />
+              )}
+            </Stack.Screen>
+            <Stack.Screen name="Battle">
+              {props => (
+                <BattleRoyaleView
+                  {...props}
+                  account={account}
+                  onBack={() => props.navigation.goBack()}
+                  onStartBattle={handleBattleStart}
+                />
+              )}
+            </Stack.Screen>
+            <Stack.Screen name="Leaderboard">
+              {props => (
+                <LeaderboardView
+                  {...props}
+                  onBack={() => props.navigation.goBack()}
+                />
+              )}
+            </Stack.Screen>
+            {activeQuiz && (
+              <Stack.Screen name="Quiz">
+                {props => (
+                  <QuizView
+                    {...props}
+                    initialQuiz={activeQuiz.state}
+                    mode={activeQuiz.mode}
+                    onComplete={handleQuizComplete}
+                    onExit={() => {
+                      setActiveQuiz(null);
+                    }}
+                  />
+                )}
+              </Stack.Screen>
+            )}
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 };
 
