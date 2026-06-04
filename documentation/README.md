@@ -275,8 +275,10 @@ Fonctions :
 - affiche score et vies ;
 - affiche QCM ou QRO selon `question.type` ;
 - en QRO, affiche si la correction est souple ou exacte ;
+- anime l'entrée de chaque question ;
+- affiche un feedback animé en cas de réussite, d'échec ou de timeout ;
 - appelle `QuizController.submitAnswer()` ;
-- à la fin, affiche un récapitulatif complet :
+- à la fin, affiche un récapitulatif complet avec une animation d'entrée :
   - toutes les questions ;
   - toutes les réponses attendues ;
   - les choix QCM.

@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,10 +25,20 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
   const [openAnswer, setOpenAnswer] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const [feedbackTone, setFeedbackTone] = useState<
+    'success' | 'error' | 'warning' | ''
+  >('');
   const [completedScore, setCompletedScore] = useState<number | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(
     initialQuiz.timeLimitSeconds || 0,
   );
+
+  const feedbackOpacity = useRef(new Animated.Value(0)).current;
+  const feedbackScale = useRef(new Animated.Value(0.85)).current;
+  const questionOpacity = useRef(new Animated.Value(1)).current;
+  const questionTranslate = useRef(new Animated.Value(0)).current;
+  const summaryOpacity = useRef(new Animated.Value(0)).current;
+  const summaryTranslate = useRef(new Animated.Value(18)).current;
 
   const currentQuestion = quizState.questions[quizState.currentIndex];
 
@@ -44,8 +56,10 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
 
     const previousScore = quizState.score;
     const previousHearts = quizState.hearts;
+    const previousIndex = quizState.currentIndex;
     setSubmitting(true);
     setFeedback('');
+    setFeedbackTone('');
 
     try {
       await QuizController.submitAnswer(
@@ -54,9 +68,18 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
         nextState => {
           setQuizState(nextState);
           if (nextState.score > previousScore) {
+            setFeedbackTone('success');
             setFeedback('Bonne réponse !');
-          } else if (nextState.hearts < previousHearts) {
-            setFeedback('Mauvaise réponse, essaye encore.');
+          } else if (
+            nextState.hearts < previousHearts ||
+            nextState.currentIndex > previousIndex
+          ) {
+            setFeedbackTone(answer === '__timeout__' ? 'warning' : 'error');
+            setFeedback(
+              answer === '__timeout__'
+                ? 'Temps écoulé, question suivante.'
+                : 'Mauvaise réponse, question suivante.',
+            );
           }
           setOpenAnswer('');
         },
@@ -73,6 +96,65 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
   }, [quizState.currentIndex, timedQuestionSeconds]);
 
   React.useEffect(() => {
+    questionOpacity.setValue(0);
+    questionTranslate.setValue(18);
+    Animated.parallel([
+      Animated.timing(questionOpacity, {
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.timing(questionTranslate, {
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
+        toValue: 0,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [questionOpacity, questionTranslate, quizState.currentIndex]);
+
+  React.useEffect(() => {
+    if (!feedback) return;
+    feedbackOpacity.setValue(0);
+    feedbackScale.setValue(0.85);
+    Animated.parallel([
+      Animated.timing(feedbackOpacity, {
+        duration: 180,
+        easing: Easing.out(Easing.cubic),
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.spring(feedbackScale, {
+        friction: 5,
+        tension: 120,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [feedback, feedbackOpacity, feedbackScale]);
+
+  React.useEffect(() => {
+    if (completedScore === null) return;
+    summaryOpacity.setValue(0);
+    summaryTranslate.setValue(18);
+    Animated.parallel([
+      Animated.timing(summaryOpacity, {
+        duration: 320,
+        easing: Easing.out(Easing.cubic),
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.timing(summaryTranslate, {
+        duration: 320,
+        easing: Easing.out(Easing.cubic),
+        toValue: 0,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [completedScore, summaryOpacity, summaryTranslate]);
+
+  React.useEffect(() => {
     if (!timedQuestionSeconds || submitting || completedScore !== null) {
       return undefined;
     }
@@ -81,6 +163,7 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
       setSecondsLeft(previous => {
         if (previous <= 1) {
           clearInterval(timer);
+          setFeedbackTone('warning');
           setFeedback('Temps écoulé, question suivante.');
           setTimeout(() => handleAnswer('__timeout__'), 0);
           return 0;
@@ -97,7 +180,15 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
   if (completedScore !== null) {
     return (
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.summaryCard}>
+        <Animated.View
+          style={[
+            styles.summaryCard,
+            {
+              opacity: summaryOpacity,
+              transform: [{ translateY: summaryTranslate }],
+            },
+          ]}
+        >
           <Text style={styles.summaryTitle}>Quiz terminé</Text>
           <Text style={styles.summaryScore}>Score final : {completedScore}</Text>
           <Text style={styles.summaryIntro}>
@@ -120,7 +211,7 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
           <TouchableOpacity style={styles.submitButton} onPress={onExit}>
             <Text style={styles.submitButtonText}>Retour à l accueil</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </ScrollView>
     );
   }
@@ -138,7 +229,15 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
         <Text style={styles.timerBadge}>Temps restant : {secondsLeft}s</Text>
       ) : null}
 
-      <View style={styles.questionCard}>
+      <Animated.View
+        style={[
+          styles.questionCard,
+          {
+            opacity: questionOpacity,
+            transform: [{ translateY: questionTranslate }],
+          },
+        ]}
+      >
         <Text style={styles.progress}>
           Question {quizState.currentIndex + 1}/{quizState.questions.length}
         </Text>
@@ -190,8 +289,30 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
           </View>
         )}
 
-        {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
-      </View>
+        {feedback ? (
+          <Animated.View
+            style={[
+              styles.feedbackBox,
+              feedbackTone === 'success' && styles.feedbackSuccess,
+              feedbackTone === 'error' && styles.feedbackError,
+              feedbackTone === 'warning' && styles.feedbackWarning,
+              {
+                opacity: feedbackOpacity,
+                transform: [{ scale: feedbackScale }],
+              },
+            ]}
+          >
+            <Text style={styles.feedbackIcon}>
+              {feedbackTone === 'success'
+                ? '✓'
+                : feedbackTone === 'warning'
+                ? '⏱'
+                : '✕'}
+            </Text>
+            <Text style={styles.feedbackText}>{feedback}</Text>
+          </Animated.View>
+        ) : null}
+      </Animated.View>
 
       <TouchableOpacity style={styles.quitButton} onPress={onExit}>
         <Text style={styles.quitText}>Quitter</Text>
@@ -300,10 +421,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  feedback: {
-    color: COLORS.text,
-    fontWeight: '700',
+  feedbackBox: {
+    alignItems: 'center',
+    borderRadius: 18,
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'center',
     marginTop: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  feedbackSuccess: {
+    backgroundColor: 'rgba(34, 197, 94, 0.16)',
+    borderColor: 'rgba(34, 197, 94, 0.35)',
+    borderWidth: 1,
+  },
+  feedbackError: {
+    backgroundColor: 'rgba(255, 77, 109, 0.14)',
+    borderColor: 'rgba(255, 77, 109, 0.35)',
+    borderWidth: 1,
+  },
+  feedbackWarning: {
+    backgroundColor: 'rgba(245, 158, 11, 0.16)',
+    borderColor: 'rgba(245, 158, 11, 0.35)',
+    borderWidth: 1,
+  },
+  feedbackIcon: {
+    color: COLORS.primary,
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  feedbackText: {
+    color: COLORS.text,
+    fontWeight: '900',
     textAlign: 'center',
   },
   timerBadge: {
