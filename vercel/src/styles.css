@@ -625,6 +625,33 @@ tr:hover td {
   margin: 0 0 10px;
 }
 
+.offline-generate-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.offline-feedback {
+  display: grid;
+  gap: 10px;
+  min-height: 8px;
+}
+
+.offline-status {
+  background: rgb(33 231 255 / 10%);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  color: var(--cyan);
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  padding: 10px 12px;
+}
+
+.btn-dim:not(:disabled) {
+  opacity: 0.85;
+}
+
 .offline-progress {
   display: grid;
   gap: 8px;

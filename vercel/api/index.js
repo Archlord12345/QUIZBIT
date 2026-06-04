@@ -37,7 +37,48 @@ const getRouteName = req => {
   return segments.slice(apiIndex + 1).join('/');
 };
 
+const parseRequestBody = req =>
+  new Promise((resolve, reject) => {
+    if (typeof req.body === 'object' && req.body !== null) {
+      resolve(req.body);
+      return;
+    }
+    if (typeof req.body === 'string' && req.body.trim()) {
+      try {
+        resolve(JSON.parse(req.body));
+      } catch {
+        resolve({});
+      }
+      return;
+    }
+
+    let raw = '';
+    req.on('data', chunk => {
+      raw += chunk;
+    });
+    req.on('end', () => {
+      if (!raw.trim()) {
+        resolve({});
+        return;
+      }
+      try {
+        resolve(JSON.parse(raw));
+      } catch {
+        resolve({});
+      }
+    });
+    req.on('error', reject);
+  });
+
 module.exports = async (req, res) => {
+  try {
+    if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+      req.body = await parseRequestBody(req);
+    }
+  } catch {
+    req.body = {};
+  }
+
   const routeName = getRouteName(req);
   const handler = handlers[routeName];
 

@@ -96,9 +96,11 @@ export default function OfflineQuizStudio() {
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('');
   const [error, setError] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
   const [result, setResult] = useState(null);
   const [acceptFilter, setAcceptFilter] = useState('any');
   const progressTimerRef = useRef(null);
+  const feedbackRef = useRef(null);
 
   useEffect(() => {
     const syncAdminKey = () => setAdminKey(getPanelAdminKey());
@@ -171,22 +173,36 @@ export default function OfflineQuizStudio() {
     setMediaMeta(null);
   };
 
-  const generate = useCallback(async () => {
+  const scrollToFeedback = () => {
+    feedbackRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  const runGenerate = async event => {
+    event?.preventDefault?.();
+
     const cleanTheme = theme.trim();
+    const panelAdminKey = getPanelAdminKey();
+
     if (!cleanTheme && !mediaPayload) {
-      setError('Indique un thème ou charge un fichier (audio, vidéo, image, PDF, texte).');
+      const msg =
+        'Indique un thème dans le champ texte ou charge un fichier (audio, image, PDF…).';
+      setError(msg);
+      setStatusMessage('');
+      scrollToFeedback();
       return;
     }
-    const panelAdminKey = getPanelAdminKey();
     if (!panelAdminKey) {
-      setError(
-        'Clé admin panel manquante. Va dans Paramètres → « Enregistrer la clé » (identique à ADMIN_PANEL_KEY sur Vercel) ou redéploie le panel avec VITE_ADMIN_PANEL_KEY.',
-      );
+      const msg =
+        'Clé admin absente. Paramètres → Cle admin panel → Enregistrer (valeur = ADMIN_PANEL_KEY sur Vercel).';
+      setError(msg);
+      setStatusMessage('');
+      scrollToFeedback();
       return;
     }
 
     setLoading(true);
     setError('');
+    setStatusMessage('Envoi de la requête à l’API QuizBit…');
     setResult(null);
     let succeeded = false;
 
@@ -194,75 +210,100 @@ export default function OfflineQuizStudio() {
       mediaPayload?.category === 'audio' || mediaPayload?.category === 'video'
         ? 120000
         : count > 20
-        ? 90000
-        : 60000;
+          ? 90000
+          : 60000;
 
     startProgressTimer(timeoutMs);
+    scrollToFeedback();
+
+    let requestBody;
+    try {
+      requestBody = {
+        prompt: cleanTheme || 'Quiz basé sur le support fourni',
+        count: Math.min(MAX_QUESTIONS, Math.max(1, count)),
+        provider,
+        choiceCount,
+        questionType,
+        openAnswerMode,
+        panelAdminKey,
+        source: 'offline-studio',
+      };
+      if (mediaPayload) {
+        requestBody.mediaPayload = mediaPayload;
+      }
+    } catch (err) {
+      stopProgressTimer();
+      setLoading(false);
+      setError(err.message || 'Impossible de préparer la requête.');
+      scrollToFeedback();
+      return;
+    }
 
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
+      setStatusMessage(`Génération en cours (${provider})…`);
+
       const response = await fetch('/api/generate-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
-        body: JSON.stringify({
-          prompt: cleanTheme || 'Quiz basé sur le support fourni',
-          count: Math.min(MAX_QUESTIONS, Math.max(1, count)),
-          provider,
-          choiceCount,
-          questionType,
-          openAnswerMode,
-          panelAdminKey,
-          source: 'offline-studio',
-          mediaPayload: mediaPayload || undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
       clearTimeout(timeout);
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.ok) {
-        throw new Error(data.message || `HTTP ${response.status}`);
+        const hint =
+          response.status === 401
+            ? ' Vérifie que ADMIN_PANEL_KEY et VITE_ADMIN_PANEL_KEY sont identiques sur Vercel.'
+            : '';
+        throw new Error((data.message || `HTTP ${response.status}`) + hint);
       }
       if (!Array.isArray(data.questions) || !data.questions.length) {
         throw new Error(
-          'L’IA n’a renvoyé aucune question valide. Réduis le nombre, change le format (mixte) ou réessaie avec Gemini.',
+          'L’IA n’a renvoyé aucune question valide. Réduis le nombre, passe en format mixte ou choisis Mistral.',
         );
       }
+
       stopProgressTimer();
       setProgress(92);
       setProgressLabel('Enregistrement dans la banque…');
+      setStatusMessage('Questions reçues, enregistrement optionnel…');
       setResult(data);
 
-      if (getPanelAdminKey()) {
-        try {
-          await postPanelApi('admin-save-quiz', {
-            theme: cleanTheme || 'Quiz importé',
-            questions: data.questions,
-            provider: data.provider,
-            model: data.model,
-            format: 'quizbit-quiz-v1',
-            source: 'offline-studio',
-            idToken: getStoredIdToken() || undefined,
-          });
-        } catch (saveErr) {
-          console.warn('Sauvegarde Firestore quiz:', saveErr);
-        }
+      try {
+        await postPanelApi('admin-save-quiz', {
+          theme: cleanTheme || 'Quiz importé',
+          questions: data.questions,
+          provider: data.provider,
+          model: data.model,
+          format: 'quizbit-quiz-v1',
+          source: 'offline-studio',
+          idToken: getStoredIdToken() || undefined,
+        });
+      } catch (saveErr) {
+        console.warn('Sauvegarde Firestore quiz:', saveErr);
       }
 
       setProgress(100);
       setProgressLabel('Questionnaire prêt');
+      setStatusMessage(
+        `${data.questions.length} question(s) générées — export JSON disponible à droite.`,
+      );
       succeeded = true;
     } catch (err) {
       stopProgressTimer();
       setProgress(0);
       setProgressLabel('');
-      setError(
+      const msg =
         err.name === 'AbortError'
           ? 'Délai dépassé. Réduis le nombre de questions ou utilise un fichier plus court.'
-          : err.message || 'Génération impossible.',
-      );
+          : err.message || 'Génération impossible.';
+      setError(msg);
+      setStatusMessage('');
+      scrollToFeedback();
     } finally {
       setLoading(false);
       if (succeeded) {
@@ -272,17 +313,7 @@ export default function OfflineQuizStudio() {
         }, 1200);
       }
     }
-  }, [
-    theme,
-    mediaPayload,
-    count,
-    provider,
-    choiceCount,
-    questionType,
-    openAnswerMode,
-    startProgressTimer,
-    stopProgressTimer,
-  ]);
+  };
 
   const buildExportPayload = () => {
     if (!result?.questions?.length) return null;
@@ -325,24 +356,7 @@ export default function OfflineQuizStudio() {
   };
 
   const hasInput = Boolean(theme.trim() || mediaPayload);
-  const canGenerate = hasInput && !loading;
-
-  const handleGenerateClick = () => {
-    if (!hasInput) {
-      setError(
-        'Indique un thème dans le champ texte ou charge un fichier (audio, image, PDF…).',
-      );
-      return;
-    }
-    if (!getPanelAdminKey()) {
-      setError(
-        'Clé admin panel manquante. Paramètres → cle admin → Enregistrer, ou configure VITE_ADMIN_PANEL_KEY sur Vercel puis redéploie.',
-      );
-      return;
-    }
-    setError('');
-    generate();
-  };
+  const readyToGenerate = hasInput && Boolean(adminKey) && !loading;
 
   return (
     <div className="offline-studio">
@@ -483,44 +497,51 @@ export default function OfflineQuizStudio() {
             </label>
           </div>
 
-          {!hasInput ? (
-            <p className="offline-hint">
-              Saisis un thème ou ajoute un fichier pour activer la génération.
-            </p>
-          ) : null}
-          {hasInput && !adminKey ? (
-            <div className="ai-error">
-              Clé admin absente pour cette session. Ouvre{' '}
-              <strong>Paramètres</strong>, colle la même valeur que{' '}
-              <code>ADMIN_PANEL_KEY</code> sur Vercel, puis{' '}
-              <strong>Enregistrer la clé</strong>.
+          <form className="offline-generate-form" onSubmit={runGenerate}>
+            <div ref={feedbackRef} className="offline-feedback">
+              {!hasInput ? (
+                <p className="offline-hint">
+                  Étape requise : saisis un thème ou ajoute un fichier ci-dessus.
+                </p>
+              ) : null}
+              {hasInput && !adminKey ? (
+                <div className="ai-error">
+                  Clé admin absente. <strong>Paramètres</strong> → colle{' '}
+                  <code>ADMIN_PANEL_KEY</code> (Vercel) → <strong>Enregistrer la clé</strong>.
+                </div>
+              ) : null}
+              {statusMessage ? (
+                <p className="offline-status" role="status">
+                  {statusMessage}
+                </p>
+              ) : null}
+              {error ? <div className="ai-error">{error}</div> : null}
+              {loading ? (
+                <div className="offline-progress" role="progressbar" aria-valuenow={progress}>
+                  <div className="offline-progress-track">
+                    <div
+                      className="offline-progress-fill"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <div className="offline-progress-meta">
+                    <strong>{progress}%</strong>
+                    <span>{progressLabel}</span>
+                  </div>
+                </div>
+              ) : null}
             </div>
-          ) : null}
-          <div className="ai-actions">
-            <button
-              type="button"
-              className={`btn primary${loading ? ' is-loading' : ''}`}
-              disabled={!canGenerate}
-              onClick={handleGenerateClick}
-            >
-              {loading ? `Génération… ${progress}%` : 'Générer le questionnaire'}
-            </button>
-          </div>
-          {loading ? (
-            <div className="offline-progress" role="progressbar" aria-valuenow={progress}>
-              <div className="offline-progress-track">
-                <div
-                  className="offline-progress-fill"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <div className="offline-progress-meta">
-                <strong>{progress}%</strong>
-                <span>{progressLabel}</span>
-              </div>
+            <div className="ai-actions">
+              <button
+                type="submit"
+                className={`btn primary${loading ? ' is-loading' : ''}${readyToGenerate ? '' : ' btn-dim'}`}
+                disabled={loading}
+                aria-busy={loading}
+              >
+                {loading ? `Génération… ${progress}%` : 'Générer le questionnaire'}
+              </button>
             </div>
-          ) : null}
-          {error ? <div className="ai-error">{error}</div> : null}
+          </form>
         </section>
 
         <section className="panel glass-panel">
