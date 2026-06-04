@@ -11,6 +11,29 @@ const assertFirebaseEnv = () => {
   }
 };
 
+const firebaseAuthMessage = code => {
+  const normalized = String(code || '');
+  const messages = {
+    CONFIGURATION_NOT_FOUND:
+      'Firebase Auth n est pas configure pour ce projet. Active Firebase Authentication et le fournisseur Email/Mot de passe dans Firebase Console, puis redeploie Vercel.',
+    EMAIL_NOT_FOUND: 'Email ou mot de passe invalide.',
+    INVALID_LOGIN_CREDENTIALS: 'Email ou mot de passe invalide.',
+    INVALID_PASSWORD: 'Email ou mot de passe invalide.',
+    EMAIL_EXISTS: 'Un compte existe deja avec cet email.',
+    OPERATION_NOT_ALLOWED:
+      'Le fournisseur Email/Mot de passe est desactive dans Firebase Authentication.',
+  };
+  return messages[normalized] || normalized;
+};
+
+const createFirebaseAuthError = (data, status) => {
+  const code = data?.error?.message || `Firebase Auth HTTP ${status}`;
+  const error = new Error(firebaseAuthMessage(code));
+  error.code = code;
+  error.status = status;
+  return error;
+};
+
 const firebaseAuthRequest = async (path, payload) => {
   assertFirebaseEnv();
   const response = await fetch(
@@ -23,9 +46,7 @@ const firebaseAuthRequest = async (path, payload) => {
   );
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(
-      data?.error?.message || `Firebase Auth HTTP ${response.status}`,
-    );
+    throw createFirebaseAuthError(data, response.status);
   }
   return data;
 };

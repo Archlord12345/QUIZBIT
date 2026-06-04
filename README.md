@@ -217,6 +217,7 @@ Routes principales :
 ```txt
 /api/auth-register
 /api/auth-login
+/api/firebase-auth
 /api/user-update-avatar
 /api/user-update-stats
 /api/generate-questions
@@ -225,6 +226,8 @@ Routes principales :
 ```
 
 Ces routes utilisent Firebase côté serveur Vercel puis renvoient les données nécessaires à l'application. La route `/api/generate-questions` essaie Gemini en premier, puis bascule automatiquement sur Mistral si Gemini échoue ou dépasse son quota.
+
+Si `/api/auth-login` ou `/api/auth-register` renvoie une erreur liée à `CONFIGURATION_NOT_FOUND`, le serveur Vercel est joignable mais Firebase Authentication n'est pas actif/configuré pour ce projet. Dans Firebase Console, activer **Authentication** puis le fournisseur **Email/Mot de passe**, et vérifier que les variables Firebase de Vercel pointent vers le même projet.
 
 ## Lancer l'application mobile
 
@@ -322,6 +325,7 @@ npm run build
 ### Routes API de diagnostic
 
 ```txt
+/api/firebase-auth
 /api/test-gemini
 /api/test-mistral
 /api/test-cloudinary

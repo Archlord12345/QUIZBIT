@@ -1,6 +1,7 @@
 const handlers = {
   'auth-login': require('../lib/api/auth-login'),
   'auth-register': require('../lib/api/auth-register'),
+  'firebase-auth': require('../lib/api/test-firebase-auth'),
   'generate-questions': require('../lib/api/generate-questions'),
   'scores-list': require('../lib/api/scores-list'),
   'scores-record': require('../lib/api/scores-record'),

@@ -367,6 +367,8 @@ export default function App() {
         );
         return 'Connection Firestore OK';
       }),
+    auth: () =>
+      runDiagnostic('auth', () => testServerEndpoint('/api/firebase-auth')),
     gemini: () =>
       runDiagnostic('gemini', () => testServerEndpoint('/api/test-gemini')),
     mistral: () =>
@@ -956,6 +958,11 @@ function SettingsPage({
       results.gemini?.message || 'Non teste',
     ],
     [
+      'Firebase Auth serveur',
+      results.auth?.status === 'success',
+      results.auth?.message || 'Non teste',
+    ],
+    [
       'Mistral route',
       results.mistral?.status === 'success',
       results.mistral?.message || 'Non teste',
@@ -974,6 +981,12 @@ function SettingsPage({
           loading={loading.firebase}
           onTest={diagnostics.firebase}
           result={results.firebase}
+        />
+        <TestRow
+          label="Firebase Auth serveur"
+          loading={loading.auth}
+          onTest={diagnostics.auth}
+          result={results.auth}
         />
         <TestRow
           label="Google Gemini API"
