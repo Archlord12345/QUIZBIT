@@ -1,5 +1,8 @@
 module.exports = {
   preset: '@react-native/jest-preset',
+  transformIgnorePatterns: [
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|@react-navigation)/)',
+  ],
   moduleNameMapper: {
     '^@react-native-documents/picker$':
       '<rootDir>/__mocks__/@react-native-documents/picker.js',
