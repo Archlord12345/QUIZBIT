@@ -200,8 +200,18 @@ const styles = StyleSheet.create({
     marginTop: 32,
     textAlign: 'center',
   },
+  eyebrow: {
+    color: COLORS.secondary,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1.6,
+    marginTop: 32,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
   subtitle: {
     color: COLORS.secondary,
+    lineHeight: 21,
     marginBottom: 20,
     marginTop: 8,
     textAlign: 'center',
@@ -224,6 +234,10 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 18,
     fontWeight: '800',
+  },
+  helpText: {
+    color: '#5E6C84',
+    lineHeight: 20,
   },
   input: {
     backgroundColor: '#FAFBFC',
@@ -262,6 +276,9 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '800',
   },
+  disabledButton: {
+    opacity: 0.55,
+  },
   roomCode: {
     color: COLORS.primary,
     fontSize: 28,
@@ -270,6 +287,11 @@ const styles = StyleSheet.create({
   },
   roomInfo: {
     color: COLORS.text,
+  },
+  roomStatus: {
+    color: COLORS.success,
+    fontWeight: '900',
+    textAlign: 'center',
   },
   playerLine: {
     color: COLORS.text,

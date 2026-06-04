@@ -1,5 +1,6 @@
 import CloudinaryModel from '../models/CloudinaryModel';
 import { apiPost } from '../utils/api';
+import { clearSession, loadSession, saveSession } from '../utils/sessionStore';
 
 export type UserAccount = {
   id: string;
@@ -24,6 +25,17 @@ class AuthController {
     return this.currentAccount;
   }
 
+  async restoreSession(): Promise<UserAccount | null> {
+    const account = await loadSession();
+    this.currentAccount = account;
+    return account;
+  }
+
+  async setCurrentAccount(account: UserAccount) {
+    this.currentAccount = account;
+    await saveSession(account);
+  }
+
   async register(
     email: string,
     password: string,
@@ -39,7 +51,7 @@ class AuthController {
       password,
       displayName: cleanName,
     });
-    this.currentAccount = response.account;
+    await this.setCurrentAccount(response.account);
     return response.account;
   }
 
@@ -51,7 +63,7 @@ class AuthController {
       email: cleanEmail,
       password,
     });
-    this.currentAccount = response.account;
+    await this.setCurrentAccount(response.account);
     return response.account;
   }
 
@@ -66,7 +78,7 @@ class AuthController {
       userId: account.id,
       avatarUrl: upload.url,
     });
-    this.currentAccount = response.account;
+    await this.setCurrentAccount(response.account);
     return response.account;
   }
 
@@ -80,12 +92,13 @@ class AuthController {
       userId: account.id,
       score,
     });
-    this.currentAccount = response.account;
+    await this.setCurrentAccount(response.account);
     return response.account;
   }
 
   async signOut() {
     this.currentAccount = null;
+    await clearSession();
   }
 
   private validateCredentials(email: string, password: string) {

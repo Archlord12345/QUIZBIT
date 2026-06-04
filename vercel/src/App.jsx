@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import logoUrl from './assets/logo.png';
 import { initializeApp } from 'firebase/app';
 import {
   collection,
@@ -45,6 +44,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 
+const QUIZBIT_LOGO_URL =
+  'https://res.cloudinary.com/dl78pj7uf/image/upload/v1780553378/logo_br2ozd.png';
 const env = import.meta.env;
 
 const firebaseConfig = {
@@ -446,7 +447,7 @@ function Sidebar({ currentPage, onPage }) {
     <aside className="sidebar glass-panel">
       <div className="brand">
         <div className="brand-logo">
-          <img src={logoUrl} alt="QuizBit logo" />
+          <img src={QUIZBIT_LOGO_URL} alt="QuizBit logo" />
         </div>
         <div>
           <strong>QuizBit</strong>

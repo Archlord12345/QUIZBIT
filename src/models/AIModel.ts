@@ -1,12 +1,22 @@
-import Config from 'react-native-config';
 import { apiPost } from '../utils/api';
+
+export type QuestionType = 'mixed' | 'mcq' | 'open';
+export type OpenAnswerMode = 'flexible' | 'exact';
 
 export type Question = {
   id: string;
   text: string;
   options?: string[];
   answer: string;
+  exactAnswer?: boolean;
   type: 'mcq' | 'open';
+};
+
+export type QuizGenerationOptions = {
+  choiceCount?: number;
+  count?: number;
+  openAnswerMode?: OpenAnswerMode;
+  questionType?: QuestionType;
 };
 
 type GenerateQuestionsResponse = {
@@ -16,23 +26,33 @@ type GenerateQuestionsResponse = {
   model?: string;
 };
 
-class AIModel {
-  private geminiKey = this.readRuntimeValue('GEMINI_API_KEY');
+type ValidateAnswerResponse = {
+  correct: boolean;
+  ok: boolean;
+};
 
+class AIModel {
   async generateQuestions(
     theme: string,
-    count: number = 5,
+    options: QuizGenerationOptions = {},
   ): Promise<Question[]> {
     const cleanTheme = theme.trim();
     if (!cleanTheme) {
       throw new Error('Theme manquant.');
     }
 
+    const count = Math.max(1, Math.min(20, Math.floor(options.count || 5)));
     const response = await apiPost<GenerateQuestionsResponse>(
       '/api/generate-questions',
       {
-        prompt: cleanTheme,
+        choiceCount: Math.max(
+          2,
+          Math.min(5, Math.floor(options.choiceCount || 4)),
+        ),
         count,
+        openAnswerMode: options.openAnswerMode || 'flexible',
+        prompt: cleanTheme,
+        questionType: options.questionType || 'mixed',
       },
     );
     const onlineQuestions = this.normalizeQuestions(response.questions, count);
@@ -46,57 +66,29 @@ class AIModel {
   async validateAnswer(
     userAnswer: string,
     correctAnswer: string,
+    question?: Question,
   ): Promise<boolean> {
-    if (
-      this.normalizeAnswer(userAnswer) === this.normalizeAnswer(correctAnswer)
-    ) {
+    if (question?.exactAnswer) {
+      return (
+        this.normalizeExactAnswer(userAnswer) ===
+        this.normalizeExactAnswer(correctAnswer)
+      );
+    }
+
+    if (this.normalizeAnswer(userAnswer) === this.normalizeAnswer(correctAnswer)) {
       return true;
     }
 
-    if (!this.geminiKey) {
-      return false;
-    }
-
-    return this.validateAnswerWithGemini(userAnswer, correctAnswer);
-  }
-
-  private async validateAnswerWithGemini(
-    userAnswer: string,
-    correctAnswer: string,
-  ): Promise<boolean> {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.geminiKey}`,
+    const response = await apiPost<ValidateAnswerResponse>(
+      '/api/validate-answer',
       {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: [
-                    'Tu verifies une reponse ouverte de quiz en francais.',
-                    'Reponds uniquement par OUI ou NON.',
-                    `Reponse attendue: ${correctAnswer}`,
-                    `Reponse utilisateur: ${userAnswer}`,
-                    'Accepte les synonymes et formulations equivalentes, refuse les contresens.',
-                  ].join(' '),
-                },
-              ],
-            },
-          ],
-        }),
+        correctAnswer,
+        exactAnswer: Boolean(question?.exactAnswer),
+        questionText: question?.text || '',
+        userAnswer,
       },
     );
-    const data = await response.json();
-    if (!response.ok) {
-      return false;
-    }
-
-    const text = String(data?.candidates?.[0]?.content?.parts?.[0]?.text || '');
-    return this.normalizeAnswer(text).startsWith('oui');
+    return response.correct;
   }
 
   private normalizeQuestions(value: unknown, count: number): Question[] {
@@ -133,6 +125,7 @@ class AIModel {
         id: String(candidate.id || `open-${index + 1}`),
         text,
         answer,
+        exactAnswer: Boolean(candidate.exactAnswer),
         type: 'open',
       };
     }
@@ -155,18 +148,13 @@ class AIModel {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
+      .replace(/[^a-z0-9\s]/gi, ' ')
+      .replace(/\s+/g, ' ')
       .trim();
   }
 
-  private readRuntimeValue(name: string): string {
-    const nativeConfig = Config as unknown as Record<
-      string,
-      string | undefined
-    >;
-    const maybeProcess = (
-      globalThis as unknown as { process?: { env?: Record<string, string> } }
-    ).process;
-    return nativeConfig[name] || maybeProcess?.env?.[name] || '';
+  private normalizeExactAnswer(value: string): string {
+    return value.trim().replace(/\s+/g, ' ').toLowerCase();
   }
 }
 

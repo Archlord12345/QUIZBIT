@@ -13,14 +13,22 @@ const readRuntimeValue = (name: string): string => {
   return nativeConfig[name] || maybeProcess?.env?.[name] || '';
 };
 
+const readFirebaseValue = (name: string): string => {
+  return (
+    readRuntimeValue(`FIREBASE_${name}`) ||
+    readRuntimeValue(`REACT_APP_FIREBASE_${name}`) ||
+    readRuntimeValue(`VITE_FIREBASE_${name}`)
+  );
+};
+
 const firebaseConfig = {
-  apiKey: readRuntimeValue('FIREBASE_API_KEY'),
-  authDomain: readRuntimeValue('FIREBASE_AUTH_DOMAIN'),
-  projectId: readRuntimeValue('FIREBASE_PROJECT_ID'),
-  storageBucket: readRuntimeValue('FIREBASE_STORAGE_BUCKET'),
-  messagingSenderId: readRuntimeValue('FIREBASE_MESSAGING_SENDER_ID'),
-  appId: readRuntimeValue('FIREBASE_APP_ID'),
-  measurementId: readRuntimeValue('FIREBASE_MEASUREMENT_ID'),
+  apiKey: readFirebaseValue('API_KEY'),
+  authDomain: readFirebaseValue('AUTH_DOMAIN'),
+  projectId: readFirebaseValue('PROJECT_ID'),
+  storageBucket: readFirebaseValue('STORAGE_BUCKET'),
+  messagingSenderId: readFirebaseValue('MESSAGING_SENDER_ID'),
+  appId: readFirebaseValue('APP_ID'),
+  measurementId: readFirebaseValue('MEASUREMENT_ID'),
 };
 
 export const firebaseEnabled = Boolean(
@@ -38,3 +46,6 @@ if (firebaseEnabled) {
 }
 
 export { app, auth, db };
+
+export const firebaseMissingConfigMessage =
+  "Configuration Firestore introuvable dans l'app. Renseigne FIREBASE_API_KEY, FIREBASE_PROJECT_ID et FIREBASE_APP_ID (ou REACT_APP_FIREBASE_*) puis reconstruis l'APK.";

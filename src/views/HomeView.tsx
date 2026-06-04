@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +12,8 @@ import {
 import LogoMark from '../components/LogoMark';
 import AuthController, { UserAccount } from '../controllers/AuthController';
 import QuizController, { QuizState } from '../controllers/QuizController';
+import { OpenAnswerMode, QuestionType } from '../models/AIModel';
+import { pickAvatarFromLibrary } from '../utils/avatarPicker';
 import { COLORS, SPACING } from '../utils/theme';
 
 type HomeViewProps = {
@@ -31,7 +34,11 @@ const HomeView = ({
   onSignOut,
 }: HomeViewProps) => {
   const [theme, setTheme] = useState('');
-  const [avatarUri, setAvatarUri] = useState('');
+  const [questionType, setQuestionType] = useState<QuestionType>('mixed');
+  const [questionCount, setQuestionCount] = useState('5');
+  const [choiceCount, setChoiceCount] = useState('4');
+  const [openAnswerMode, setOpenAnswerMode] =
+    useState<OpenAnswerMode>('flexible');
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [error, setError] = useState('');
@@ -46,7 +53,12 @@ const HomeView = ({
     setError('');
 
     try {
-      const quiz = await QuizController.initQuiz(cleanTheme);
+      const quiz = await QuizController.initQuiz(cleanTheme, {
+        choiceCount: Number(choiceCount),
+        count: Number(questionCount),
+        openAnswerMode,
+        questionType,
+      });
       onQuizReady(quiz);
     } catch (err) {
       setError(
@@ -60,22 +72,23 @@ const HomeView = ({
   };
 
   const handleAvatarUpload = async () => {
-    if (!avatarUri.trim() || uploadingAvatar) {
+    if (uploadingAvatar) {
       return;
     }
 
     setUploadingAvatar(true);
     setError('');
     try {
+      const avatar = await pickAvatarFromLibrary();
+      if (!avatar) return;
       const updatedAccount = await AuthController.updateAvatar(
         account,
-        avatarUri,
+        avatar.uri,
       );
       onAccountUpdated(updatedAccount);
-      setAvatarUri('');
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Upload avatar impossible.',
+        err instanceof Error ? err.message : 'Selection avatar impossible.',
       );
     } finally {
       setUploadingAvatar(false);
@@ -92,36 +105,47 @@ const HomeView = ({
       </View>
 
       <View style={styles.profileCard}>
-        <Text style={styles.profileName}>{account.displayName}</Text>
-        <Text style={styles.profileMeta}>{account.email}</Text>
+        <View style={styles.profileTop}>
+          {account.avatarUrl ? (
+            <Image source={{ uri: account.avatarUrl }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarInitial}>
+                {account.displayName.slice(0, 1).toUpperCase()}
+              </Text>
+            </View>
+          )}
+          <View style={styles.profileIdentity}>
+            <Text style={styles.profileName}>{account.displayName}</Text>
+            <Text style={styles.profileMeta}>{account.email}</Text>
+            <Text style={styles.profileHint}>
+              Session sauvegardée localement et synchronisée avec Firebase.
+            </Text>
+          </View>
+        </View>
         <View style={styles.statsRow}>
           <Stat label="Parties" value={account.gamesPlayed} />
           <Stat label="Total" value={account.totalScore} />
           <Stat label="Best" value={account.bestScore} />
         </View>
-        <Text style={styles.profileMeta}>
-          Avatar: {account.avatarUrl ? account.avatarUrl : 'non configure'}
-        </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="URI image avatar pour Cloudinary"
-          placeholderTextColor="#6B778C"
-          value={avatarUri}
-          onChangeText={setAvatarUri}
-        />
         <TouchableOpacity
           style={[styles.secondaryButton, uploadingAvatar && styles.disabled]}
-          disabled={uploadingAvatar || !avatarUri.trim()}
+          disabled={uploadingAvatar}
           onPress={handleAvatarUpload}
         >
           <Text style={styles.secondaryButtonText}>
-            {uploadingAvatar ? 'Upload...' : 'Sauvegarder avatar'}
+            {uploadingAvatar ? 'Upload...' : 'Choisir une photo de profil'}
           </Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Quiz solo</Text>
+        <Text style={styles.label}>Quiz solo intelligent</Text>
+        <Text style={styles.cardText}>
+          Choisis un thème, puis précise le format. Les QCM ont au maximum 5
+          choix et les réponses ouvertes peuvent être corrigées souplement par
+          IA ou strictement pour les noms exacts.
+        </Text>
         <TextInput
           style={styles.input}
           placeholder="ex: Mathématiques, Science-Fiction..."
@@ -132,6 +156,76 @@ const HomeView = ({
           returnKeyType="done"
           onSubmitEditing={handleStart}
         />
+
+        <Text style={styles.optionLabel}>Format des questions</Text>
+        <View style={styles.segmentedRow}>
+          <OptionChip
+            active={questionType === 'mixed'}
+            label="Mixte"
+            onPress={() => setQuestionType('mixed')}
+          />
+          <OptionChip
+            active={questionType === 'mcq'}
+            label="QCM"
+            onPress={() => setQuestionType('mcq')}
+          />
+          <OptionChip
+            active={questionType === 'open'}
+            label="QRO"
+            onPress={() => setQuestionType('open')}
+          />
+        </View>
+
+        <View style={styles.settingsRow}>
+          <View style={styles.settingBox}>
+            <Text style={styles.optionLabel}>Questions</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              placeholder="5"
+              placeholderTextColor="#6B778C"
+              value={questionCount}
+              onChangeText={value =>
+                setQuestionCount(clampNumber(value, 1, 20))
+              }
+            />
+          </View>
+          {questionType !== 'open' ? (
+            <View style={styles.settingBox}>
+              <Text style={styles.optionLabel}>Choix QCM</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="numeric"
+                placeholder="4"
+                placeholderTextColor="#6B778C"
+                value={choiceCount}
+                onChangeText={value => setChoiceCount(clampNumber(value, 2, 5))}
+              />
+            </View>
+          ) : null}
+        </View>
+
+        {questionType !== 'mcq' ? (
+          <>
+            <Text style={styles.optionLabel}>Correction des réponses ouvertes</Text>
+            <View style={styles.segmentedRow}>
+              <OptionChip
+                active={openAnswerMode === 'flexible'}
+                label="Souple"
+                onPress={() => setOpenAnswerMode('flexible')}
+              />
+              <OptionChip
+                active={openAnswerMode === 'exact'}
+                label="Nom exact"
+                onPress={() => setOpenAnswerMode('exact')}
+              />
+            </View>
+            <Text style={styles.helperText}>
+              Souple accepte synonymes et petites fautes. Nom exact exige la
+              bonne orthographe pour les personnes, lieux ou termes précis.
+            </Text>
+          </>
+        ) : null}
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -146,7 +240,7 @@ const HomeView = ({
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text style={styles.buttonText}>Commencer le Quiz</Text>
+            <Text style={styles.buttonText}>Générer et commencer</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -154,11 +248,16 @@ const HomeView = ({
       <View style={styles.actionsGrid}>
         <TouchableOpacity style={styles.modeButton} onPress={onBattle}>
           <Text style={styles.modeTitle}>Battle Royale</Text>
-          <Text style={styles.modeText}>Créer ou rejoindre une salle</Text>
+          <Text style={styles.modeText}>
+            Crée une salle synchronisée, partage le code et lance un quiz en
+            élimination.
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.modeButton} onPress={onLeaderboard}>
           <Text style={styles.modeTitle}>Scores</Text>
-          <Text style={styles.modeText}>Voir le leaderboard</Text>
+          <Text style={styles.modeText}>
+            Consulte les meilleurs scores synchronisés depuis le serveur.
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -174,6 +273,30 @@ const Stat = ({ label, value }: { label: string; value: number }) => (
     <Text style={styles.statValue}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </View>
+);
+
+const clampNumber = (value: string, min: number, max: number) => {
+  const numeric = Math.max(min, Math.min(max, Math.floor(Number(value) || min)));
+  return String(numeric);
+};
+
+const OptionChip = ({
+  active,
+  label,
+  onPress,
+}: {
+  active: boolean;
+  label: string;
+  onPress: () => void;
+}) => (
+  <TouchableOpacity
+    style={[styles.optionChip, active && styles.optionChipActive]}
+    onPress={onPress}
+  >
+    <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>
+      {label}
+    </Text>
+  </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
@@ -200,10 +323,38 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     backgroundColor: 'white',
-    borderRadius: 20,
+    borderRadius: 24,
     gap: 12,
     marginBottom: 18,
     padding: SPACING.lg,
+  },
+  profileTop: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 14,
+  },
+  avatar: {
+    borderRadius: 36,
+    height: 72,
+    width: 72,
+  },
+  avatarPlaceholder: {
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.secondary,
+    borderRadius: 36,
+    borderWidth: 2,
+    height: 72,
+    justifyContent: 'center',
+    width: 72,
+  },
+  avatarInitial: {
+    color: COLORS.textOnDark,
+    fontSize: 28,
+    fontWeight: '900',
+  },
+  profileIdentity: {
+    flex: 1,
   },
   profileName: {
     color: COLORS.text,
@@ -213,6 +364,12 @@ const styles = StyleSheet.create({
   profileMeta: {
     color: '#6B778C',
     fontSize: 13,
+  },
+  profileHint: {
+    color: COLORS.success,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 4,
   },
   statsRow: {
     flexDirection: 'row',
@@ -246,6 +403,55 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 10,
+  },
+  cardText: {
+    color: '#5E6C84',
+    lineHeight: 20,
+    marginBottom: 14,
+  },
+  optionLabel: {
+    color: COLORS.text,
+    fontSize: 12,
+    fontWeight: '900',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  segmentedRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  optionChip: {
+    borderColor: '#DFE1E6',
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  optionChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  optionChipText: {
+    color: COLORS.text,
+    fontWeight: '800',
+  },
+  optionChipTextActive: {
+    color: COLORS.textOnDark,
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  settingBox: {
+    flex: 1,
+  },
+  helperText: {
+    color: '#6B778C',
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 14,
   },
   input: {
     backgroundColor: '#FAFBFC',
