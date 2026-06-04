@@ -1,129 +1,41 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { StackScreenProps } from '@react-navigation/stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import LogoMark from '../components/LogoMark';
-import AuthController, { UserAccount } from '../controllers/AuthController';
+import { UserAccount } from '../controllers/AuthController';
+import { LoginForm } from '../components/LoginForm';
 import { COLORS, SPACING } from '../utils/theme';
 
-type AuthViewProps = StackScreenProps<any> & {
+type AuthViewProps = NativeStackScreenProps<any> & {
   onAuthenticated: (account: UserAccount) => void;
 };
 
 const AuthView = ({ onAuthenticated, navigation }: AuthViewProps) => {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const submit = async () => {
-    if (loading) {
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    try {
-      const account =
-        mode === 'register'
-          ? await AuthController.register(email, password, displayName)
-          : await AuthController.login(email, password);
-      onAuthenticated(account);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Authentification impossible.',
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <LogoMark subtitle="Quiz IA, scores cloud et battle royale" />
-
-      <View style={styles.card}>
-        <Text style={styles.heading}>Bienvenue dans QuizBit</Text>
-        <Text style={styles.description}>
-          Connecte-toi pour retrouver ton profil, ton avatar et tes scores sur
-          tous tes lancements. La session reste sauvegardée sur ce téléphone.
-        </Text>
-        <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[styles.tab, mode === 'login' && styles.tabActive]}
-            onPress={() => setMode('login')}
-          >
-            <Text style={styles.tabText}>Connexion</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, mode === 'register' && styles.tabActive]}
-            onPress={() => setMode('register')}
-          >
-            <Text style={styles.tabText}>Créer compte</Text>
-          </TouchableOpacity>
-        </View>
-
-        {mode === 'register' ? (
-          <TextInput
-            style={styles.input}
-            placeholder="Pseudo"
-            placeholderTextColor="#6B778C"
-            value={displayName}
-            onChangeText={setDisplayName}
-          />
-        ) : null}
-
-        <TextInput
-          style={styles.input}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholder="Email"
-          placeholderTextColor="#6B778C"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Mot de passe"
-          placeholderTextColor="#6B778C"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <TouchableOpacity style={styles.primaryButton} onPress={submit}>
-          {loading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.primaryButtonText}>
-              {mode === 'register' ? 'Créer le compte' : 'Se connecter'}
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={() => navigation.navigate('Settings')}
-        >
-          <Text style={styles.secondaryButtonText}>Paramètres</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.hint}>
-          Connexion sécurisée via Firebase Auth. QuizBit n'utilise aucune donnée
-          fictive : comptes, scores et battles sont synchronisés.
-        </Text>
+    <ScrollView 
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.logoContainer}>
+        <LogoMark subtitle="Quiz IA, scores cloud et battle royale" />
       </View>
+
+      <LoginForm onSuccess={onAuthenticated} />
+
+      <TouchableOpacity
+        style={styles.settingsButton}
+        onPress={() => navigation.navigate('Settings')}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.settingsText}>⚙ Paramètres de connexion</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };
@@ -133,99 +45,25 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    padding: SPACING.lg,
+    paddingVertical: SPACING.xl,
   },
-  logo: {
-    color: 'white',
-    fontSize: 48,
-    fontWeight: 'bold',
-    textAlign: 'center',
+  logoContainer: {
+    marginBottom: SPACING.lg,
   },
-  subtitle: {
+  settingsButton: {
+    alignSelf: 'center',
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  settingsText: {
     color: COLORS.secondary,
-    fontSize: 16,
-    marginBottom: 32,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 26,
-    padding: SPACING.xl,
-    gap: 14,
-  },
-  heading: {
-    color: COLORS.text,
-    fontSize: 24,
-    fontWeight: '900',
-    textAlign: 'center',
-  },
-  description: {
-    color: '#5E6C84',
-    lineHeight: 20,
-    textAlign: 'center',
-  },
-  tabs: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
-  },
-  tab: {
-    flex: 1,
-    borderColor: '#DFE1E6',
-    borderRadius: 10,
-    borderWidth: 1,
-    padding: 12,
-  },
-  tabActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  tabText: {
-    color: COLORS.text,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  input: {
-    backgroundColor: '#FAFBFC',
-    borderColor: '#DFE1E6',
-    borderRadius: 10,
-    borderWidth: 1,
-    color: COLORS.text,
-    fontSize: 16,
-    padding: 15,
-  },
-  error: {
-    color: COLORS.error,
-    textAlign: 'center',
-  },
-  primaryButton: {
-    alignItems: 'center',
-    backgroundColor: COLORS.accent,
-    borderRadius: 10,
-    padding: 16,
-  },
-  primaryButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  secondaryButton: {
-    alignItems: 'center',
-    borderColor: COLORS.secondary,
-    borderRadius: 10,
-    borderWidth: 1,
-    padding: 14,
-  },
-  secondaryButtonText: {
-    color: COLORS.primary,
-    fontWeight: '700',
-  },
-  hint: {
-    color: '#6B778C',
-    fontSize: 12,
-    lineHeight: 18,
-    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '800',
   },
 });
 

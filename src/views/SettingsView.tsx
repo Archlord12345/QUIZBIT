@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Switch } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, Switch, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApiBaseUrl, setApiMode } from '../utils/api';
 import { COLORS, SPACING } from '../utils/theme';
@@ -31,62 +31,119 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Paramètres</Text>
-      <View style={styles.settingRow}>
-        <Text style={styles.settingLabel}>Utiliser serveur local</Text>
-        <Switch value={isLocal} onValueChange={toggleMode} />
+    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+          <Text style={styles.backButtonText}>← Retour</Text>
+        </TouchableOpacity>
+        <View style={{ width: 70 }} />
       </View>
-      <Text style={styles.urlText}>URL actuelle : {apiUrl}</Text>
-      <TouchableOpacity style={styles.backButton} onPress={onBack}>
-        <Text style={styles.backButtonText}>Retour</Text>
-      </TouchableOpacity>
-    </View>
+
+      <Text style={styles.pageTitle}>Paramètres</Text>
+
+      <View style={styles.card}>
+        <View style={styles.settingRow}>
+          <View style={styles.settingTextContainer}>
+            <Text style={styles.settingTitle}>Serveur Local</Text>
+            <Text style={styles.settingDescription}>
+              Bascule sur le panel admin local (hors ligne). Ne modifie pas les données Firestore.
+            </Text>
+          </View>
+          <Switch 
+            value={isLocal} 
+            onValueChange={toggleMode} 
+            trackColor={{ false: '#DFE1E6', true: COLORS.primary }}
+            thumbColor="white"
+          />
+        </View>
+        
+        <View style={styles.divider} />
+        
+        <View>
+          <Text style={styles.urlLabel}>URL de l'API active</Text>
+          <View style={styles.urlValueBox}>
+            <Text style={styles.urlText}>{apiUrl}</Text>
+          </View>
+        </View>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.primary,
-    flex: 1,
+    flexGrow: 1,
     padding: SPACING.lg,
-    justifyContent: 'center',
   },
-  title: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.xl,
+    marginTop: SPACING.sm,
+  },
+  backButton: {
+    padding: SPACING.md,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 14,
+  },
+  backButtonText: {
     color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
+    fontWeight: '800',
+  },
+  pageTitle: {
+    color: 'white',
+    fontSize: 32,
+    fontWeight: '900',
+    marginBottom: SPACING.lg,
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 24,
+    padding: SPACING.xl,
   },
   settingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'white',
-    padding: SPACING.md,
-    borderRadius: 10,
-    marginBottom: 20,
   },
-  settingLabel: {
+  settingTextContainer: {
+    flex: 1,
+    paddingRight: SPACING.lg,
+  },
+  settingTitle: {
     fontSize: 18,
+    fontWeight: '900',
     color: COLORS.text,
+    marginBottom: 4,
+  },
+  settingDescription: {
+    fontSize: 13,
+    color: '#6B778C',
+    lineHeight: 18,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#F0F2F5',
+    marginVertical: SPACING.lg,
+  },
+  urlLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#6B778C',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  urlValueBox: {
+    backgroundColor: '#F4F5F7',
+    borderRadius: 12,
+    padding: 14,
   },
   urlText: {
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  backButton: {
-    backgroundColor: COLORS.accent,
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

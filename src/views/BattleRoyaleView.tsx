@@ -97,7 +97,6 @@ const BattleRoyaleView = ({
       const activeRoom = await BattleRoyaleController.startRoom(room);
       setRoom(activeRoom);
       onStartBattle(activeRoom);
-      navigation.navigate('Quiz');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Demarrage impossible.');
     } finally {
@@ -166,7 +165,6 @@ const BattleRoyaleView = ({
         if (room.status === 'waiting' && updatedRoom.status === 'active') {
           setRoom(updatedRoom);
           onStartBattle(updatedRoom);
-          navigation.navigate('Quiz');
         } else {
           setRoom(updatedRoom);
         }
