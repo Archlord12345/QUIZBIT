@@ -219,11 +219,12 @@ Routes principales :
 /api/auth-login
 /api/user-update-avatar
 /api/user-update-stats
+/api/generate-questions
 /api/scores-record
 /api/scores-list
 ```
 
-Ces routes utilisent Firebase côté serveur Vercel puis renvoient les données nécessaires à l'application.
+Ces routes utilisent Firebase côté serveur Vercel puis renvoient les données nécessaires à l'application. La route `/api/generate-questions` essaie Gemini en premier, puis bascule automatiquement sur Mistral si Gemini échoue ou dépasse son quota.
 
 ## Lancer l'application mobile
 
@@ -328,6 +329,8 @@ npm run build
 
 Ces routes sont utilisées par la page Settings du panel admin.
 
+Le test prompt IA utilise aussi `/api/generate-questions`. Le bouton principal lance le mode automatique Gemini puis Mistral, et le bouton Mistral permet de forcer manuellement la génération avec Mistral.
+
 ## Panel admin local
 
 ```sh
@@ -368,7 +371,9 @@ Valider le panel Vercel :
 
 ```sh
 cd vercel
-npm run check
+node --check api/test-gemini.js
+node --check api/test-mistral.js
+node --check api/test-cloudinary.js
 npm run build
 ```
 
@@ -494,9 +499,9 @@ https://quizbit-admin.vercel.app/
 Le dépôt contient deux configurations pour sécuriser le lien avec Vercel :
 
 - `vercel/vercel.json` si le projet Vercel utilise `vercel/` comme root directory ;
-- `vercel.json` + `api/index.js` à la racine si le projet Vercel est lié à la racine du dépôt.
+- `vercel.json` + wrappers `api/` à la racine si le projet Vercel est lié à la racine du dépôt.
 
-Dans les deux cas, le build cible le panel admin et garde les routes API de diagnostics disponibles. Les URLs publiques (`/api/auth-login`, `/api/test-gemini`, etc.) sont routées vers une seule Serverless Function Vercel (`/api/index`) afin de rester sous la limite du plan gratuit.
+Dans les deux cas, le build cible le panel admin et garde les routes API de diagnostics disponibles.
 
 Configurer les variables d'environnement Vercel avant déploiement pour que diagnostics et données Firestore fonctionnent correctement.
 
