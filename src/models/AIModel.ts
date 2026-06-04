@@ -1,4 +1,5 @@
 import Config from 'react-native-config';
+import { apiPost } from '../utils/api';
 
 export type Question = {
   id: string;
@@ -8,6 +9,13 @@ export type Question = {
   type: 'mcq' | 'open';
 };
 
+type GenerateQuestionsResponse = {
+  ok: boolean;
+  questions: Question[];
+  provider?: string;
+  model?: string;
+};
+
 class AIModel {
   private geminiKey = this.readRuntimeValue('GEMINI_API_KEY');
 
@@ -15,60 +23,24 @@ class AIModel {
     theme: string,
     count: number = 5,
   ): Promise<Question[]> {
-    if (!this.geminiKey) {
-      throw new Error(
-        'GEMINI_API_KEY doit etre configuree pour generer un quiz reel.',
-      );
-    }
-
     const cleanTheme = theme.trim();
     if (!cleanTheme) {
       throw new Error('Theme manquant.');
     }
 
-    const onlineQuestions = await this.fetchFromGemini(cleanTheme, count);
+    const response = await apiPost<GenerateQuestionsResponse>(
+      '/api/generate-questions',
+      {
+        prompt: cleanTheme,
+        count,
+      },
+    );
+    const onlineQuestions = this.normalizeQuestions(response.questions, count);
     if (onlineQuestions.length === 0) {
-      throw new Error('Gemini n a retourne aucune question exploitable.');
+      throw new Error('Le serveur IA n a retourne aucune question exploitable.');
     }
 
     return onlineQuestions;
-  }
-
-  private async fetchFromGemini(
-    theme: string,
-    count: number,
-  ): Promise<Question[]> {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.geminiKey}`;
-    const prompt = [
-      `Genere ${count} questions de quiz en francais sur "${theme}".`,
-      'Reponds uniquement avec un tableau JSON valide, sans markdown.',
-      'Il existe exactement deux types de questions:',
-      '1. type "mcq": question a choix multiples avec options de 2 a 5 choix maximum, et answer doit exactement correspondre a une option.',
-      '2. type "open": question ouverte sans options, ou l utilisateur saisit lui-meme la reponse, et answer contient la reponse attendue.',
-      'Schema: [{"id":"1","text":"Question","options":["A","B","C"],"answer":"A","type":"mcq"},{"id":"2","text":"Question ouverte","answer":"Reponse attendue","type":"open"}].',
-      'Melange des questions mcq et open quand le theme le permet.',
-    ].join(' ');
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data?.error?.message || `Gemini HTTP ${response.status}`);
-    }
-
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (typeof text !== 'string') {
-      throw new Error('Gemini response does not contain text.');
-    }
-
-    return this.normalizeQuestions(this.parseQuestionsJson(text), count);
   }
 
   async validateAnswer(
@@ -127,26 +99,9 @@ class AIModel {
     return this.normalizeAnswer(text).startsWith('oui');
   }
 
-  private parseQuestionsJson(text: string): unknown {
-    const withoutCodeFence = text
-      .replace(/```json/gi, '')
-      .replace(/```/g, '')
-      .trim();
-    const firstArrayChar = withoutCodeFence.indexOf('[');
-    const lastArrayChar = withoutCodeFence.lastIndexOf(']');
-
-    if (firstArrayChar === -1 || lastArrayChar === -1) {
-      throw new Error('No JSON array found in Gemini response.');
-    }
-
-    return JSON.parse(
-      withoutCodeFence.slice(firstArrayChar, lastArrayChar + 1),
-    );
-  }
-
   private normalizeQuestions(value: unknown, count: number): Question[] {
     if (!Array.isArray(value)) {
-      throw new Error('Gemini response is not an array.');
+      throw new Error('La reponse IA serveur n est pas un tableau.');
     }
 
     return value

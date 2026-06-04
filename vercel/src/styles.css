@@ -495,6 +495,11 @@ tr:hover td {
   min-height: 112px;
   resize: vertical;
 }
+.ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 .ai-error {
   background: rgb(255 77 109 / 14%);
   border: 1px solid rgb(255 77 109 / 28%);
@@ -510,4 +515,12 @@ tr:hover td {
   color: var(--cyan);
   font-size: 13px;
   font-weight: 900;
+}
+.ai-note {
+  background: rgb(34 197 94 / 12%);
+  border: 1px solid rgb(34 197 94 / 24%);
+  border-radius: 14px;
+  color: #bbf7d0;
+  font-size: 13px;
+  padding: 10px 12px;
 }

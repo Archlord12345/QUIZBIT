@@ -367,6 +367,8 @@ export default function App() {
         );
         return 'Connection Firestore OK';
       }),
+    auth: () =>
+      runDiagnostic('auth', () => testServerEndpoint('/api/firebase-auth')),
     gemini: () =>
       runDiagnostic('gemini', () => testServerEndpoint('/api/test-gemini')),
     mistral: () =>
@@ -956,6 +958,11 @@ function SettingsPage({
       results.gemini?.message || 'Non teste',
     ],
     [
+      'Firebase Auth serveur',
+      results.auth?.status === 'success',
+      results.auth?.message || 'Non teste',
+    ],
+    [
       'Mistral route',
       results.mistral?.status === 'success',
       results.mistral?.message || 'Non teste',
@@ -974,6 +981,12 @@ function SettingsPage({
           loading={loading.firebase}
           onTest={diagnostics.firebase}
           result={results.firebase}
+        />
+        <TestRow
+          label="Firebase Auth serveur"
+          loading={loading.auth}
+          onTest={diagnostics.auth}
+          result={results.auth}
         />
         <TestRow
           label="Google Gemini API"
@@ -1015,22 +1028,23 @@ function AiPromptTester() {
     'Créer un quiz sur les capitales africaines avec QCM et questions ouvertes',
   );
   const [count, setCount] = useState(5);
-  const [loading, setLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState('');
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
+  const loading = Boolean(loadingProvider);
 
-  const generate = async () => {
+  const generate = async (provider = 'auto') => {
     const cleanPrompt = prompt.trim();
     if (!cleanPrompt || loading) return;
 
-    setLoading(true);
+    setLoadingProvider(provider);
     setError('');
     setResult(null);
     try {
       const response = await fetch('/api/generate-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: cleanPrompt, count }),
+        body: JSON.stringify({ prompt: cleanPrompt, count, provider }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.ok) {
@@ -1040,7 +1054,7 @@ function AiPromptTester() {
     } catch (err) {
       setError(err.message || 'Generation impossible.');
     } finally {
-      setLoading(false);
+      setLoadingProvider('');
     }
   };
 
@@ -1065,17 +1079,39 @@ function AiPromptTester() {
             onChange={event => setCount(Number(event.target.value || 5))}
           />
         </label>
-        <button
-          className="btn primary"
-          disabled={loading || !prompt.trim()}
-          onClick={generate}
-        >
-          {loading ? 'Generation...' : 'Tester la generation'}
-        </button>
+        <div className="ai-actions">
+          <button
+            className="btn primary"
+            disabled={loading || !prompt.trim()}
+            onClick={() => generate('auto')}
+          >
+            {loadingProvider === 'auto'
+              ? 'Generation...'
+              : 'Tester la generation'}
+          </button>
+          <button
+            className="btn ghost"
+            disabled={loading || !prompt.trim()}
+            onClick={() => generate('mistral')}
+          >
+            {loadingProvider === 'mistral'
+              ? 'Mistral...'
+              : 'Tester avec Mistral'}
+          </button>
+        </div>
         {error ? <div className="ai-error">{error}</div> : null}
         {result ? (
           <div className="ai-result">
-            <div className="ai-model">Modèle: {result.model}</div>
+            <div className="ai-model">
+              Modèle: {result.provider ? `${result.provider} / ` : ''}
+              {result.model}
+            </div>
+            {result.fallbackFrom ? (
+              <div className="ai-note">
+                Gemini indisponible, generation faite automatiquement avec
+                Mistral.
+              </div>
+            ) : null}
             <QuizPreview questions={result.questions} />
           </div>
         ) : null}
