@@ -637,3 +637,122 @@ Panels :
 - Média thème impossible : vérifier permissions Android/iOS et module documents.
 - Battle impossible : vérifier routes Vercel et variables Firebase serveur.
 - Import local impossible : vérifier que le JSON contient `questions`.
+
+## 23. Guide opérationnel des panels admin
+
+Cette section sert de procédure rapide pour configurer et utiliser les deux
+panels après installation ou déploiement.
+
+### 23.1 Panel Vercel : configuration attendue
+
+Le panel Vercel est le tableau de bord cloud. Il doit être utilisé quand on veut
+voir ou diagnostiquer les données réelles.
+
+Avant de considérer le panel prêt, ouvrir la page **Settings** et vérifier :
+
+1. **Firebase Firestore** : doit retourner `Connection Firestore OK`.
+2. **Firebase Auth serveur** : doit confirmer que l'auth serveur fonctionne.
+3. **Google Gemini API** : peut répondre OK ou quota à vérifier ; si Gemini est
+   en quota, Mistral doit prendre le relais.
+4. **Mistral AI API** : doit être OK pour garantir le fallback.
+5. **Cloudinary Upload** : doit être OK si l'upload avatar est utilisé.
+
+La carte **Checklist déploiement Vercel** rappelle les variables minimales :
+
+```txt
+FIREBASE_API_KEY ou REACT_APP_FIREBASE_API_KEY
+FIREBASE_PROJECT_ID ou REACT_APP_FIREBASE_PROJECT_ID
+FIREBASE_AUTH_DOMAIN ou REACT_APP_FIREBASE_AUTH_DOMAIN
+GEMINI_API_KEY
+MISTRAL_API_KEY
+CLOUDINARY_CLOUD_NAME
+CLOUDINARY_UPLOAD_PRESET
+```
+
+La carte **Routes critiques disponibles** rappelle les endpoints à vérifier
+avant de publier une nouvelle APK :
+
+```txt
+/api/auth-login
+/api/generate-questions
+/api/validate-answer
+/api/battle-room-create
+/api/battle-room-chat
+/api/scores-list
+```
+
+Si une variable est changée dans Vercel, il faut redéployer le projet. Les
+anciennes exécutions Vercel ne prennent pas toujours les nouvelles variables en
+compte tant qu'un redeploy n'a pas été lancé.
+
+### 23.2 Panel Vercel : génération et export de quiz
+
+Depuis **Settings > Test prompt IA** :
+
+1. saisir un prompt ou thème ;
+2. choisir le nombre de questions ;
+3. cliquer sur génération automatique ou génération Mistral ;
+4. vérifier les questions affichées ;
+5. cliquer sur l'export JSON pour télécharger un fichier compatible offline.
+
+Le JSON exporté contient :
+
+```txt
+format: quizbit-quiz-v1
+theme
+provider
+model
+questions[]
+```
+
+Ce fichier peut être importé dans le panel local sans Firebase ni Vercel.
+
+### 23.3 Panel local : configuration attendue
+
+Le panel local est conçu pour fonctionner hors cloud. Il ne parle pas à
+Firestore, Firebase Auth, Gemini, Mistral ou Cloudinary. Tout est stocké dans le
+navigateur via `localStorage`.
+
+La page **Import / Export** contient une carte **Configuration locale** qui
+explique :
+
+- le stockage local ;
+- l'import de quiz Vercel ;
+- l'usage recommandé : démo, test, préparation offline.
+
+Workflow recommandé :
+
+1. Générer un quiz dans le panel Vercel.
+2. Exporter le JSON offline.
+3. Ouvrir le panel local.
+4. Aller dans **Import / Export**.
+5. Importer le fichier JSON.
+6. Vérifier le quiz dans la page **Quiz**.
+
+### 23.4 Ce que le panel local ne fait pas
+
+Le panel local ne remplace pas le backend de production. Il ne doit pas être
+utilisé pour valider :
+
+- Firebase Auth ;
+- Firestore réel ;
+- scores cloud ;
+- rooms Battle Royale réelles ;
+- upload Cloudinary ;
+- quotas Gemini/Mistral.
+
+Il sert uniquement à manipuler des données locales, importer/exporter des quiz
+et tester un scénario offline.
+
+### 23.5 Ordre conseillé après fusion d'une PR
+
+Après fusion dans `main` :
+
+1. Redéployer Vercel.
+2. Ouvrir le panel Vercel Settings.
+3. Lancer tous les diagnostics.
+4. Générer un quiz de test et exporter le JSON.
+5. Importer ce JSON dans le panel local.
+6. Rebuilder l'APK si la PR touche le mobile ou les modules natifs.
+7. Tester sur un vrai téléphone : permissions, avatar, médias, quiz, battle,
+   chat lobby et leaderboard.

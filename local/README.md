@@ -25,3 +25,15 @@ Fonctions disponibles :
 - import/export JSON complet ;
 - import direct des quiz JSON exportes depuis le panel Vercel pour jouer/tester offline ;
 - reset local.
+
+## Importer un quiz exporté depuis Vercel
+
+1. Ouvrir le panel Vercel.
+2. Aller dans **Settings**.
+3. Générer un quiz dans **Test prompt IA**.
+4. Exporter le quiz en JSON.
+5. Revenir dans ce panel local.
+6. Ouvrir **Import / Export**.
+7. Cliquer sur **Importer quiz Vercel JSON**.
+
+Le quiz importé est stocké dans `localStorage` et reste disponible sans réseau.
