@@ -301,6 +301,7 @@ function renderTools() {
         <button class="button danger" id="reset-local">Reset local</button>
       </div>
       <p class="hint-box">Compte demo mobile: <strong>demo@local.quizbit</strong> / <strong>demo123</strong></p>
+      <p class="hint-box">Genere des quiz riches (audio, PDF…) sur le panel Vercel → section <strong>Studio JSON Offline</strong>, puis importe le fichier ici.</p>
       <textarea id="json-box" placeholder="Colle ici un export complet local ou un quiz JSON exporté depuis le panel Vercel"></textarea>
     </section>
   `;
@@ -509,6 +510,10 @@ function normalizeImportedQuiz(parsed) {
   return {
     id: parsed.id || uid('quiz'),
     theme: parsed.theme || parsed.prompt || 'Quiz importe',
+    format: parsed.format || 'quizbit-quiz-v1',
+    provider: parsed.provider || '',
+    model: parsed.model || '',
+    sourceMedia: parsed.sourceMedia || null,
     questions: parsed.questions.map((question, index) => ({
       id: question.id || uid('question'),
       text: question.text || `Question ${index + 1}`,

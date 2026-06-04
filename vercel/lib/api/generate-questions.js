@@ -142,19 +142,22 @@ const buildGeminiParts = (prompt, count, options = {}, mediaPayload = null) => {
 
   if (mediaPayload.textContent) {
     parts.push({
-      text: `Contenu du support (${mediaPayload.fileName || 'fichier'}):\n${String(mediaPayload.textContent).slice(0, 8000)}`,
+      text: `Contenu texte du support (${mediaPayload.fileName || 'fichier'}):\n${String(mediaPayload.textContent).slice(0, 12000)}`,
     });
-    return parts;
   }
 
   if (mediaPayload.base64 && mediaPayload.mimeType) {
     const category = mediaPayload.category || '';
     const instruction =
       category === 'audio'
-        ? 'Ecoute cet extrait audio. Deduis le theme principal, puis genere les questions en francais sur ce contenu.'
+        ? 'Ecoute cet extrait audio. Deduis le theme et genere des questions en francais fideles au contenu parle.'
         : category === 'image'
-        ? 'Analyse cette image et genere des questions en francais liees a son contenu.'
-        : 'Analyse ce media et genere des questions en francais pertinentes.';
+        ? 'Analyse cette image et genere des questions en francais sur les elements visibles.'
+        : category === 'video'
+        ? 'Analyse cette video (son et images) et genere des questions en francais sur le contenu.'
+        : category === 'document'
+        ? 'Lis ce document PDF et genere des questions en francais sur son contenu.'
+        : 'Analyse ce fichier et genere des questions en francais pertinentes.';
     parts.push({ text: instruction });
     parts.push({
       inline_data: {
@@ -191,7 +194,11 @@ const generateWithGemini = async (prompt, count, options = {}, mediaPayload = nu
           contents: [{ parts }],
         }),
       },
-      mediaPayload?.category === 'audio' ? 45000 : 15000,
+      ['audio', 'video', 'document'].includes(mediaPayload?.category)
+        ? 90000
+        : mediaPayload?.category === 'image'
+        ? 60000
+        : 20000,
     );
     const data = await response.json().catch(() => ({}));
 

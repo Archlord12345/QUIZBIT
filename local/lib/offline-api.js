@@ -54,6 +54,9 @@ const getUserFromRequest = (body, state) => {
 const pickQuestions = (state, prompt, count, options = {}) => {
   const cleanPrompt = normalize(prompt);
   const ranked = [...state.quizzes].sort((a, b) => {
+    const aFormat = a.format === 'quizbit-quiz-v1' ? 1 : 0;
+    const bFormat = b.format === 'quizbit-quiz-v1' ? 1 : 0;
+    if (bFormat !== aFormat) return bFormat - aFormat;
     const aTheme = normalize(a.theme);
     const bTheme = normalize(b.theme);
     const aScore = aTheme.includes(cleanPrompt) || cleanPrompt.includes(aTheme) ? 2 : 0;

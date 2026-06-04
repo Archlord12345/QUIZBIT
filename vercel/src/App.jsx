@@ -22,7 +22,9 @@ import {
   Settings,
   Sparkles,
   Users,
+  FileJson,
 } from 'lucide-react';
+import OfflineQuizStudio from './OfflineQuizStudio.jsx';
 import {
   Area,
   AreaChart,
@@ -78,6 +80,7 @@ const db = firebaseApp ? getFirestore(firebaseApp) : null;
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'offline-studio', label: 'Studio JSON Offline', icon: FileJson },
   { id: 'questions', label: 'Quiz & Questions', icon: Database },
   { id: 'users', label: 'Users', icon: Users },
   { id: 'scores', label: 'Scores', icon: Activity },
@@ -405,7 +408,10 @@ export default function App() {
             {currentPage === 'dashboard' && (
               <Dashboard stats={stats} analytics={analytics} />
             )}
-            {currentPage !== 'dashboard' && currentPage !== 'settings' && (
+            {currentPage === 'offline-studio' && <OfflineQuizStudio />}
+            {currentPage !== 'dashboard' &&
+              currentPage !== 'settings' &&
+              currentPage !== 'offline-studio' && (
               <DataPage
                 page={currentPage}
                 rows={currentRows}
