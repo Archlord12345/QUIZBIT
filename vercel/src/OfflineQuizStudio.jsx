@@ -96,6 +96,7 @@ export default function OfflineQuizStudio() {
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('');
   const [error, setError] = useState('');
+  const [saveWarning, setSaveWarning] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [result, setResult] = useState(null);
   const [acceptFilter, setAcceptFilter] = useState('any');
@@ -202,16 +203,19 @@ export default function OfflineQuizStudio() {
 
     setLoading(true);
     setError('');
+    setSaveWarning('');
     setStatusMessage('Envoi de la requête à l’API QuizBit…');
     setResult(null);
     let succeeded = false;
 
     const timeoutMs =
       mediaPayload?.category === 'audio' || mediaPayload?.category === 'video'
-        ? 120000
-        : count > 20
-          ? 90000
-          : 60000;
+        ? 180000
+        : count >= 40
+          ? 240000
+          : count > 20
+            ? 180000
+            : 90000;
 
     startProgressTimer(timeoutMs);
     scrollToFeedback();
@@ -259,7 +263,11 @@ export default function OfflineQuizStudio() {
           response.status === 401
             ? ' Vérifie que ADMIN_PANEL_KEY et VITE_ADMIN_PANEL_KEY sont identiques sur Vercel.'
             : '';
-        throw new Error((data.message || `HTTP ${response.status}`) + hint);
+        const timeoutHint =
+          response.status === 502 && count > 20
+            ? ' Pour 50 questions, utilise Mistral et attends 2–3 min (generation par lots cote serveur).'
+            : '';
+        throw new Error((data.message || `HTTP ${response.status}`) + hint + timeoutHint);
       }
       if (!Array.isArray(data.questions) || !data.questions.length) {
         throw new Error(
@@ -274,7 +282,7 @@ export default function OfflineQuizStudio() {
       setResult(data);
 
       try {
-        await postPanelApi('admin-save-quiz', {
+        const saveResult = await postPanelApi('admin-save-quiz', {
           theme: cleanTheme || 'Quiz importé',
           questions: data.questions,
           provider: data.provider,
@@ -283,12 +291,17 @@ export default function OfflineQuizStudio() {
           source: 'offline-studio',
           idToken: getStoredIdToken() || undefined,
         });
-        } catch (saveErr) {
-          console.warn('Sauvegarde Firestore quiz:', saveErr);
-          setError(
-            `Quiz genere mais non sauvegarde dans Firestore : ${saveErr.message || saveErr}. Va dans Parametres → Connecter Firestore, ou configure PANEL_FIRESTORE_EMAIL/PASSWORD sur Vercel.`,
+        if (saveResult.saved === false) {
+          setSaveWarning(
+            `Quiz genere (${data.questions.length} questions). Firestore non enregistre : ${saveResult.message || 'session manquante'}. Export JSON a droite — Parametres → Connecter Firestore.`,
           );
         }
+      } catch (saveErr) {
+        console.warn('Sauvegarde Firestore quiz:', saveErr);
+        setSaveWarning(
+          `Quiz genere (${data.questions.length} questions) mais non enregistre dans Firestore. Export JSON disponible.`,
+        );
+      }
 
       setProgress(100);
       setProgressLabel('Questionnaire prêt');
@@ -517,6 +530,11 @@ export default function OfflineQuizStudio() {
                 <p className="offline-status" role="status">
                   {statusMessage}
                 </p>
+              ) : null}
+              {saveWarning ? (
+                <div className="ai-error" style={{ borderColor: 'rgb(245 158 11 / 40%)' }}>
+                  {saveWarning}
+                </div>
               ) : null}
               {error ? <div className="ai-error">{error}</div> : null}
               {loading ? (

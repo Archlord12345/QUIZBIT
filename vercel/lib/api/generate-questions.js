@@ -1,6 +1,22 @@
 const { getEnv } = require('../env');
 const { verifyIdToken } = require('../auth-verify');
 
+const BATCH_THRESHOLD = 16;
+const BATCH_SIZE = 12;
+
+const generationTimeoutMs = (count, mediaPayload) => {
+  if (['audio', 'video', 'document'].includes(mediaPayload?.category)) {
+    return 120000;
+  }
+  if (mediaPayload?.category === 'image') {
+    return 90000;
+  }
+  return Math.min(120000, Math.max(30000, Number(count) * 2200));
+};
+
+const maxTokensForCount = count =>
+  Math.min(16384, Math.max(2800, Math.ceil(Number(count) * 320)));
+
 const requestWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -194,11 +210,7 @@ const generateWithGemini = async (prompt, count, options = {}, mediaPayload = nu
           contents: [{ parts }],
         }),
       },
-      ['audio', 'video', 'document'].includes(mediaPayload?.category)
-        ? 90000
-        : mediaPayload?.category === 'image'
-        ? 60000
-        : 20000,
+      generationTimeoutMs(count, mediaPayload),
     );
     const data = await response.json().catch(() => ({}));
 
@@ -234,7 +246,7 @@ const mistralTextFromResponse = data => {
   return String(content || '');
 };
 
-const generateWithMistral = async (prompt, count, options = {}) => {
+const generateWithMistral = async (prompt, count, options = {}, mediaPayload = null) => {
   const key = getEnv('MISTRAL_API_KEY', 'REACT_APP_MISTRAL_API_KEY');
   if (!key) {
     throw new Error('MISTRAL_API_KEY manquante dans Vercel.');
@@ -265,9 +277,10 @@ const generateWithMistral = async (prompt, count, options = {}) => {
           ],
           response_format: { type: 'json_object' },
           temperature: 0.2,
-          max_tokens: 2400,
+          max_tokens: maxTokensForCount(count),
         }),
       },
+      generationTimeoutMs(count, mediaPayload),
     );
     const data = await response.json().catch(() => ({}));
 
@@ -298,7 +311,13 @@ const enrichPromptWithMedia = (prompt, mediaPayload) => {
   return `${prompt}\n\nContenu texte du support:\n${String(mediaPayload.textContent).slice(0, 8000)}`;
 };
 
-const generateQuestions = async (prompt, count, provider, options = {}, mediaPayload = null) => {
+const generateQuestionsOnce = async (
+  prompt,
+  count,
+  provider,
+  options = {},
+  mediaPayload = null,
+) => {
   const enrichedPrompt = enrichPromptWithMedia(prompt, mediaPayload);
   const preferGemini = Boolean(
     mediaPayload?.base64 && ['audio', 'image', 'video'].includes(mediaPayload.category),
@@ -307,14 +326,21 @@ const generateQuestions = async (prompt, count, provider, options = {}, mediaPay
   if (preferGemini || provider === 'gemini') {
     return generateWithGemini(enrichedPrompt, count, options, mediaPayload);
   }
-  if (provider === 'mistral') return generateWithMistral(enrichedPrompt, count, options);
+  if (provider === 'mistral') {
+    return generateWithMistral(enrichedPrompt, count, options, mediaPayload);
+  }
 
   try {
     return await generateWithGemini(enrichedPrompt, count, options, mediaPayload);
   } catch (geminiError) {
     if (preferGemini) throw geminiError;
     try {
-      const fallback = await generateWithMistral(enrichedPrompt, count, options);
+      const fallback = await generateWithMistral(
+        enrichedPrompt,
+        count,
+        options,
+        mediaPayload,
+      );
       return {
         ...fallback,
         fallbackFrom: 'gemini',
@@ -326,6 +352,66 @@ const generateQuestions = async (prompt, count, provider, options = {}, mediaPay
       );
     }
   }
+};
+
+const generateQuestionsChunked = async (
+  prompt,
+  count,
+  provider,
+  options = {},
+  mediaPayload = null,
+) => {
+  const allQuestions = [];
+  let meta = { provider: 'mistral', model: 'batched' };
+  let offset = 0;
+
+  while (offset < count) {
+    const batchCount = Math.min(BATCH_SIZE, count - offset);
+    const batchPrompt =
+      offset === 0
+        ? prompt
+        : `${prompt}\n\nGenere exactement ${batchCount} nouvelles questions (suite ${offset + 1} a ${offset + batchCount}), themes differents, JSON uniquement.`;
+    const batch = await generateQuestionsOnce(
+      batchPrompt,
+      batchCount,
+      provider,
+      options,
+      offset === 0 ? mediaPayload : null,
+    );
+    meta = {
+      provider: batch.provider,
+      model: batch.model,
+      fallbackFrom: batch.fallbackFrom,
+      fallbackReason: batch.fallbackReason,
+    };
+    allQuestions.push(...(batch.questions || []));
+    offset += batchCount;
+  }
+
+  const questions = allQuestions.slice(0, count).map((item, index) => ({
+    ...item,
+    id: item.id || `q-${index + 1}`,
+  }));
+
+  if (!questions.length) {
+    throw new Error('Generation par lots: aucune question valide.');
+  }
+
+  return {
+    ...meta,
+    questions,
+    offlineNote:
+      count > BATCH_THRESHOLD
+        ? `Genere en ${Math.ceil(count / BATCH_SIZE)} appels IA (${questions.length} questions).`
+        : undefined,
+  };
+};
+
+const generateQuestions = async (prompt, count, provider, options = {}, mediaPayload = null) => {
+  if (count > BATCH_THRESHOLD) {
+    return generateQuestionsChunked(prompt, count, provider, options, mediaPayload);
+  }
+  return generateQuestionsOnce(prompt, count, provider, options, mediaPayload);
 };
 
 module.exports = async (req, res) => {

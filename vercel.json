@@ -4,6 +4,12 @@
   "installCommand": "npm ci --prefix vercel",
   "buildCommand": "npm run build --prefix vercel",
   "outputDirectory": "vercel/dist",
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 120,
+      "memory": 1024
+    }
+  },
   "rewrites": [
     {
       "source": "/api/:path*",

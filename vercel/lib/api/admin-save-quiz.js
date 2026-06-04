@@ -37,9 +37,17 @@ module.exports = async (req, res) => {
     const saved = await addDocument('quizzes', payload, idToken);
     return res.status(200).json({ ok: true, quiz: saved });
   } catch (error) {
+    const message = error.message || 'Enregistrement quiz impossible.';
+    if (/Firestore|panel manquant|Acces Firestore/i.test(message)) {
+      return res.status(200).json({
+        ok: true,
+        saved: false,
+        message,
+      });
+    }
     return res.status(502).json({
       ok: false,
-      message: error.message || 'Enregistrement quiz impossible.',
+      message,
     });
   }
 };
