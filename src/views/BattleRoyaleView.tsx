@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -20,6 +20,7 @@ import {
 } from '../utils/themeMediaPayload';
 import { ThemeMediaSection } from '../components/ThemeMediaSection';
 import VoiceController from '../controllers/VoiceController';
+import { MAX_VOICE_RECORD_MS } from '../utils/voiceRecorder';
 
 type BattleRoyaleViewProps = {
   account: UserAccount;
