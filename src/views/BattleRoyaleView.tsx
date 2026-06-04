@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -108,7 +108,11 @@ const BattleRoyaleView = ({
     setLoading(true);
     setError('');
     try {
-      setRoom(await BattleRoyaleController.getRoom(room.code, account));
+      const updatedRoom = await BattleRoyaleController.getRoom(room.code, account);
+      setRoom(updatedRoom);
+      if (room.status === 'waiting' && updatedRoom.status === 'active') {
+        onStartBattle(updatedRoom);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Actualisation impossible.');
     } finally {
@@ -149,6 +153,27 @@ const BattleRoyaleView = ({
     }
   };
 
+  useEffect(() => {
+    if (!room) return;
+    if (room.status === 'finished') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const updatedRoom = await BattleRoyaleController.getRoom(room.code, account);
+        if (room.status === 'waiting' && updatedRoom.status === 'active') {
+          setRoom(updatedRoom);
+          onStartBattle(updatedRoom);
+        } else {
+          setRoom(updatedRoom);
+        }
+      } catch (err) {
+        // Silently ignore background fetch errors to avoid UI spam
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [room?.code, room?.status, account, onStartBattle]);
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Battle Royale</Text>
@@ -157,97 +182,99 @@ const BattleRoyaleView = ({
         quiz.
       </Text>
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Créer une salle</Text>
-        <FieldLabel label="Thème du jeu">
-          <TextInput
-            style={styles.input}
-            placeholder="Ex: React Native, capitales, sport..."
-            placeholderTextColor="#6B778C"
-            value={theme}
-            onChangeText={setTheme}
-          />
-        </FieldLabel>
-        <Text style={styles.optionLabel}>Mode de jeu</Text>
-        <View style={styles.segmentedRow}>
-          <ModeChip
-            active={battleMode === 'classic'}
-            label="Classique"
-            onPress={() => setBattleMode('classic')}
-          />
-          <ModeChip
-            active={battleMode === 'timed_mcq'}
-            label="QCM chronométré"
-            onPress={() => setBattleMode('timed_mcq')}
-          />
-        </View>
-        <View style={styles.row}>
-          <FieldLabel label="Nombre maximum de joueurs" style={styles.smallInput}>
-            <TextInput
-              style={styles.input}
-              keyboardType="numeric"
-              placeholder="10"
-              placeholderTextColor="#6B778C"
-              value={maxPlayers}
-              onChangeText={setMaxPlayers}
-            />
-          </FieldLabel>
-          <FieldLabel label="Nombre de questions" style={styles.smallInput}>
-            <TextInput
-              style={styles.input}
-              keyboardType="numeric"
-              placeholder="5"
-              placeholderTextColor="#6B778C"
-              value={questionCount}
-              onChangeText={value => setQuestionCount(clampNumber(value, 3, 20))}
-            />
-          </FieldLabel>
-        </View>
-        <FieldLabel label="Score minimum pour survivre">
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            placeholder="20"
-            placeholderTextColor="#6B778C"
-            value={eliminationScore}
-            onChangeText={setEliminationScore}
-          />
-        </FieldLabel>
-        {battleMode === 'timed_mcq' ? (
-          <FieldLabel label="Temps par question (secondes)">
-            <TextInput
-              style={styles.input}
-              keyboardType="numeric"
-              placeholder="15"
-              placeholderTextColor="#6B778C"
-              value={timeLimitSeconds}
-              onChangeText={setTimeLimitSeconds}
-            />
-          </FieldLabel>
-        ) : null}
-        <TouchableOpacity style={styles.primaryButton} onPress={createRoom}>
-          <Text style={styles.primaryButtonText}>Créer la salle</Text>
-        </TouchableOpacity>
-      </View>
+      {!room ? (
+        <>
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Créer une salle</Text>
+            <FieldLabel label="Thème du jeu">
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: React Native, capitales, sport..."
+                placeholderTextColor="#6B778C"
+                value={theme}
+                onChangeText={setTheme}
+              />
+            </FieldLabel>
+            <Text style={styles.optionLabel}>Mode de jeu</Text>
+            <View style={styles.segmentedRow}>
+              <ModeChip
+                active={battleMode === 'classic'}
+                label="Classique"
+                onPress={() => setBattleMode('classic')}
+              />
+              <ModeChip
+                active={battleMode === 'timed_mcq'}
+                label="QCM chronométré"
+                onPress={() => setBattleMode('timed_mcq')}
+              />
+            </View>
+            <View style={styles.row}>
+              <FieldLabel label="Nombre maximum de joueurs" style={styles.smallInput}>
+                <TextInput
+                  style={styles.input}
+                  keyboardType="numeric"
+                  placeholder="10"
+                  placeholderTextColor="#6B778C"
+                  value={maxPlayers}
+                  onChangeText={setMaxPlayers}
+                />
+              </FieldLabel>
+              <FieldLabel label="Nombre de questions" style={styles.smallInput}>
+                <TextInput
+                  style={styles.input}
+                  keyboardType="numeric"
+                  placeholder="5"
+                  placeholderTextColor="#6B778C"
+                  value={questionCount}
+                  onChangeText={value => setQuestionCount(clampNumber(value, 3, 20))}
+                />
+              </FieldLabel>
+            </View>
+            <FieldLabel label="Score minimum pour survivre">
+              <TextInput
+                style={styles.input}
+                keyboardType="numeric"
+                placeholder="20"
+                placeholderTextColor="#6B778C"
+                value={eliminationScore}
+                onChangeText={setEliminationScore}
+              />
+            </FieldLabel>
+            {battleMode === 'timed_mcq' ? (
+              <FieldLabel label="Temps par question (secondes)">
+                <TextInput
+                  style={styles.input}
+                  keyboardType="numeric"
+                  placeholder="15"
+                  placeholderTextColor="#6B778C"
+                  value={timeLimitSeconds}
+                  onChangeText={setTimeLimitSeconds}
+                />
+              </FieldLabel>
+            ) : null}
+            <TouchableOpacity style={styles.primaryButton} onPress={createRoom}>
+              <Text style={styles.primaryButtonText}>Créer la salle</Text>
+            </TouchableOpacity>
+          </View>
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Rejoindre une salle</Text>
-        <FieldLabel label="Code de salle à rejoindre">
-          <TextInput
-            style={styles.input}
-            autoCapitalize="characters"
-            placeholder="Ex: A1B2C3"
-            placeholderTextColor="#6B778C"
-            value={joinCode}
-            onChangeText={setJoinCode}
-          />
-        </FieldLabel>
-        <TouchableOpacity style={styles.secondaryButton} onPress={joinRoom}>
-          <Text style={styles.secondaryButtonText}>Rejoindre</Text>
-        </TouchableOpacity>
-      </View>
-
-      {room ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Rejoindre une salle</Text>
+            <FieldLabel label="Code de salle à rejoindre">
+              <TextInput
+                style={styles.input}
+                autoCapitalize="characters"
+                placeholder="Ex: A1B2C3"
+                placeholderTextColor="#6B778C"
+                value={joinCode}
+                onChangeText={setJoinCode}
+              />
+            </FieldLabel>
+            <TouchableOpacity style={styles.secondaryButton} onPress={joinRoom}>
+              <Text style={styles.secondaryButtonText}>Rejoindre</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      ) : (
         <View style={styles.roomCard}>
           <Text style={styles.roomCode}>Code: {room.code}</Text>
           <Text style={styles.roomInfo}>Statut: {room.status}</Text>
@@ -264,12 +291,22 @@ const BattleRoyaleView = ({
               : ''}
           </Text>
           <Text style={styles.sectionTitle}>Joueurs</Text>
-          {room.players.map(player => (
-            <Text key={player.userId} style={styles.playerLine}>
-              {player.displayName} -{' '}
-              {player.finished ? `${player.score} pts` : 'en attente'}
-            </Text>
-          ))}
+          {room.players.map(player => {
+            const isHost = player.userId === room.hostId;
+            let statusText = 'en attente';
+            if (room.status === 'waiting') {
+              statusText = isHost ? 'dans le lobby (créateur)' : 'dans le lobby';
+            } else if (room.status === 'active') {
+              statusText = player.finished ? `${player.score} pts` : 'en cours de jeu';
+            } else if (room.status === 'finished') {
+              statusText = `${player.score} pts`;
+            }
+            return (
+              <Text key={player.userId} style={styles.playerLine}>
+                {player.displayName} - {statusText}
+              </Text>
+            );
+          })}
           <View style={styles.lobbyActions}>
             <TouchableOpacity style={styles.secondaryButton} onPress={refreshRoom}>
               <Text style={styles.secondaryButtonText}>Actualiser lobby</Text>
@@ -335,14 +372,29 @@ const BattleRoyaleView = ({
             </Text>
           ) : null}
 
-          <TouchableOpacity style={styles.primaryButton} onPress={startBattle}>
-            <Text style={styles.primaryButtonText}>Lancer le battle</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.dangerButton} onPress={deleteLobby}>
-            <Text style={styles.primaryButtonText}>Supprimer le lobby</Text>
-          </TouchableOpacity>
+          {room.hostId === account.id ? (
+            <>
+              <TouchableOpacity style={styles.primaryButton} onPress={startBattle}>
+                <Text style={styles.primaryButtonText}>Lancer le battle</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.dangerButton} onPress={deleteLobby}>
+                <Text style={styles.primaryButtonText}>Supprimer le lobby</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <View style={styles.waitingForHostContainer}>
+                <Text style={styles.waitingForHostText}>
+                  En attente du lancement par le créateur de la salle...
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.dangerButton} onPress={() => setRoom(null)}>
+                <Text style={styles.primaryButtonText}>Quitter la salle</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
-      ) : null}
+      )}
 
       {loading ? (
         <ActivityIndicator color="white" style={styles.loader} />
@@ -676,6 +728,19 @@ const styles = StyleSheet.create({
   backText: {
     color: 'white',
     textDecorationLine: 'underline',
+  },
+  waitingForHostContainer: {
+    backgroundColor: '#F4F5F7',
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 8,
+    alignItems: 'center',
+  },
+  waitingForHostText: {
+    color: '#5E6C84',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 
