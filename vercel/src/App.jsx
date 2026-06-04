@@ -446,7 +446,7 @@ function Sidebar({ currentPage, onPage }) {
         </div>
         <div>
           <strong>QuizBit</strong>
-          <span>Admin Studio</span>
+          <span>Panel cloud</span>
         </div>
       </div>
       <nav className="nav-list">
@@ -465,7 +465,7 @@ function Sidebar({ currentPage, onPage }) {
         })}
       </nav>
       <div className="sidebar-note">
-        Firestore real-time ready. Zero mock data policy.
+        Palette alignee sur l app mobile (#050816, cyan #21E7FF, accent #2D7DFF).
       </div>
     </aside>
   );
@@ -479,28 +479,36 @@ function Topbar({
   page,
   title,
 }) {
-  const showExport = page !== 'settings';
+  const isOfflineStudio = page === 'offline-studio';
+  const showExport = page !== 'settings' && !isOfflineStudio;
+  const showRefresh = !isOfflineStudio;
   return (
     <header className="topbar">
       <div>
-        <p className="eyebrow">QuizBit control center</p>
+        <p className="eyebrow">
+          {isOfflineStudio ? 'QuizBit · Studio offline' : 'QuizBit control center'}
+        </p>
         <h1>{title}</h1>
       </div>
-      <div className="topbar-actions">
-        {showExport && (
-          <button className="btn ghost" onClick={onExportCsv}>
-            <Download size={16} /> CSV
-          </button>
-        )}
-        {showExport && (
-          <button className="btn ghost" onClick={onExportJson}>
-            JSON
-          </button>
-        )}
-        <button className="btn primary" disabled={loading} onClick={onRefresh}>
-          {loading ? 'Chargement...' : 'Rafraichir'}
-        </button>
-      </div>
+      {showExport || showRefresh ? (
+        <div className="topbar-actions">
+          {showExport ? (
+            <button className="btn ghost" onClick={onExportCsv}>
+              <Download size={16} /> CSV
+            </button>
+          ) : null}
+          {showExport ? (
+            <button className="btn ghost" onClick={onExportJson}>
+              JSON
+            </button>
+          ) : null}
+          {showRefresh ? (
+            <button className="btn primary" disabled={loading} onClick={onRefresh}>
+              {loading ? 'Chargement...' : 'Rafraichir'}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </header>
   );
 }

@@ -336,7 +336,10 @@ module.exports = async (req, res) => {
 
   const body = typeof req.body === 'object' && req.body ? req.body : {};
   const prompt = String(body.prompt || body.theme || '').trim();
-  const count = Math.max(1, Math.min(20, Number(body.count || 5)));
+  const isOfflineStudio =
+    String(body.source || '').trim() === 'offline-studio';
+  const maxCount = isOfflineStudio ? 50 : 20;
+  const count = Math.max(1, Math.min(maxCount, Number(body.count || 5)));
   const provider = ['gemini', 'mistral'].includes(body.provider)
     ? body.provider
     : 'auto';

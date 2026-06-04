@@ -1,0 +1,167 @@
+/**
+ * Tokens alignés sur src/utils/theme.ts (app mobile QuizBit)
+ */
+:root {
+  color-scheme: dark;
+
+  --qb-primary: #050816;
+  --qb-primary-soft: #0b1230;
+  --qb-secondary: #21e7ff;
+  --qb-background: #070a13;
+  --qb-surface: #10162a;
+  --qb-surface-light: #ffffff;
+  --qb-text: #172b4d;
+  --qb-text-on-dark: #f8fbff;
+  --qb-muted: #94a3b8;
+  --qb-muted-soft: #6b778c;
+  --qb-line-soft: #dfe1e6;
+  --qb-input-bg: #fafbfc;
+  --qb-error: #ff4d6d;
+  --qb-success: #22c55e;
+  --qb-warning: #f59e0b;
+  --qb-accent: #2d7dff;
+  --qb-violet: #8b5cf6;
+  --qb-glow: rgb(33 231 255 / 55%);
+  --qb-gradient-start: #050816;
+  --qb-gradient-mid: #0a1f44;
+  --qb-gradient-end: #4c1d95;
+
+  /* Alias panels admin */
+  --bg: var(--qb-primary);
+  --bg-soft: var(--qb-background);
+  --panel: rgb(16 22 42 / 82%);
+  --panel-strong: rgb(11 18 48 / 94%);
+  --line: rgb(33 231 255 / 18%);
+  --line-strong: rgb(33 231 255 / 32%);
+  --text: var(--qb-text-on-dark);
+  --text-dark: var(--qb-text);
+  --muted: var(--qb-muted);
+  --cyan: var(--qb-secondary);
+  --blue: var(--qb-accent);
+  --violet: var(--qb-violet);
+  --green: var(--qb-success);
+  --amber: var(--qb-warning);
+  --red: var(--qb-error);
+}
+
+.quizbit-panel-bg {
+  background-color: var(--qb-primary);
+  background-image: radial-gradient(
+      circle at 12% 8%,
+      rgb(33 231 255 / 16%),
+      transparent 28rem
+    ),
+    radial-gradient(
+      circle at 88% 4%,
+      rgb(139 92 246 / 18%),
+      transparent 30rem
+    ),
+    linear-gradient(
+      145deg,
+      var(--qb-gradient-start) 0%,
+      var(--qb-gradient-mid) 48%,
+      var(--qb-gradient-end) 100%
+    );
+}
+
+.glass-panel {
+  background: linear-gradient(
+    145deg,
+    rgb(16 22 42 / 88%),
+    rgb(9 14 32 / 86%)
+  );
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 38%), 0 0 0 1px rgb(33 231 255 / 6%);
+  backdrop-filter: blur(18px);
+}
+
+.card-surface {
+  background: var(--qb-surface-light);
+  border: 1px solid var(--qb-line-soft);
+  border-radius: 20px;
+  box-shadow: 0 8px 28px rgb(5 8 22 / 28%);
+  color: var(--qb-text);
+}
+
+.card-surface strong,
+.card-surface h2,
+.card-surface h3 {
+  color: var(--qb-text);
+}
+
+.card-surface p,
+.card-surface .hint,
+.card-surface label {
+  color: var(--qb-muted-soft);
+}
+
+.card-surface input,
+.card-surface select,
+.card-surface textarea {
+  background: var(--qb-input-bg);
+  border: 1px solid var(--qb-line-soft);
+  border-radius: 10px;
+  color: var(--qb-text);
+}
+
+.btn-accent {
+  background: var(--qb-accent);
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgb(45 125 255 / 28%);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 12px 16px;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.btn-accent:hover {
+  box-shadow: 0 12px 28px rgb(45 125 255 / 38%);
+  transform: translateY(-1px);
+}
+
+.btn-chip {
+  background: var(--qb-surface-light);
+  border: 1px solid var(--qb-line-soft);
+  border-radius: 999px;
+  color: var(--qb-text);
+  cursor: pointer;
+  font-weight: 800;
+  padding: 9px 14px;
+}
+
+.btn-chip:hover,
+.btn-chip.active {
+  background: var(--qb-primary);
+  border-color: var(--qb-primary);
+  color: var(--qb-text-on-dark);
+}
+
+.eyebrow {
+  color: var(--qb-secondary);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+.mode-pill {
+  border-radius: 999px;
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 4px 10px;
+  text-transform: uppercase;
+}
+
+.mode-pill.mcq {
+  background: rgb(34 197 94 / 18%);
+  color: #86efac;
+}
+
+.mode-pill.open {
+  background: rgb(139 92 246 / 20%);
+  color: #c4b5fd;
+}

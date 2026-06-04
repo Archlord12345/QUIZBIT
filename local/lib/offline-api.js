@@ -212,7 +212,9 @@ export const handleOfflineApi = async (req, res, routeName) => {
 
       case 'generate-questions': {
         const prompt = String(body.prompt || body.theme || '').trim();
-        const count = Math.max(1, Math.min(20, Number(body.count || 5)));
+        const maxCount =
+          String(body.source || '').trim() === 'offline-studio' ? 50 : 20;
+        const count = Math.max(1, Math.min(maxCount, Number(body.count || 5)));
         if (!prompt && !body.mediaPayload) {
           return json(res, 400, { ok: false, message: 'Theme ou media requis.' });
         }

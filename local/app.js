@@ -97,7 +97,7 @@ function render() {
   app.innerHTML = `
     <div class="shell">
       <aside class="sidebar">
-        <div class="brand"><span>QuizBit</span><small>Offline Studio</small></div>
+        <div class="brand"><span>QuizBit</span><small>Mode offline</small></div>
         <nav>${pages
           .map(
             ([id, label]) => `
@@ -128,10 +128,10 @@ function renderHeader() {
   return `
     <header class="header">
       <div>
+        <p class="eyebrow">QuizBit · Panel local</p>
         <h1>${label}</h1>
-        <p>Administration locale rapide pour developpement, demo et tests hors cloud.</p>
+        <p>Administration locale pour developpement, demo et tests hors cloud — meme univers visuel que l app mobile.</p>
       </div>
-
     </header>
   `;
 }

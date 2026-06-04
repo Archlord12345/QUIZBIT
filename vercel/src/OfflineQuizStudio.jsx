@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   buildMediaPayloadFromFile,
   categoryLabel,
@@ -7,9 +7,18 @@ import {
 } from './utils/mediaPayload.web.js';
 
 const env = import.meta.env;
-
-const PANEL_ADMIN_KEY =
+const BUILD_PANEL_KEY =
   env.VITE_ADMIN_PANEL_KEY || env.REACT_APP_ADMIN_PANEL_KEY || '';
+const SESSION_KEY = 'quizbit_panel_admin_key';
+const MAX_QUESTIONS = 50;
+
+const readSessionKey = () => {
+  try {
+    return sessionStorage.getItem(SESSION_KEY) || '';
+  } catch {
+    return '';
+  }
+};
 
 const downloadFile = (filename, content, mimeType) => {
   const blob = new Blob([content], { type: mimeType });
@@ -33,7 +42,7 @@ function ModePill({ mode }) {
 
 function QuestionPreviewList({ questions }) {
   if (!questions?.length) {
-    return <p className="offline-empty">Aucune question générée.</p>;
+    return <p className="offline-empty">Aucune question dans l&apos;aperçu.</p>;
   }
   return (
     <div className="question-list">
@@ -79,6 +88,25 @@ export default function OfflineQuizStudio() {
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [acceptFilter, setAcceptFilter] = useState('any');
+  const [sessionKey, setSessionKey] = useState(readSessionKey);
+
+  const panelAdminKey = useMemo(
+    () => (BUILD_PANEL_KEY || sessionKey).trim(),
+    [sessionKey],
+  );
+  const keyFromBuild = Boolean(BUILD_PANEL_KEY.trim());
+  const previewCount = result?.questions?.length ?? 0;
+
+  const persistSessionKey = value => {
+    const clean = value.trim();
+    setSessionKey(clean);
+    try {
+      if (clean) sessionStorage.setItem(SESSION_KEY, clean);
+      else sessionStorage.removeItem(SESSION_KEY);
+    } catch {
+      // ignore private mode
+    }
+  };
 
   const pickFile = filter => {
     setAcceptFilter(filter);
@@ -121,9 +149,9 @@ export default function OfflineQuizStudio() {
       setError('Indique un thème ou charge un fichier (audio, vidéo, image, PDF, texte).');
       return;
     }
-    if (!PANEL_ADMIN_KEY) {
+    if (!panelAdminKey) {
       setError(
-        'Configure VITE_ADMIN_PANEL_KEY (et ADMIN_PANEL_KEY) sur Vercel pour utiliser le studio.',
+        'Clé admin requise : définis VITE_ADMIN_PANEL_KEY au build Vercel, ou saisis la clé ci-dessous (identique à ADMIN_PANEL_KEY).',
       );
       return;
     }
@@ -134,12 +162,13 @@ export default function OfflineQuizStudio() {
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(
-        () => controller.abort(),
+      const timeoutMs =
         mediaPayload?.category === 'audio' || mediaPayload?.category === 'video'
+          ? 120000
+          : count > 20
           ? 90000
-          : 45000,
-      );
+          : 60000;
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
       const response = await fetch('/api/generate-questions', {
         method: 'POST',
@@ -147,12 +176,12 @@ export default function OfflineQuizStudio() {
         signal: controller.signal,
         body: JSON.stringify({
           prompt: cleanTheme || 'Quiz basé sur le support fourni',
-          count,
+          count: Math.min(MAX_QUESTIONS, Math.max(1, count)),
           provider,
           choiceCount,
           questionType,
           openAnswerMode,
-          panelAdminKey: PANEL_ADMIN_KEY,
+          panelAdminKey,
           source: 'offline-studio',
           mediaPayload: mediaPayload || undefined,
         }),
@@ -163,11 +192,16 @@ export default function OfflineQuizStudio() {
       if (!response.ok || !data.ok) {
         throw new Error(data.message || `HTTP ${response.status}`);
       }
+      if (!Array.isArray(data.questions) || !data.questions.length) {
+        throw new Error(
+          'L’IA n’a renvoyé aucune question valide. Réduis le nombre, change le format (mixte) ou réessaie avec Gemini.',
+        );
+      }
       setResult(data);
     } catch (err) {
       setError(
         err.name === 'AbortError'
-          ? 'Délai dépassé. Réessaie avec un fichier plus court ou moins de questions.'
+          ? 'Délai dépassé. Réduis le nombre de questions ou utilise un fichier plus court.'
           : err.message || 'Génération impossible.',
       );
     } finally {
@@ -181,6 +215,7 @@ export default function OfflineQuizStudio() {
     choiceCount,
     questionType,
     openAnswerMode,
+    panelAdminKey,
   ]);
 
   const buildExportPayload = () => {
@@ -223,22 +258,39 @@ export default function OfflineQuizStudio() {
     await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
   };
 
-  const canGenerate = Boolean((theme.trim() || mediaPayload) && !loading);
+  const canGenerate = Boolean((theme.trim() || mediaPayload) && !loading && panelAdminKey);
 
   return (
     <div className="offline-studio">
       <section className="panel glass-panel offline-intro">
-        <h2>Studio JSON Offline</h2>
         <p>
-          Génère des questionnaires compatibles avec le panel local et l&apos;app en
-          mode hors ligne. Supports : audio, vidéo, image, PDF, texte, documents.
+          Questionnaires <strong>quizbit-quiz-v1</strong> pour le panel local et l&apos;app
+          hors ligne. Supports : audio, vidéo, image, PDF, texte (max {MAX_QUESTIONS}{' '}
+          questions).
         </p>
-        {!PANEL_ADMIN_KEY ? (
-          <div className="ai-error">
-            Ajoute <code>VITE_ADMIN_PANEL_KEY</code> et <code>ADMIN_PANEL_KEY</code>{' '}
-            (même valeur) dans les variables Vercel, puis redéploie.
+        {keyFromBuild ? (
+          <div className="ai-note">Clé admin détectée au build (VITE_ADMIN_PANEL_KEY).</div>
+        ) : panelAdminKey ? (
+          <div className="ai-note">Clé admin en session (valide pour cette fenêtre).</div>
+        ) : (
+          <div className="offline-key-box">
+            <label className="offline-field">
+              Clé admin panel
+              <input
+                type="password"
+                value={sessionKey}
+                onChange={e => persistSessionKey(e.target.value)}
+                placeholder="Même valeur que ADMIN_PANEL_KEY sur Vercel"
+                autoComplete="off"
+              />
+            </label>
+            <p className="offline-key-hint">
+              Sans <code>VITE_ADMIN_PANEL_KEY</code> au déploiement, saisis ici la clé
+              définie dans les variables Vercel (<code>ADMIN_PANEL_KEY</code>), puis
+              clique Générer.
+            </p>
           </div>
-        ) : null}
+        )}
       </section>
 
       <div className="offline-grid">
@@ -249,7 +301,7 @@ export default function OfflineQuizStudio() {
             <textarea
               value={theme}
               onChange={e => setTheme(e.target.value)}
-              placeholder="Ex: Biologie cellulaire, histoire du Mali, analyse de cet enregistrement..."
+              placeholder="Ex: Mathématiques maternelle, histoire du Mali, analyse de cet audio..."
               rows={3}
             />
           </label>
@@ -262,7 +314,28 @@ export default function OfflineQuizStudio() {
             onChange={onFileSelected}
           />
 
-          <div className="offline-dropzone" onDragOver={e => e.preventDefault()}>
+          <div
+            className="offline-dropzone"
+            onDragOver={e => e.preventDefault()}
+            onDrop={async e => {
+              e.preventDefault();
+              const file = e.dataTransfer?.files?.[0];
+              if (!file) return;
+              setError('');
+              try {
+                const payload = await buildMediaPayloadFromFile(file);
+                setMediaPayload(payload);
+                setMediaMeta({
+                  name: file.name,
+                  size: file.size,
+                  category: payload.category,
+                  mimeType: payload.mimeType,
+                });
+              } catch (err) {
+                setError(err.message || 'Fichier non supporté.');
+              }
+            }}
+          >
             <p>Glisse un fichier ou choisis le type :</p>
             <div className="offline-media-buttons">
               <button type="button" className="btn small" onClick={() => pickFile('audio')}>
@@ -300,13 +373,20 @@ export default function OfflineQuizStudio() {
           <h3>Options du quiz</h3>
           <div className="offline-options-grid">
             <label>
-              Questions
+              Questions (1–{MAX_QUESTIONS})
               <input
                 type="number"
                 min={1}
-                max={20}
+                max={MAX_QUESTIONS}
                 value={count}
-                onChange={e => setCount(Number(e.target.value) || 5)}
+                onChange={e =>
+                  setCount(
+                    Math.min(
+                      MAX_QUESTIONS,
+                      Math.max(1, Number(e.target.value) || 5),
+                    ),
+                  )
+                }
               />
             </label>
             <label>
@@ -354,7 +434,7 @@ export default function OfflineQuizStudio() {
             <button
               type="button"
               className="btn primary"
-              disabled={!canGenerate || !PANEL_ADMIN_KEY}
+              disabled={!canGenerate}
               onClick={generate}
             >
               {loading ? 'Génération…' : 'Générer le questionnaire'}
@@ -364,34 +444,46 @@ export default function OfflineQuizStudio() {
         </section>
 
         <section className="panel glass-panel">
-          <h2>2. Aperçu et export</h2>
+          <div className="offline-preview-head">
+            <h2>2. Aperçu et export</h2>
+            <span className="offline-count-badge">{previewCount} question(s)</span>
+          </div>
           {result ? (
             <div className="ai-result">
               <div className="ai-model">
-                {result.provider} / {result.model} · {result.questions?.length} questions
+                {result.provider} / {result.model}
               </div>
               {result.offlineNote ? (
                 <div className="ai-note">{result.offlineNote}</div>
               ) : null}
               <div className="ai-actions">
-                <button type="button" className="btn primary" onClick={exportJson}>
+                <button
+                  type="button"
+                  className="btn primary"
+                  disabled={!previewCount}
+                  onClick={exportJson}
+                >
                   Télécharger JSON offline
                 </button>
-                <button type="button" className="btn ghost" onClick={copyJson}>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  disabled={!previewCount}
+                  onClick={copyJson}
+                >
                   Copier JSON
                 </button>
               </div>
               <details className="offline-json-hint">
-                <summary>Format attendu par le panel local</summary>
-                <pre>{`format: quizbit-quiz-v1\ntheme + questions[] (mcq|open)`}</pre>
+                <summary>Import panel local</summary>
+                <pre>{`Outils → Importer quiz Vercel JSON\nformat: quizbit-quiz-v1`}</pre>
               </details>
               <QuestionPreviewList questions={result.questions} />
             </div>
           ) : (
             <p className="offline-empty">
-              Le JSON exporté s&apos;importe dans le panel local (Import / Export →
-              Importer quiz Vercel JSON) ou enrichit la banque offline du serveur{' '}
-              <code>npm run local:server</code>.
+              Génère un quiz pour voir l&apos;aperçu. Export compatible{' '}
+              <code>npm run local:server</code> et mode offline de l&apos;app.
             </p>
           )}
         </section>
