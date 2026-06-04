@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { ThemeMedia } from '../utils/themeMediaPicker';
 import { classifyThemeMedia } from '../utils/themeMediaPayload';
 import { COLORS } from '../utils/theme';
@@ -7,6 +7,10 @@ import { COLORS } from '../utils/theme';
 type ThemeMediaSectionProps = {
   themeMedia: ThemeMedia | null;
   loading?: boolean;
+  isRecording?: boolean;
+  recordDurationLabel?: string;
+  onStartRecording: () => void;
+  onStopRecording: () => void;
   onPickAudio: () => void;
   onPickImage: () => void;
   onPickDocument: () => void;
@@ -17,7 +21,7 @@ type ThemeMediaSectionProps = {
 const categoryLabel = (media: ThemeMedia) => {
   switch (classifyThemeMedia(media)) {
     case 'audio':
-      return 'Audio';
+      return media.name.startsWith('theme-vocal') ? 'Vocal enregistré' : 'Audio';
     case 'image':
       return 'Image';
     case 'video':
@@ -32,6 +36,10 @@ const categoryLabel = (media: ThemeMedia) => {
 export const ThemeMediaSection = ({
   themeMedia,
   loading = false,
+  isRecording = false,
+  recordDurationLabel = '0:00',
+  onStartRecording,
+  onStopRecording,
   onPickAudio,
   onPickImage,
   onPickDocument,
@@ -40,26 +48,66 @@ export const ThemeMediaSection = ({
 }: ThemeMediaSectionProps) => (
   <View style={styles.wrap}>
     <Text style={styles.hint}>
-      Ajoute un audio, une image ou un document : l&apos;IA analyse le support pour
-      générer le quiz (l&apos;audio est transcrit et compris par Gemini).
+      Parle pour définir le thème : ton enregistrement est envoyé à l&apos;IA (Gemini)
+      pour créer les questions. Tu peux aussi charger un fichier audio.
     </Text>
 
+    {isRecording ? (
+      <View style={styles.recordingBox}>
+        <View style={styles.recordingPulse} />
+        <Text style={styles.recordingTitle}>Enregistrement en cours…</Text>
+        <Text style={styles.recordingTime}>{recordDurationLabel}</Text>
+        <Text style={styles.recordingHint}>Parle clairement, puis appuie sur Envoyer.</Text>
+        <TouchableOpacity
+          style={[styles.stopRecordBtn, loading && styles.disabled]}
+          onPress={onStopRecording}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.stopRecordBtnText}>⏹ Envoyer l&apos;audio</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    ) : (
+      <TouchableOpacity
+        style={[styles.voiceBtn, loading && styles.disabled]}
+        onPress={onStartRecording}
+        disabled={loading}
+      >
+        <Text style={styles.voiceBtnText}>🎙️ Parler (micro)</Text>
+      </TouchableOpacity>
+    )}
+
     <TouchableOpacity
-      style={[styles.primaryMediaBtn, loading && styles.disabled]}
+      style={[styles.primaryMediaBtn, (loading || isRecording) && styles.disabled]}
       onPress={onPickAudio}
-      disabled={loading}
+      disabled={loading || isRecording}
     >
       <Text style={styles.primaryMediaBtnText}>🎧 Choisir un fichier audio</Text>
     </TouchableOpacity>
 
     <View style={styles.pillsRow}>
-      <TouchableOpacity style={styles.pill} onPress={onPickImage} disabled={loading}>
+      <TouchableOpacity
+        style={styles.pill}
+        onPress={onPickImage}
+        disabled={loading || isRecording}
+      >
         <Text style={styles.pillText}>🖼️ Image</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.pill} onPress={onPickDocument} disabled={loading}>
+      <TouchableOpacity
+        style={styles.pill}
+        onPress={onPickDocument}
+        disabled={loading || isRecording}
+      >
         <Text style={styles.pillText}>📄 Doc</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.pill} onPress={onPickAny} disabled={loading}>
+      <TouchableOpacity
+        style={styles.pill}
+        onPress={onPickAny}
+        disabled={loading || isRecording}
+      >
         <Text style={styles.pillText}>📁 Autre</Text>
       </TouchableOpacity>
     </View>
@@ -75,10 +123,10 @@ export const ThemeMediaSection = ({
         </Text>
         {classifyThemeMedia(themeMedia) === 'audio' ? (
           <Text style={styles.badgeAudio}>
-            Le contenu audio sera analysé pour définir le thème du quiz.
+            Audio prêt : il sera analysé à la génération du quiz.
           </Text>
         ) : null}
-        <TouchableOpacity onPress={onRemove} disabled={loading}>
+        <TouchableOpacity onPress={onRemove} disabled={loading || isRecording}>
           <Text style={styles.remove}>Retirer le support</Text>
         </TouchableOpacity>
       </View>
@@ -93,6 +141,62 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 10,
+  },
+  voiceBtn: {
+    alignItems: 'center',
+    backgroundColor: '#ee6845',
+    borderRadius: 14,
+    marginBottom: 10,
+    padding: 16,
+  },
+  voiceBtnText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  recordingBox: {
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderColor: COLORS.error,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 10,
+    padding: 16,
+    gap: 6,
+  },
+  recordingPulse: {
+    backgroundColor: COLORS.error,
+    borderRadius: 8,
+    height: 16,
+    width: 16,
+  },
+  recordingTitle: {
+    color: COLORS.error,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  recordingTime: {
+    color: COLORS.primary,
+    fontSize: 28,
+    fontWeight: '900',
+  },
+  recordingHint: {
+    color: '#6B778C',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  stopRecordBtn: {
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    marginTop: 8,
+    minWidth: 200,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  stopRecordBtnText: {
+    color: 'white',
+    fontWeight: '900',
   },
   primaryMediaBtn: {
     alignItems: 'center',

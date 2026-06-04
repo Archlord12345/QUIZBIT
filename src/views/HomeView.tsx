@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -24,6 +24,8 @@ import {
   themeLabelFromMedia,
 } from '../utils/themeMediaPayload';
 import { ThemeMediaSection } from '../components/ThemeMediaSection';
+import VoiceController from '../controllers/VoiceController';
+import { MAX_VOICE_RECORD_MS } from '../utils/voiceRecorder';
 import { COLORS, SPACING } from '../utils/theme';
 import { Header } from '../components/Header';
 
@@ -79,6 +81,8 @@ const HomeView = ({
   const [themeMedia, setThemeMedia] = useState<ThemeMedia | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordMs, setRecordMs] = useState(0);
 
   const normalizedQuestionCount = Math.max(
     1,
@@ -125,6 +129,39 @@ const HomeView = ({
           : 'Impossible de creer le quiz pour le moment.',
       );
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartRecording = async () => {
+    setError('');
+    try {
+      setRecordMs(0);
+      setIsRecording(true);
+      await VoiceController.startRecording(ms => setRecordMs(ms));
+    } catch (err) {
+      setIsRecording(false);
+      setError(
+        err instanceof Error ? err.message : 'Microphone indisponible.',
+      );
+    }
+  };
+
+  const handleStopRecording = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const media = await VoiceController.stopRecording();
+      setThemeMedia(media);
+      if (!theme.trim()) {
+        setTheme(themeLabelFromMedia(media));
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Enregistrement vocal impossible.',
+      );
+    } finally {
+      setIsRecording(false);
       setLoading(false);
     }
   };
@@ -236,6 +273,10 @@ const HomeView = ({
         <ThemeMediaSection
           themeMedia={themeMedia}
           loading={loading}
+          isRecording={isRecording}
+          recordDurationLabel={VoiceController.formatDuration(recordMs)}
+          onStartRecording={handleStartRecording}
+          onStopRecording={handleStopRecording}
           onPickAudio={() => handleThemeMedia('audio')}
           onPickImage={() => handleThemeMedia('image')}
           onPickDocument={() => handleThemeMedia('document')}
@@ -280,6 +321,10 @@ const HomeView = ({
           <ThemeMediaSection
             themeMedia={themeMedia}
             loading={loading}
+            isRecording={isRecording}
+            recordDurationLabel={VoiceController.formatDuration(recordMs)}
+            onStartRecording={handleStartRecording}
+            onStopRecording={handleStopRecording}
             onPickAudio={() => handleThemeMedia('audio')}
             onPickImage={() => handleThemeMedia('image')}
             onPickDocument={() => handleThemeMedia('document')}

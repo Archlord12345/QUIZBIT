@@ -19,6 +19,7 @@ import {
   themeLabelFromMedia,
 } from '../utils/themeMediaPayload';
 import { ThemeMediaSection } from '../components/ThemeMediaSection';
+import VoiceController from '../controllers/VoiceController';
 
 type BattleRoyaleViewProps = {
   account: UserAccount;
@@ -48,6 +49,8 @@ const BattleRoyaleView = ({
   const [chatText, setChatText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordMs, setRecordMs] = useState(0);
 
   const normalizedQuestionCount = Math.max(
     3,
@@ -89,6 +92,39 @@ const BattleRoyaleView = ({
         err instanceof Error ? err.message : 'Connexion salle impossible.',
       );
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartRecording = async () => {
+    setError('');
+    try {
+      setRecordMs(0);
+      setIsRecording(true);
+      await VoiceController.startRecording(ms => setRecordMs(ms));
+    } catch (err) {
+      setIsRecording(false);
+      setError(
+        err instanceof Error ? err.message : 'Microphone indisponible.',
+      );
+    }
+  };
+
+  const handleStopRecording = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const media = await VoiceController.stopRecording();
+      setThemeMedia(media);
+      if (!theme.trim() || theme === 'Culture générale') {
+        setTheme(themeLabelFromMedia(media));
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Enregistrement vocal impossible.',
+      );
+    } finally {
+      setIsRecording(false);
       setLoading(false);
     }
   };
@@ -231,6 +267,10 @@ const BattleRoyaleView = ({
             <ThemeMediaSection
               themeMedia={themeMedia}
               loading={loading}
+              isRecording={isRecording}
+              recordDurationLabel={VoiceController.formatDuration(recordMs)}
+              onStartRecording={handleStartRecording}
+              onStopRecording={handleStopRecording}
               onPickAudio={handleBattleThemeMedia}
               onPickImage={handleBattleThemeMedia}
               onPickDocument={handleBattleThemeMedia}

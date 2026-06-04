@@ -19,7 +19,11 @@ export const classifyThemeMedia = (media: ThemeMedia): ThemeMediaCategory => {
   const mime = String(media.type || '').toLowerCase();
   const name = String(media.name || '').toLowerCase();
 
-  if (mime.startsWith('audio/') || /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(name)) {
+  if (
+    mime.startsWith('audio/') ||
+    /\.(mp3|wav|m4a|aac|ogg|flac|mp4)$/i.test(name) ||
+    name.startsWith('theme-vocal-')
+  ) {
     return 'audio';
   }
   if (mime.startsWith('image/') || /\.(png|jpe?g|gif|webp)$/i.test(name)) {

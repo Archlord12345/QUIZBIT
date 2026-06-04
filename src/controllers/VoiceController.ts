@@ -1,13 +1,41 @@
-class VoiceController {
-  private onResultsCallback: (text: string) => void = () => {};
+import type { ThemeMedia } from '../utils/themeMediaPicker';
+import {
+  cancelVoiceRecording,
+  formatRecordDuration,
+  startVoiceRecording,
+  stopVoiceRecording,
+} from '../utils/voiceRecorder';
 
-  async startListening(callback: (text: string) => void) {
-    this.onResultsCallback = callback;
-    console.warn('Voice recognition is disabled in this stable APK build.');
+class VoiceController {
+  private recording = false;
+
+  isRecording() {
+    return this.recording;
   }
 
-  async stopListening() {
-    this.onResultsCallback = () => {};
+  async startRecording(onDurationMs: (ms: number) => void): Promise<void> {
+    if (this.recording) return;
+    this.recording = true;
+    await startVoiceRecording(onDurationMs);
+  }
+
+  async stopRecording(): Promise<ThemeMedia> {
+    if (!this.recording) {
+      throw new Error('Aucun enregistrement en cours.');
+    }
+    const media = await stopVoiceRecording();
+    this.recording = false;
+    return media;
+  }
+
+  async cancelRecording(): Promise<void> {
+    if (!this.recording) return;
+    await cancelVoiceRecording();
+    this.recording = false;
+  }
+
+  formatDuration(ms: number) {
+    return formatRecordDuration(ms);
   }
 }
 

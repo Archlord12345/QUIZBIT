@@ -36,6 +36,8 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>QuizBit utilise le microphone pour enregistrer ton thème vocal et générer le quiz avec l'IA.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>QuizBit utilise la photothèque pour choisir un avatar ou un support de thème.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
