@@ -1,4 +1,4 @@
-const { listDocuments } = require('./firebase-rest');
+const { listDocuments } = require('../firebase-rest');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {

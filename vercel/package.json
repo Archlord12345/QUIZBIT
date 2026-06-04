@@ -18,6 +18,6 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "check": "node --check api/test-gemini.js && node --check api/test-mistral.js && node --check api/test-cloudinary.js"
+    "check": "node --check api/index.js && for file in lib/*.js lib/api/*.js; do node --check \"$file\"; done"
   }
 }
