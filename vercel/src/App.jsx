@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import OfflineQuizStudio from './OfflineQuizStudio.jsx';
 import {
+  FIRESTORE_SESSION_EVENT,
   getPanelAdminKey,
   getStoredIdToken,
   postPanelApi,
@@ -82,8 +83,18 @@ const REQUEST_TIMEOUT_MS = 9000;
 const firebaseEnabled = Boolean(
   firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId,
 );
-const firebaseApp = firebaseEnabled ? initializeApp(firebaseConfig) : null;
-const db = firebaseApp ? getFirestore(firebaseApp) : null;
+/** Client Firestore uniquement si pas de clé admin au build (sinon API serveur). */
+const panelUsesServerApi = Boolean(getPanelAdminKey());
+let firebaseApp = null;
+let firestoreDb = null;
+const getFirestoreDb = () => {
+  if (!firebaseEnabled || panelUsesServerApi) return null;
+  if (!firebaseApp) {
+    firebaseApp = initializeApp(firebaseConfig);
+    firestoreDb = getFirestore(firebaseApp);
+  }
+  return firestoreDb;
+};
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -212,7 +223,13 @@ export default function App() {
         setStats(data.stats);
         return;
       }
-      if (!db) return;
+      const db = getFirestoreDb();
+      if (!db) {
+        setError(
+          'Lecture Firestore client désactivée. Configure VITE_ADMIN_PANEL_KEY sur Vercel.',
+        );
+        return;
+      }
       const [quizSnap, userSnap, scoreSnap, roomSnap] = await Promise.all([
         getCountFromServer(collection(db, 'quizzes')),
         getCountFromServer(collection(db, 'users')),
@@ -227,7 +244,12 @@ export default function App() {
       });
     } catch (err) {
       console.error(err);
-      setError(err.message || 'Impossible de charger les statistiques Firestore.');
+      const msg = err.message || 'Impossible de charger les statistiques Firestore.';
+      setError(
+        msg.includes('Firestore') || msg.includes('panel manquant')
+          ? `${msg} Ouvre le menu Parametres et clique sur « Connecter Firestore ».`
+          : msg,
+      );
     } finally {
       setLoadingFlag('stats', false);
     }
@@ -252,7 +274,13 @@ export default function App() {
           return;
         }
 
-        if (!db) return;
+        const db = getFirestoreDb();
+        if (!db) {
+          setError(
+            'Lecture Firestore client désactivée. Configure VITE_ADMIN_PANEL_KEY sur Vercel.',
+          );
+          return;
+        }
         let snap;
         try {
           snap = await getDocs(
@@ -283,12 +311,38 @@ export default function App() {
   );
 
   useEffect(() => {
+    if (currentPage === 'offline-studio') return;
     fetchStats();
-  }, [fetchStats]);
+  }, [fetchStats, currentPage]);
+
+  useEffect(() => {
+    const onFirestoreSession = () => {
+      if (currentPage !== 'offline-studio') {
+        fetchStats();
+        if (
+          currentPage !== 'dashboard' &&
+          currentPage !== 'settings' &&
+          currentPage !== 'offline-studio'
+        ) {
+          fetchCollection(currentPage);
+        }
+      }
+    };
+    window.addEventListener(FIRESTORE_SESSION_EVENT, onFirestoreSession);
+    return () =>
+      window.removeEventListener(FIRESTORE_SESSION_EVENT, onFirestoreSession);
+  }, [currentPage, fetchStats, fetchCollection]);
 
   useEffect(() => {
     setGlobalFilter('');
     setSelectedRecord(null);
+    if (
+      currentPage === 'offline-studio' ||
+      currentPage === 'dashboard' ||
+      currentPage === 'settings'
+    ) {
+      return;
+    }
     fetchCollection(currentPage);
   }, [currentPage, fetchCollection]);
 
@@ -390,7 +444,8 @@ export default function App() {
           const data = await postPanelApi('admin-firestore-stats');
           return `Firestore OK via API (${data.stats.players} joueurs, ${data.stats.quizzes} quiz)`;
         }
-        if (!db) throw new Error('Firebase non configure.');
+        const db = getFirestoreDb();
+        if (!db) throw new Error('Firebase client désactivé (utilisez l’API admin).');
         await withTimeout(
           getCountFromServer(collection(db, 'users')),
           'Firebase',
@@ -1110,10 +1165,20 @@ function FirestoreAccessPanel() {
     <Panel title="Acces Firestore (panel admin)">
       <div className="ai-tester">
         <div className="ai-note">
-          Les lectures passent par l&apos;API securisee avec ADMIN_PANEL_KEY. Si
-          PANEL_FIRESTORE_EMAIL/PASSWORD ne sont pas sur Vercel, connecte un
-          compte Firebase autorise a lire les collections.
+          Les lectures Firestore passent par l&apos;API avec ADMIN_PANEL_KEY. Sans
+          PANEL_FIRESTORE_EMAIL/PASSWORD sur Vercel, connecte un compte Firebase
+          ci-dessous (meme email que l&apos;app mobile, projet quizbit-cecc1).
         </div>
+        {hasToken ? (
+          <p className="ai-note" style={{ color: 'var(--green)' }}>
+            Session Firestore active pour ce navigateur.
+          </p>
+        ) : (
+          <p className="ai-error" style={{ marginTop: 0 }}>
+            Aucune session Firestore : le Dashboard et la sauvegarde des quiz
+            echoueront tant que tu n&apos;as pas clique « Connecter Firestore ».
+          </p>
+        )}
         <label>
           Cle admin panel (session)
           <input

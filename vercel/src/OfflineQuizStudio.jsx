@@ -283,9 +283,12 @@ export default function OfflineQuizStudio() {
           source: 'offline-studio',
           idToken: getStoredIdToken() || undefined,
         });
-      } catch (saveErr) {
-        console.warn('Sauvegarde Firestore quiz:', saveErr);
-      }
+        } catch (saveErr) {
+          console.warn('Sauvegarde Firestore quiz:', saveErr);
+          setError(
+            `Quiz genere mais non sauvegarde dans Firestore : ${saveErr.message || saveErr}. Va dans Parametres → Connecter Firestore, ou configure PANEL_FIRESTORE_EMAIL/PASSWORD sur Vercel.`,
+          );
+        }
 
       setProgress(100);
       setProgressLabel('Questionnaire prêt');

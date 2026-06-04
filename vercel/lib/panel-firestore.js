@@ -23,7 +23,7 @@ const getPanelServiceIdToken = async () => {
 
   if (!email || !password) {
     throw new Error(
-      'Compte Firestore panel manquant. Definis PANEL_FIRESTORE_EMAIL et PANEL_FIRESTORE_PASSWORD sur Vercel, ou connecte un compte dans Parametres.',
+      'Acces Firestore requis : va dans Parametres → Acces Firestore → Connecter Firestore (email/mot de passe Firebase du projet quizbit-cecc1), ou ajoute PANEL_FIRESTORE_EMAIL et PANEL_FIRESTORE_PASSWORD sur Vercel puis redéploie.',
     );
   }
 
