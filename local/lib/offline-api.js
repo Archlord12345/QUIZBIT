@@ -184,7 +184,7 @@ export const handleOfflineApi = async (req, res, routeName) => {
           bestScore: 0,
           avatarUrl: '',
         };
-        const next = mutateStore(s => ({ ...s, users: [user, ...s.users] }));
+        mutateStore(s => ({ ...s, users: [user, ...s.users] }));
         const token = issueToken(user.id);
         return json(res, 200, {
           ok: true,

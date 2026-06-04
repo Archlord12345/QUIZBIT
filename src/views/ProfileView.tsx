@@ -64,7 +64,7 @@ const ProfileView = ({
           <Text style={styles.backButtonText}>← Retour</Text>
         </TouchableOpacity>
         <LogoMark compact />
-        <View style={{ width: 70 }} />
+        <View style={styles.headerSpacer} />
       </View>
 
       <Text style={styles.pageTitle}>Mon Profil</Text>
@@ -145,6 +145,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: SPACING.xl,
     marginTop: SPACING.sm,
+  },
+  headerSpacer: {
+    width: 70,
   },
   backButton: {
     padding: SPACING.md,

@@ -614,6 +614,43 @@ tr:hover td {
   gap: 18px;
 }
 
+.offline-progress {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.offline-progress-track {
+  background: rgb(5 8 22 / 55%);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.offline-progress-fill {
+  background: linear-gradient(90deg, var(--cyan), var(--blue));
+  border-radius: 999px;
+  height: 100%;
+  min-width: 2%;
+  transition: width 0.22s ease;
+}
+
+.offline-progress-meta {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 13px;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.offline-progress-meta strong {
+  color: var(--cyan);
+  font-size: 15px;
+  min-width: 3ch;
+}
+
 .offline-preview-head {
   align-items: center;
   display: flex;

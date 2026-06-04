@@ -58,7 +58,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
       activeOpacity={0.9}
     >
       {/* Icon in circle */}
-      <View style={[styles.secondaryIconBadge, { borderColor: 'rgba(231, 229, 228, 0.5)' }]}>
+      <View style={styles.secondaryIconBadge}>
         {typeof Icon === 'string' ? (
           <Text style={styles.emojiTextSmall}>{Icon}</Text>
         ) : (
@@ -146,6 +146,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: '#f5f5f4',
     borderWidth: 1,
+    borderColor: 'rgba(231, 229, 228, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
   },

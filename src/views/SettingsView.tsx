@@ -17,7 +17,7 @@ import {
   setApiMode,
   setOfflineApiHost,
 } from '../utils/api';
-import { COLORS, SPACING, HELPER, PLACEHOLDER, LINE, INPUT_BG } from '../utils/theme';
+import { COLORS, SPACING, PLACEHOLDER, LINE, INPUT_BG } from '../utils/theme';
 import { RADIUS, SHADOW, UI } from '../utils/ui';
 
 type SettingsViewProps = {

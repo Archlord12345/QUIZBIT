@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   buildMediaPayloadFromFile,
   categoryLabel,
@@ -8,6 +8,19 @@ import {
 import { getPanelAdminKey, getStoredIdToken, postPanelApi } from './panelApi.js';
 
 const MAX_QUESTIONS = 50;
+
+const PROGRESS_STEPS = [
+  { until: 18, label: 'Préparation de la requête…' },
+  { until: 42, label: 'Analyse du thème et du support…' },
+  { until: 72, label: 'Génération des questions…' },
+  { until: 88, label: 'Validation du format JSON…' },
+  { until: 96, label: 'Finalisation…' },
+];
+
+const labelForProgress = value => {
+  const step = PROGRESS_STEPS.find(item => value < item.until);
+  return step?.label || 'Presque terminé…';
+};
 
 const downloadFile = (filename, content, mimeType) => {
   const blob = new Blob([content], { type: mimeType });
@@ -74,11 +87,38 @@ export default function OfflineQuizStudio() {
   const [mediaMeta, setMediaMeta] = useState(null);
   const [mediaPayload, setMediaPayload] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState('');
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [acceptFilter, setAcceptFilter] = useState('any');
+  const progressTimerRef = useRef(null);
 
   const panelAdminKey = getPanelAdminKey();
+
+  const stopProgressTimer = useCallback(() => {
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+  }, []);
+
+  const startProgressTimer = useCallback(timeoutMs => {
+    stopProgressTimer();
+    const startedAt = Date.now();
+    setProgress(2);
+    setProgressLabel(PROGRESS_STEPS[0].label);
+    progressTimerRef.current = setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const ratio = Math.min(elapsed / timeoutMs, 1);
+      const eased = 1 - (1 - ratio) ** 1.35;
+      const next = Math.min(96, Math.max(2, Math.round(eased * 96)));
+      setProgress(next);
+      setProgressLabel(labelForProgress(next));
+    }, 180);
+  }, [stopProgressTimer]);
+
+  useEffect(() => () => stopProgressTimer(), [stopProgressTimer]);
   const previewCount = result?.questions?.length ?? 0;
 
   const pickFile = filter => {
@@ -130,15 +170,19 @@ export default function OfflineQuizStudio() {
     setLoading(true);
     setError('');
     setResult(null);
+    let succeeded = false;
+
+    const timeoutMs =
+      mediaPayload?.category === 'audio' || mediaPayload?.category === 'video'
+        ? 120000
+        : count > 20
+        ? 90000
+        : 60000;
+
+    startProgressTimer(timeoutMs);
 
     try {
       const controller = new AbortController();
-      const timeoutMs =
-        mediaPayload?.category === 'audio' || mediaPayload?.category === 'video'
-          ? 120000
-          : count > 20
-          ? 90000
-          : 60000;
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
       const response = await fetch('/api/generate-questions', {
@@ -168,6 +212,9 @@ export default function OfflineQuizStudio() {
           'L’IA n’a renvoyé aucune question valide. Réduis le nombre, change le format (mixte) ou réessaie avec Gemini.',
         );
       }
+      stopProgressTimer();
+      setProgress(92);
+      setProgressLabel('Enregistrement dans la banque…');
       setResult(data);
 
       if (getPanelAdminKey()) {
@@ -185,7 +232,14 @@ export default function OfflineQuizStudio() {
           console.warn('Sauvegarde Firestore quiz:', saveErr);
         }
       }
+
+      setProgress(100);
+      setProgressLabel('Questionnaire prêt');
+      succeeded = true;
     } catch (err) {
+      stopProgressTimer();
+      setProgress(0);
+      setProgressLabel('');
       setError(
         err.name === 'AbortError'
           ? 'Délai dépassé. Réduis le nombre de questions ou utilise un fichier plus court.'
@@ -193,6 +247,12 @@ export default function OfflineQuizStudio() {
       );
     } finally {
       setLoading(false);
+      if (succeeded) {
+        setTimeout(() => {
+          setProgress(0);
+          setProgressLabel('');
+        }, 1200);
+      }
     }
   }, [
     theme,
@@ -203,6 +263,8 @@ export default function OfflineQuizStudio() {
     questionType,
     openAnswerMode,
     panelAdminKey,
+    startProgressTimer,
+    stopProgressTimer,
   ]);
 
   const buildExportPayload = () => {
@@ -393,9 +455,23 @@ export default function OfflineQuizStudio() {
               disabled={!canGenerate}
               onClick={generate}
             >
-              {loading ? 'Génération…' : 'Générer le questionnaire'}
+              {loading ? `Génération… ${progress}%` : 'Générer le questionnaire'}
             </button>
           </div>
+          {loading ? (
+            <div className="offline-progress" role="progressbar" aria-valuenow={progress}>
+              <div className="offline-progress-track">
+                <div
+                  className="offline-progress-fill"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="offline-progress-meta">
+                <strong>{progress}%</strong>
+                <span>{progressLabel}</span>
+              </div>
+            </div>
+          ) : null}
           {error ? <div className="ai-error">{error}</div> : null}
         </section>
 
