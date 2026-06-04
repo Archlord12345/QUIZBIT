@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import LogoMark from '../components/LogoMark';
 import AuthController, { UserAccount } from '../controllers/AuthController';
 import QuizController, { QuizState } from '../controllers/QuizController';
@@ -23,6 +24,7 @@ import { COLORS, SPACING } from '../utils/theme';
 
 type HomeViewProps = {
   account: UserAccount;
+  navigation: StackNavigationProp<any>;
   onAccountUpdated: (account: UserAccount) => void;
   onBattle: () => void;
   onLeaderboard: () => void;
@@ -38,6 +40,7 @@ const questionTypeLabel = {
 
 const HomeView = ({
   account,
+  navigation,
   onAccountUpdated,
   onBattle,
   onLeaderboard,
@@ -312,6 +315,12 @@ const HomeView = ({
 
       <TouchableOpacity style={styles.signOutButton} onPress={onSignOut}>
         <Text style={styles.signOutText}>Déconnexion</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.settingsButton}
+        onPress={() => navigation.navigate('Settings')}
+      >
+        <Text style={styles.settingsText}>Paramètres</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -605,6 +614,15 @@ const styles = StyleSheet.create({
   },
   signOutText: {
     color: 'white',
+    textDecorationLine: 'underline',
+  },
+  settingsButton: {
+    alignSelf: 'center',
+    marginTop: 10,
+    padding: 12,
+  },
+  settingsText: {
+    color: COLORS.secondary,
     textDecorationLine: 'underline',
   },
 });

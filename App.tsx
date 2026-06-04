@@ -14,6 +14,7 @@ import BattleRoyaleView from './src/views/BattleRoyaleView';
 import HomeView from './src/views/HomeView';
 import LeaderboardView from './src/views/LeaderboardView';
 import QuizView from './src/views/QuizView';
+import SettingsView from './src/views/SettingsView';
 
 type ActiveQuiz = {
   state: QuizState;
@@ -155,6 +156,14 @@ const App = () => {
             <Stack.Screen name="Leaderboard">
               {props => (
                 <LeaderboardView
+                  {...props}
+                  onBack={() => props.navigation.goBack()}
+                />
+              )}
+            </Stack.Screen>
+            <Stack.Screen name="Settings">
+              {props => (
+                <SettingsView
                   {...props}
                   onBack={() => props.navigation.goBack()}
                 />

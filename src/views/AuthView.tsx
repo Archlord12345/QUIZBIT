@@ -8,15 +8,16 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { StackScreenProps } from '@react-navigation/stack';
 import LogoMark from '../components/LogoMark';
 import AuthController, { UserAccount } from '../controllers/AuthController';
 import { COLORS, SPACING } from '../utils/theme';
 
-type AuthViewProps = {
+type AuthViewProps = StackScreenProps<any> & {
   onAuthenticated: (account: UserAccount) => void;
 };
 
-const AuthView = ({ onAuthenticated }: AuthViewProps) => {
+const AuthView = ({ onAuthenticated, navigation }: AuthViewProps) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -109,6 +110,13 @@ const AuthView = ({ onAuthenticated }: AuthViewProps) => {
               {mode === 'register' ? 'Créer le compte' : 'Se connecter'}
             </Text>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => navigation.navigate('Settings')}
+        >
+          <Text style={styles.secondaryButtonText}>Paramètres</Text>
         </TouchableOpacity>
 
         <Text style={styles.hint}>
