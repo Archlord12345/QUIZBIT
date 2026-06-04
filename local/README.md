@@ -22,5 +22,6 @@ Fonctions disponibles :
 - gestion des joueurs ;
 - scores / leaderboard ;
 - rooms battle royale ;
-- import/export JSON ;
+- import/export JSON complet ;
+- import direct des quiz JSON exportes depuis le panel Vercel pour jouer/tester offline ;
 - reset local.

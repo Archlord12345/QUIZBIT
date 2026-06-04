@@ -1034,6 +1034,23 @@ function AiPromptTester() {
   const [result, setResult] = useState(null);
   const loading = Boolean(loadingProvider);
 
+  const exportGeneratedQuiz = () => {
+    if (!result?.questions?.length) return;
+    const payload = {
+      createdAt: new Date().toISOString(),
+      format: 'quizbit-quiz-v1',
+      provider: result.provider,
+      model: result.model,
+      theme: prompt.trim(),
+      questions: result.questions,
+    };
+    downloadFile(
+      `quizbit-${Date.now()}.json`,
+      JSON.stringify(payload, null, 2),
+      'application/json;charset=utf-8',
+    );
+  };
+
   const generate = async (provider = 'auto') => {
     const cleanPrompt = prompt.trim();
     if (!cleanPrompt || loading) return;
@@ -1062,6 +1079,9 @@ function AiPromptTester() {
   return (
     <Panel title="Test prompt IA">
       <div className="ai-tester">
+        <div className="ai-note">
+          Génère un quiz cloud, exporte-le en JSON, puis importe-le dans le panel local pour jouer ou tester offline.
+        </div>
         <label>
           Prompt / thème
           <textarea
@@ -1107,6 +1127,9 @@ function AiPromptTester() {
               Modèle: {result.provider ? `${result.provider} / ` : ''}
               {result.model}
             </div>
+            <button className="btn ghost" onClick={exportGeneratedQuiz}>
+              Exporter ce quiz JSON offline
+            </button>
             {result.fallbackFrom ? (
               <div className="ai-note">
                 Gemini indisponible, generation faite automatiquement avec

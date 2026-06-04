@@ -11,10 +11,12 @@ const createPlayer = account => ({
 const generateCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 
 const normalizeConfig = config => ({
+  mode: config?.mode === 'timed_mcq' ? 'timed_mcq' : 'classic',
   theme: String(config?.theme || '').trim() || 'culture generale',
   maxPlayers: Math.max(2, Math.min(100, Math.floor(Number(config?.maxPlayers || 10)))),
   questionCount: Math.max(3, Math.min(20, Math.floor(Number(config?.questionCount || 5)))),
   eliminationScore: Math.max(0, Math.floor(Number(config?.eliminationScore || 20))),
+  timeLimitSeconds: Math.max(5, Math.min(120, Math.floor(Number(config?.timeLimitSeconds || 15)))),
 });
 
 module.exports = async (req, res) => {

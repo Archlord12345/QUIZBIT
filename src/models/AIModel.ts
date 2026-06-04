@@ -14,6 +14,7 @@ export type Question = {
 
 export type QuizGenerationOptions = {
   choiceCount?: number;
+  mediaDescription?: string;
   count?: number;
   openAnswerMode?: OpenAnswerMode;
   questionType?: QuestionType;
@@ -51,7 +52,9 @@ class AIModel {
         ),
         count,
         openAnswerMode: options.openAnswerMode || 'flexible',
-        prompt: cleanTheme,
+        prompt: options.mediaDescription
+          ? `${cleanTheme}. ${options.mediaDescription}`
+          : cleanTheme,
         questionType: options.questionType || 'mixed',
       },
     );

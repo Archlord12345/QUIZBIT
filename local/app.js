@@ -64,7 +64,7 @@ function render() {
   app.innerHTML = `
     <div class="shell">
       <aside class="sidebar">
-        <div class="brand">QuizBit Local</div>
+        <div class="brand"><span>QuizBit</span><small>Offline Studio</small></div>
         <nav>${pages
           .map(
             ([id, label]) => `
@@ -78,7 +78,7 @@ function render() {
       </aside>
       <main class="main">
         ${renderHeader()}
-        <div class="notice">Panel 100% local: les donnees sont stockees dans le navigateur via localStorage.</div>
+        <div class="notice"><strong>Mode offline.</strong> Importe un quiz JSON exporte depuis Vercel, joue/teste sans cloud, puis conserve tout dans localStorage.</div>
         ${renderPage()}
       </main>
     </div>
@@ -258,11 +258,15 @@ function renderTools() {
     <section class="card">
       <h2>Import / Export</h2>
       <div class="actions">
-        <button class="button" id="export-json">Exporter JSON</button>
-        <button class="button secondary" id="import-json">Importer JSON</button>
+        <button class="button" id="export-json">Exporter tout le local</button>
+        <button class="button secondary" id="import-json">Importer depuis le texte</button>
+        <label class="file-button">
+          Importer quiz Vercel JSON
+          <input id="import-quiz-file" type="file" accept="application/json,.json" />
+        </label>
         <button class="button danger" id="reset-local">Reset local</button>
       </div>
-      <textarea id="json-box" placeholder="JSON local"></textarea>
+      <textarea id="json-box" placeholder="Colle ici un export complet local ou un quiz JSON exporté depuis le panel Vercel"></textarea>
     </section>
   `;
 }
@@ -296,6 +300,9 @@ function bindPageActions() {
   document.getElementById('export-json')?.addEventListener('click', exportJson);
   document.getElementById('import-json')?.addEventListener('click', importJson);
   document.getElementById('reset-local')?.addEventListener('click', resetLocal);
+  document
+    .getElementById('import-quiz-file')
+    ?.addEventListener('change', importQuizFile);
 
   document
     .querySelectorAll('[data-delete-quiz]')
@@ -455,14 +462,55 @@ function exportJson() {
   document.getElementById('json-box').value = JSON.stringify(state, null, 2);
 }
 
+function normalizeImportedQuiz(parsed) {
+  if (!parsed || !Array.isArray(parsed.questions)) return null;
+  return {
+    id: parsed.id || uid('quiz'),
+    theme: parsed.theme || parsed.prompt || 'Quiz importe',
+    questions: parsed.questions.map((question, index) => ({
+      id: question.id || uid('question'),
+      text: question.text || `Question ${index + 1}`,
+      answer: question.answer || '',
+      options: Array.isArray(question.options) ? question.options.slice(0, 5) : undefined,
+      exactAnswer: Boolean(question.exactAnswer),
+      type: question.type === 'open' ? 'open' : 'mcq',
+    })),
+    createdAt: parsed.createdAt || new Date().toISOString(),
+    importedFrom: parsed.format || 'json',
+  };
+}
+
+function importParsedJson(parsed) {
+  const quiz = normalizeImportedQuiz(parsed);
+  if (quiz) {
+    mutate({ ...state, quizzes: [quiz, ...state.quizzes] });
+    return;
+  }
+  mutate({ ...initialState, ...parsed });
+}
+
 function importJson() {
   const box = document.getElementById('json-box');
   try {
-    const parsed = JSON.parse(box.value);
-    mutate({ ...initialState, ...parsed });
+    importParsedJson(JSON.parse(box.value));
   } catch (error) {
     alert(`JSON invalide: ${error.message}`);
   }
+}
+
+function importQuizFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      importParsedJson(JSON.parse(String(reader.result || '{}')));
+    } catch (error) {
+      alert(`Fichier JSON invalide: ${error.message}`);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
 }
 
 function resetLocal() {

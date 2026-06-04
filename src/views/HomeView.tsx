@@ -14,6 +14,11 @@ import AuthController, { UserAccount } from '../controllers/AuthController';
 import QuizController, { QuizState } from '../controllers/QuizController';
 import { OpenAnswerMode, QuestionType } from '../models/AIModel';
 import { pickAvatarFromLibrary } from '../utils/avatarPicker';
+import {
+  describeThemeMedia,
+  pickThemeMedia,
+  ThemeMedia,
+} from '../utils/themeMediaPicker';
 import { COLORS, SPACING } from '../utils/theme';
 
 type HomeViewProps = {
@@ -39,6 +44,7 @@ const HomeView = ({
   const [choiceCount, setChoiceCount] = useState('4');
   const [openAnswerMode, setOpenAnswerMode] =
     useState<OpenAnswerMode>('flexible');
+  const [themeMedia, setThemeMedia] = useState<ThemeMedia | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [error, setError] = useState('');
@@ -56,6 +62,7 @@ const HomeView = ({
       const quiz = await QuizController.initQuiz(cleanTheme, {
         choiceCount: Number(choiceCount),
         count: Number(questionCount),
+        mediaDescription: describeThemeMedia(themeMedia),
         openAnswerMode,
         questionType,
       });
@@ -92,6 +99,19 @@ const HomeView = ({
       );
     } finally {
       setUploadingAvatar(false);
+    }
+  };
+
+
+  const handleThemeMedia = async () => {
+    setError('');
+    try {
+      const media = await pickThemeMedia();
+      if (media) setThemeMedia(media);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Chargement du support impossible.',
+      );
     }
   };
 
@@ -156,6 +176,23 @@ const HomeView = ({
           returnKeyType="done"
           onSubmitEditing={handleStart}
         />
+        <TouchableOpacity style={styles.mediaButton} onPress={handleThemeMedia}>
+          <Text style={styles.mediaButtonText}>
+            Charger un support de thème (audio, vidéo, image, document)
+          </Text>
+        </TouchableOpacity>
+        {themeMedia ? (
+          <View style={styles.mediaBadge}>
+            <Text style={styles.mediaBadgeTitle}>{themeMedia.name}</Text>
+            <Text style={styles.mediaBadgeText}>
+              {themeMedia.type || 'type inconnu'}
+              {themeMedia.size ? ` · ${Math.round(themeMedia.size / 1024)} Ko` : ''}
+            </Text>
+            <TouchableOpacity onPress={() => setThemeMedia(null)}>
+              <Text style={styles.mediaRemove}>Retirer</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         <Text style={styles.optionLabel}>Format des questions</Text>
         <View style={styles.segmentedRow}>
@@ -452,6 +489,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 14,
+  },
+  mediaButton: {
+    alignItems: 'center',
+    borderColor: COLORS.secondary,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 14,
+    padding: 13,
+  },
+  mediaButtonText: {
+    color: COLORS.primary,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  mediaBadge: {
+    backgroundColor: '#EAF2FF',
+    borderRadius: 14,
+    gap: 4,
+    marginBottom: 14,
+    padding: 12,
+  },
+  mediaBadgeTitle: {
+    color: COLORS.primary,
+    fontWeight: '900',
+  },
+  mediaBadgeText: {
+    color: '#5E6C84',
+    fontSize: 12,
+  },
+  mediaRemove: {
+    color: COLORS.error,
+    fontWeight: '900',
+    marginTop: 4,
   },
   input: {
     backgroundColor: '#FAFBFC',

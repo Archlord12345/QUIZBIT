@@ -67,6 +67,8 @@ HomeView -> pickAvatarFromLibrary -> CloudinaryModel.uploadImage
 
 ### Quiz solo
 
+Avant de générer, le joueur peut choisir un thème texte ou charger un support natif depuis le téléphone : image, audio, vidéo, PDF, document ou présentation. Android déclare les permissions READ_MEDIA_* / READ_EXTERNAL_STORAGE et iOS déclare les descriptions d usage. Le support sert de contexte de thème pour la génération IA.
+
 Le quiz solo appelle :
 
 ```txt
@@ -74,7 +76,7 @@ Le quiz solo appelle :
 ```
 
 Le serveur tente Gemini en premier. Si Gemini échoue ou dépasse son quota, il
-bascule automatiquement sur Mistral. Le joueur peut choisir le format avant la génération : mixte, QCM ou QRO. Les QCM demandent un nombre de choix borné de 2 à 5. Les QRO peuvent être corrigées en mode souple (synonymes et petites fautes acceptés) ou en mode exact pour les noms/termes où l orthographe doit correspondre.
+bascule automatiquement sur Mistral. Le joueur peut choisir le format avant la génération : mixte, QCM ou QRO. Les QCM demandent un nombre de choix borné de 2 à 5. Les QRO peuvent être corrigées en mode souple (synonymes et petites fautes acceptés) ou en mode exact pour les noms/termes où l orthographe doit correspondre. À la fin d un quiz, l app affiche la liste complète des questions et réponses.
 
 ### Correction des réponses ouvertes
 
@@ -91,6 +93,8 @@ battleRooms
 
 Chaque salle contient :
 
+- un mode `classic` ou `timed_mcq` ;
+- un délai par question pour le mode QCM chronométré ;
 - un code court ;
 - l'hôte ;
 - la configuration de partie ;
@@ -251,3 +255,7 @@ cd android
 - Battle Royale impossible : vérifier la config Firebase dans l'APK.
 - Avatar non uploadé : vérifier Cloudinary et `CLOUDINARY_UPLOAD_PRESET`.
 - Gemini en quota : Mistral prend automatiquement le relais.
+
+## Import/export offline
+
+Le panel Vercel permet d exporter un quiz généré au format `quizbit-quiz-v1`. Le panel local peut importer ce fichier JSON depuis la page Import / Export. Les quiz importés sont conservés dans `localStorage`, ce qui permet de tester ou jouer hors ligne sans Vercel ni Firebase.

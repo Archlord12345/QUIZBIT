@@ -1,6 +1,8 @@
 module.exports = {
   preset: '@react-native/jest-preset',
   moduleNameMapper: {
+    '^@react-native-documents/picker$':
+      '<rootDir>/__mocks__/@react-native-documents/picker.js',
     '^@react-native-async-storage/async-storage$':
       '<rootDir>/__mocks__/@react-native-async-storage/async-storage.js',
     '^firebase/app$': '<rootDir>/__mocks__/firebaseApp.js',

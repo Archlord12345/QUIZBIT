@@ -6,6 +6,7 @@ export type QuizState = {
   hearts: number;
   score: number;
   currentIndex: number;
+  timeLimitSeconds?: number;
 };
 
 class QuizController {
@@ -37,6 +38,7 @@ class QuizController {
     quizState: QuizState,
     setQuizState: (state: QuizState) => void,
     onComplete: (finalScore: number) => void,
+    options: { advanceOnWrong?: boolean } = {},
   ) {
     const currentQuestion = quizState.questions[quizState.currentIndex];
 
@@ -65,6 +67,16 @@ class QuizController {
         onComplete(newScore);
       }
     } else {
+      if (options.advanceOnWrong) {
+        const nextIndex = quizState.currentIndex + 1;
+        if (nextIndex < quizState.questions.length) {
+          setQuizState({ ...quizState, currentIndex: nextIndex });
+        } else {
+          onComplete(quizState.score);
+        }
+        return;
+      }
+
       const newHearts = quizState.hearts - 1;
       if (newHearts <= 0) {
         onComplete(quizState.score);

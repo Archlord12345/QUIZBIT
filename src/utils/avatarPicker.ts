@@ -1,4 +1,18 @@
+import { PermissionsAndroid, Platform } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
+
+
+const requestPhotoPermission = async () => {
+  if (Platform.OS !== 'android') return true;
+
+  const version = Number(Platform.Version);
+  const permission =
+    version >= 33
+      ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
+      : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
+  const result = await PermissionsAndroid.request(permission);
+  return result === PermissionsAndroid.RESULTS.GRANTED;
+};
 
 export type PickedAvatar = {
   fileName?: string;
@@ -7,6 +21,11 @@ export type PickedAvatar = {
 };
 
 export const pickAvatarFromLibrary = async (): Promise<PickedAvatar | null> => {
+  const granted = await requestPhotoPermission();
+  if (!granted) {
+    throw new Error('Permission photo refusee. Autorise les images pour choisir un avatar.');
+  }
+
   const result = await launchImageLibrary({
     mediaType: 'photo',
     quality: 0.8,
