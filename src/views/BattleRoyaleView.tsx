@@ -166,13 +166,13 @@ const BattleRoyaleView = ({
         } else {
           setRoom(updatedRoom);
         }
-      } catch (err) {
+      } catch {
         // Silently ignore background fetch errors to avoid UI spam
       }
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [room?.code, room?.status, account, onStartBattle]);
+  }, [room, account, onStartBattle]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
