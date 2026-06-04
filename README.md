@@ -504,7 +504,7 @@ Configurer les variables d'environnement Vercel avant déploiement pour que diag
 
 ## Documentation complète
 
-Le dossier `documentation/` décrit le fonctionnement du projet de A à Z :
+Le dossier `documentation/` décrit le fonctionnement du projet de A à Z, dont un guide opérationnel des panels admin :
 architecture, configuration Firebase/Vercel, génération IA, avatars,
 Battle Royale, session persistante et déploiement. Le panel Vercel peut exporter les quiz generes en JSON, et le panel local peut les importer pour un usage offline.
 
