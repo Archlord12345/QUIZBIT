@@ -14,6 +14,11 @@ import AuthController, { UserAccount } from '../controllers/AuthController';
 import QuizController, { QuizState } from '../controllers/QuizController';
 import { OpenAnswerMode, QuestionType } from '../models/AIModel';
 import { pickAvatarFromLibrary } from '../utils/avatarPicker';
+import {
+  describeThemeMedia,
+  pickThemeMedia,
+  ThemeMedia,
+} from '../utils/themeMediaPicker';
 import { COLORS, SPACING } from '../utils/theme';
 
 type HomeViewProps = {
@@ -23,6 +28,12 @@ type HomeViewProps = {
   onLeaderboard: () => void;
   onQuizReady: (quiz: QuizState) => void;
   onSignOut: () => void;
+};
+
+const questionTypeLabel = {
+  mixed: 'Mixte',
+  mcq: 'QCM',
+  open: 'QRO',
 };
 
 const HomeView = ({
@@ -39,9 +50,15 @@ const HomeView = ({
   const [choiceCount, setChoiceCount] = useState('4');
   const [openAnswerMode, setOpenAnswerMode] =
     useState<OpenAnswerMode>('flexible');
+  const [themeMedia, setThemeMedia] = useState<ThemeMedia | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [error, setError] = useState('');
+
+  const normalizedQuestionCount = Math.max(
+    1,
+    Math.min(20, Math.floor(Number(questionCount) || 5)),
+  );
 
   const handleStart = async () => {
     const cleanTheme = theme.trim();
@@ -55,7 +72,8 @@ const HomeView = ({
     try {
       const quiz = await QuizController.initQuiz(cleanTheme, {
         choiceCount: Number(choiceCount),
-        count: Number(questionCount),
+        count: normalizedQuestionCount,
+        mediaDescription: describeThemeMedia(themeMedia),
         openAnswerMode,
         questionType,
       });
@@ -92,6 +110,19 @@ const HomeView = ({
       );
     } finally {
       setUploadingAvatar(false);
+    }
+  };
+
+
+  const handleThemeMedia = async () => {
+    setError('');
+    try {
+      const media = await pickThemeMedia();
+      if (media) setThemeMedia(media);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Chargement du support impossible.',
+      );
     }
   };
 
@@ -142,9 +173,10 @@ const HomeView = ({
       <View style={styles.card}>
         <Text style={styles.label}>Quiz solo intelligent</Text>
         <Text style={styles.cardText}>
-          Choisis un thème, puis précise le format. Les QCM ont au maximum 5
-          choix et les réponses ouvertes peuvent être corrigées souplement par
-          IA ou strictement pour les noms exacts.
+          Choisis un thème, puis définis obligatoirement le nombre de questions
+          avant de lancer le mode {questionTypeLabel[questionType]}. Les QCM ont
+          au maximum 5 choix et les QRO peuvent être corrigées souplement ou
+          strictement.
         </Text>
         <TextInput
           style={styles.input}
@@ -156,6 +188,23 @@ const HomeView = ({
           returnKeyType="done"
           onSubmitEditing={handleStart}
         />
+        <TouchableOpacity style={styles.mediaButton} onPress={handleThemeMedia}>
+          <Text style={styles.mediaButtonText}>
+            Charger un support de thème (audio, vidéo, image, document)
+          </Text>
+        </TouchableOpacity>
+        {themeMedia ? (
+          <View style={styles.mediaBadge}>
+            <Text style={styles.mediaBadgeTitle}>{themeMedia.name}</Text>
+            <Text style={styles.mediaBadgeText}>
+              {themeMedia.type || 'type inconnu'}
+              {themeMedia.size ? ` · ${Math.round(themeMedia.size / 1024)} Ko` : ''}
+            </Text>
+            <TouchableOpacity onPress={() => setThemeMedia(null)}>
+              <Text style={styles.mediaRemove}>Retirer</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         <Text style={styles.optionLabel}>Format des questions</Text>
         <View style={styles.segmentedRow}>
@@ -178,7 +227,7 @@ const HomeView = ({
 
         <View style={styles.settingsRow}>
           <View style={styles.settingBox}>
-            <Text style={styles.optionLabel}>Questions</Text>
+            <Text style={styles.optionLabel}>Nombre de questions</Text>
             <TextInput
               style={styles.input}
               keyboardType="numeric"
@@ -240,7 +289,7 @@ const HomeView = ({
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text style={styles.buttonText}>Générer et commencer</Text>
+            <Text style={styles.buttonText}>Générer {normalizedQuestionCount} questions</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -452,6 +501,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 14,
+  },
+  mediaButton: {
+    alignItems: 'center',
+    borderColor: COLORS.secondary,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 14,
+    padding: 13,
+  },
+  mediaButtonText: {
+    color: COLORS.primary,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  mediaBadge: {
+    backgroundColor: '#EAF2FF',
+    borderRadius: 14,
+    gap: 4,
+    marginBottom: 14,
+    padding: 12,
+  },
+  mediaBadgeTitle: {
+    color: COLORS.primary,
+    fontWeight: '900',
+  },
+  mediaBadgeText: {
+    color: '#5E6C84',
+    fontSize: 12,
+  },
+  mediaRemove: {
+    color: COLORS.error,
+    fontWeight: '900',
+    marginTop: 4,
   },
   input: {
     backgroundColor: '#FAFBFC',

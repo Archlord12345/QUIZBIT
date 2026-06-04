@@ -19,7 +19,7 @@ QuizBit est une plateforme de quiz mobile avec génération de questions par IA,
 - Génération de quiz avec Google Gemini.
 - Questions QCM et questions ouvertes.
 - QCM avec 2 à 5 choix maximum.
-- Questions ouvertes : l'utilisateur saisit sa réponse et l'app l'analyse avec Gemini pour validation.
+- Questions ouvertes : l'utilisateur saisit sa réponse et l'app l'analyse avec Gemini/Mistral pour validation. Chaque mode de jeu demande un nombre de questions défini avant lancement.
 - Scores sauvegardés dans Firestore.
 - Leaderboard global depuis Firestore.
 - Mode battle royale avec salles Firestore :
@@ -506,7 +506,7 @@ Configurer les variables d'environnement Vercel avant déploiement pour que diag
 
 Le dossier `documentation/` décrit le fonctionnement du projet de A à Z :
 architecture, configuration Firebase/Vercel, génération IA, avatars,
-Battle Royale, session persistante et déploiement.
+Battle Royale, session persistante et déploiement. Le panel Vercel peut exporter les quiz generes en JSON, et le panel local peut les importer pour un usage offline.
 
 ## Pull request
 

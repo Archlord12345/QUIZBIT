@@ -69,6 +69,10 @@ const App = () => {
         hearts: 1,
         score: 0,
         currentIndex: 0,
+        timeLimitSeconds:
+          room.config.mode === 'timed_mcq'
+            ? room.config.timeLimitSeconds
+            : undefined,
       },
     });
   };

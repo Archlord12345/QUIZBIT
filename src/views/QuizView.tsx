@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -24,16 +23,18 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
   const [openAnswer, setOpenAnswer] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const [completedScore, setCompletedScore] = useState<number | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(
+    initialQuiz.timeLimitSeconds || 0,
+  );
 
   const currentQuestion = quizState.questions[quizState.currentIndex];
 
+  const timedQuestionSeconds = quizState.timeLimitSeconds || 0;
+
   const completeQuiz = async (finalScore: number) => {
     await onComplete(finalScore, quizState);
-    Alert.alert(
-      mode === 'battle_royale' ? 'Battle terminée !' : 'Partie terminée !',
-      `Score final : ${finalScore}`,
-      [{ text: 'OK', onPress: onExit }],
-    );
+    setCompletedScore(finalScore);
   };
 
   const handleAnswer = async (answer: string) => {
@@ -60,11 +61,69 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
           setOpenAnswer('');
         },
         completeQuiz,
+        { advanceOnWrong: mode === 'battle_royale' },
       );
     } finally {
       setSubmitting(false);
     }
   };
+
+  React.useEffect(() => {
+    setSecondsLeft(timedQuestionSeconds);
+  }, [quizState.currentIndex, timedQuestionSeconds]);
+
+  React.useEffect(() => {
+    if (!timedQuestionSeconds || submitting || completedScore !== null) {
+      return undefined;
+    }
+
+    const timer = setInterval(() => {
+      setSecondsLeft(previous => {
+        if (previous <= 1) {
+          clearInterval(timer);
+          setFeedback('Temps écoulé, question suivante.');
+          setTimeout(() => handleAnswer('__timeout__'), 0);
+          return 0;
+        }
+        return previous - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+    // handleAnswer is intentionally omitted to keep one stable timer per question.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completedScore, quizState.currentIndex, submitting, timedQuestionSeconds]);
+
+  if (completedScore !== null) {
+    return (
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Quiz terminé</Text>
+          <Text style={styles.summaryScore}>Score final : {completedScore}</Text>
+          <Text style={styles.summaryIntro}>
+            Voici la liste complète des questions et des réponses attendues.
+          </Text>
+          {quizState.questions.map((question, index) => (
+            <View key={question.id} style={styles.summaryQuestion}>
+              <Text style={styles.summaryQuestionTitle}>
+                #{index + 1} · {question.type === 'mcq' ? 'QCM' : 'QRO'}
+              </Text>
+              <Text style={styles.summaryText}>{question.text}</Text>
+              <Text style={styles.summaryAnswer}>Réponse : {question.answer}</Text>
+              {question.options?.length ? (
+                <Text style={styles.summaryOptions}>
+                  Choix : {question.options.join(' · ')}
+                </Text>
+              ) : null}
+            </View>
+          ))}
+          <TouchableOpacity style={styles.submitButton} onPress={onExit}>
+            <Text style={styles.submitButtonText}>Retour à l accueil</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -75,6 +134,9 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
       <Text style={styles.modeBadge}>
         {mode === 'battle_royale' ? 'Mode Battle Royale' : 'Mode Solo'}
       </Text>
+      {timedQuestionSeconds ? (
+        <Text style={styles.timerBadge}>Temps restant : {secondsLeft}s</Text>
+      ) : null}
 
       <View style={styles.questionCard}>
         <Text style={styles.progress}>
@@ -243,6 +305,62 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 20,
     textAlign: 'center',
+  },
+  timerBadge: {
+    alignSelf: 'center',
+    backgroundColor: COLORS.warning,
+    borderRadius: 999,
+    color: COLORS.primary,
+    fontWeight: '900',
+    marginBottom: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  summaryCard: {
+    backgroundColor: 'white',
+    borderRadius: 24,
+    gap: 14,
+    marginTop: 50,
+    padding: SPACING.lg,
+  },
+  summaryTitle: {
+    color: COLORS.primary,
+    fontSize: 28,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  summaryScore: {
+    color: COLORS.accent,
+    fontSize: 20,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  summaryIntro: {
+    color: '#5E6C84',
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  summaryQuestion: {
+    backgroundColor: '#F4F5F7',
+    borderRadius: 16,
+    gap: 6,
+    padding: 12,
+  },
+  summaryQuestionTitle: {
+    color: COLORS.primary,
+    fontWeight: '900',
+  },
+  summaryText: {
+    color: COLORS.text,
+    fontWeight: '700',
+  },
+  summaryAnswer: {
+    color: COLORS.success,
+    fontWeight: '900',
+  },
+  summaryOptions: {
+    color: '#5E6C84',
+    fontSize: 12,
   },
   quitButton: {
     alignSelf: 'center',

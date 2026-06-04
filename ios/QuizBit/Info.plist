@@ -36,6 +36,10 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>QuizBit utilise la photothèque pour choisir un avatar ou un support de thème.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>QuizBit utilise les documents sélectionnés pour enrichir le thème des quiz.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>

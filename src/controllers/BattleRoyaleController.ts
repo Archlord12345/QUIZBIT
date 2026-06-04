@@ -2,11 +2,15 @@ import AIModel, { Question } from '../models/AIModel';
 import { apiPost } from '../utils/api';
 import { UserAccount } from './AuthController';
 
+export type BattleRoyaleMode = 'classic' | 'timed_mcq';
+
 export type BattleRoyaleConfig = {
+  mode: BattleRoyaleMode;
   theme: string;
   maxPlayers: number;
   questionCount: number;
   eliminationScore: number;
+  timeLimitSeconds: number;
 };
 
 export type BattleRoyalePlayer = {
@@ -64,8 +68,9 @@ class BattleRoyaleController {
   async startRoom(room: BattleRoyaleRoom, host?: UserAccount): Promise<BattleRoyaleRoom> {
     if (host) this.assertAuthenticated(host);
     const questions = await AIModel.generateQuestions(room.config.theme, {
+      choiceCount: 4,
       count: room.config.questionCount,
-      questionType: 'mixed',
+      questionType: room.config.mode === 'timed_mcq' ? 'mcq' : 'mixed',
     });
     const response = await apiPost<BattleRoomResponse>('/api/battle-room-start', {
       code: room.code,
@@ -92,6 +97,7 @@ class BattleRoyaleController {
 
   private normalizeConfig(config: BattleRoyaleConfig): BattleRoyaleConfig {
     return {
+      mode: config.mode === 'timed_mcq' ? 'timed_mcq' : 'classic',
       theme: config.theme.trim() || 'culture generale',
       maxPlayers: Math.max(
         2,
@@ -102,6 +108,7 @@ class BattleRoyaleController {
         Math.min(20, Math.floor(config.questionCount || 5)),
       ),
       eliminationScore: Math.max(0, Math.floor(config.eliminationScore || 20)),
+      timeLimitSeconds: Math.max(5, Math.min(120, Math.floor(config.timeLimitSeconds || 15))),
     };
   }
 

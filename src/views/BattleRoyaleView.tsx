@@ -26,23 +26,34 @@ const BattleRoyaleView = ({
   onStartBattle,
 }: BattleRoyaleViewProps) => {
   const [theme, setTheme] = useState('Culture générale');
+  const [battleMode, setBattleMode] = useState<'classic' | 'timed_mcq'>(
+    'classic',
+  );
   const [maxPlayers, setMaxPlayers] = useState('10');
   const [questionCount, setQuestionCount] = useState('5');
   const [eliminationScore, setEliminationScore] = useState('20');
+  const [timeLimitSeconds, setTimeLimitSeconds] = useState('15');
   const [joinCode, setJoinCode] = useState('');
   const [room, setRoom] = useState<BattleRoyaleRoom | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const normalizedQuestionCount = Math.max(
+    3,
+    Math.min(20, Math.floor(Number(questionCount) || 5)),
+  );
 
   const createRoom = async () => {
     setLoading(true);
     setError('');
     try {
       const nextRoom = await BattleRoyaleController.createRoom(account, {
+        mode: battleMode,
         theme,
         maxPlayers: Number(maxPlayers),
-        questionCount: Number(questionCount),
+        questionCount: normalizedQuestionCount,
         eliminationScore: Number(eliminationScore),
+        timeLimitSeconds: Number(timeLimitSeconds),
       });
       setRoom(nextRoom);
     } catch (err) {
@@ -106,6 +117,19 @@ const BattleRoyaleView = ({
           value={theme}
           onChangeText={setTheme}
         />
+        <Text style={styles.optionLabel}>Mode de jeu</Text>
+        <View style={styles.segmentedRow}>
+          <ModeChip
+            active={battleMode === 'classic'}
+            label="Classique"
+            onPress={() => setBattleMode('classic')}
+          />
+          <ModeChip
+            active={battleMode === 'timed_mcq'}
+            label="QCM chronométré"
+            onPress={() => setBattleMode('timed_mcq')}
+          />
+        </View>
         <View style={styles.row}>
           <TextInput
             style={[styles.input, styles.smallInput]}
@@ -118,10 +142,10 @@ const BattleRoyaleView = ({
           <TextInput
             style={[styles.input, styles.smallInput]}
             keyboardType="numeric"
-            placeholder="Questions"
+            placeholder="Nombre de questions"
             placeholderTextColor="#6B778C"
             value={questionCount}
-            onChangeText={setQuestionCount}
+            onChangeText={value => setQuestionCount(clampNumber(value, 3, 20))}
           />
         </View>
         <TextInput
@@ -132,6 +156,16 @@ const BattleRoyaleView = ({
           value={eliminationScore}
           onChangeText={setEliminationScore}
         />
+        {battleMode === 'timed_mcq' ? (
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            placeholder="Secondes par question"
+            placeholderTextColor="#6B778C"
+            value={timeLimitSeconds}
+            onChangeText={setTimeLimitSeconds}
+          />
+        ) : null}
         <TouchableOpacity style={styles.primaryButton} onPress={createRoom}>
           <Text style={styles.primaryButtonText}>Créer la salle</Text>
         </TouchableOpacity>
@@ -157,10 +191,16 @@ const BattleRoyaleView = ({
           <Text style={styles.roomCode}>Code: {room.code}</Text>
           <Text style={styles.roomInfo}>Statut: {room.status}</Text>
           <Text style={styles.roomInfo}>
-            Thème: {room.config.theme} | Questions: {room.config.questionCount}
+            Thème: {room.config.theme} | Questions prévues: {room.config.questionCount}
+          </Text>
+          <Text style={styles.roomInfo}>
+            Mode: {room.config.mode === 'timed_mcq' ? 'QCM chronométré' : 'Classique'}
           </Text>
           <Text style={styles.roomInfo}>
             Survivre si score {'>='} {room.config.eliminationScore}
+            {room.config.mode === 'timed_mcq'
+              ? ` · ${room.config.timeLimitSeconds}s/question`
+              : ''}
           </Text>
           <Text style={styles.sectionTitle}>Joueurs</Text>
           {room.players.map(player => (
@@ -186,6 +226,31 @@ const BattleRoyaleView = ({
     </ScrollView>
   );
 };
+
+
+const clampNumber = (value: string, min: number, max: number) => {
+  const numeric = Math.max(min, Math.min(max, Math.floor(Number(value) || min)));
+  return String(numeric);
+};
+
+const ModeChip = ({
+  active,
+  label,
+  onPress,
+}: {
+  active: boolean;
+  label: string;
+  onPress: () => void;
+}) => (
+  <TouchableOpacity
+    style={[styles.modeChip, active && styles.modeChipActive]}
+    onPress={onPress}
+  >
+    <Text style={[styles.modeChipText, active && styles.modeChipTextActive]}>
+      {label}
+    </Text>
+  </TouchableOpacity>
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -238,6 +303,35 @@ const styles = StyleSheet.create({
   helpText: {
     color: '#5E6C84',
     lineHeight: 20,
+  },
+  optionLabel: {
+    color: COLORS.text,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  segmentedRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  modeChip: {
+    borderColor: '#DFE1E6',
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  modeChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  modeChipText: {
+    color: COLORS.text,
+    fontWeight: '800',
+  },
+  modeChipTextActive: {
+    color: COLORS.textOnDark,
   },
   input: {
     backgroundColor: '#FAFBFC',
