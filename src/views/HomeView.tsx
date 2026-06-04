@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,27 +8,37 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import LogoMark from '../components/LogoMark';
-import AuthController, { UserAccount } from '../controllers/AuthController';
+import { UserAccount } from '../controllers/AuthController';
 import QuizController, { QuizState } from '../controllers/QuizController';
 import { OpenAnswerMode, QuestionType } from '../models/AIModel';
-import { pickAvatarFromLibrary } from '../utils/avatarPicker';
 import {
   describeThemeMedia,
   pickThemeMedia,
   ThemeMedia,
 } from '../utils/themeMediaPicker';
 import { COLORS, SPACING } from '../utils/theme';
+import { Header } from '../components/Header';
+
+// Component Imports
+import { ScoreCard } from '../components/ScoreCard';
+import { QuizCard } from '../components/QuizCard';
+import { BottomNavigation, NavItem } from '../components/BottomNavigation';
+
+// View & Controller Imports
+import ProfileView from './ProfileView';
+import LeaderboardView from './LeaderboardView';
+import BattleRoyaleView from './BattleRoyaleView';
+import { BattleRoyaleRoom } from '../controllers/BattleRoyaleController';
 
 type HomeViewProps = {
   account: UserAccount;
-  navigation: StackNavigationProp<any>;
+  navigation: NativeStackNavigationProp<any>;
   onAccountUpdated: (account: UserAccount) => void;
-  onBattle: () => void;
-  onLeaderboard: () => void;
-  onQuizReady: (quiz: QuizState) => void;
   onSignOut: () => void;
+  onStartBattle: (room: BattleRoyaleRoom) => void;
+  onQuizReady: (quiz: QuizState) => void;
 };
 
 const questionTypeLabel = {
@@ -38,15 +47,23 @@ const questionTypeLabel = {
   open: 'QRO',
 };
 
+const NAV_ITEMS: NavItem[] = [
+  { id: 'home', label: 'Accueil', icon: '🏠' },
+  { id: 'quiz', label: 'Quiz', icon: '🧠' },
+  { id: 'battle', label: 'Battle', icon: '⚔️' },
+  { id: 'top', label: 'Top', icon: '🏆' },
+  { id: 'profile', label: 'Profil', icon: '👤' },
+];
+
 const HomeView = ({
   account,
   navigation,
   onAccountUpdated,
-  onBattle,
-  onLeaderboard,
-  onQuizReady,
   onSignOut,
+  onStartBattle,
+  onQuizReady,
 }: HomeViewProps) => {
+  const [activeTab, setActiveTab] = useState<'home' | 'quiz' | 'battle' | 'top' | 'profile'>('home');
   const [theme, setTheme] = useState('');
   const [questionType, setQuestionType] = useState<QuestionType>('mixed');
   const [questionCount, setQuestionCount] = useState('5');
@@ -55,7 +72,6 @@ const HomeView = ({
     useState<OpenAnswerMode>('flexible');
   const [themeMedia, setThemeMedia] = useState<ThemeMedia | null>(null);
   const [loading, setLoading] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [error, setError] = useState('');
 
   const normalizedQuestionCount = Math.max(
@@ -81,7 +97,6 @@ const HomeView = ({
         questionType,
       });
       onQuizReady(quiz);
-      navigation.navigate('Quiz');
     } catch (err) {
       setError(
         err instanceof Error
@@ -92,31 +107,6 @@ const HomeView = ({
       setLoading(false);
     }
   };
-
-  const handleAvatarUpload = async () => {
-    if (uploadingAvatar) {
-      return;
-    }
-
-    setUploadingAvatar(true);
-    setError('');
-    try {
-      const avatar = await pickAvatarFromLibrary();
-      if (!avatar) return;
-      const updatedAccount = await AuthController.updateAvatar(
-        account,
-        avatar.uri,
-      );
-      onAccountUpdated(updatedAccount);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Selection avatar impossible.',
-      );
-    } finally {
-      setUploadingAvatar(false);
-    }
-  };
-
 
   const handleThemeMedia = async () => {
     setError('');
@@ -130,73 +120,98 @@ const HomeView = ({
     }
   };
 
-  return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.header}>
-        <LogoMark compact subtitle="Quiz, comptes, scores et battle royale" />
-      </View>
+  const handleDailyChallenge = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const quiz = await QuizController.initQuiz("Cinéma des années 90", {
+        count: 5,
+        questionType: 'mixed',
+      });
+      onQuizReady(quiz);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Impossible de lancer le défi pour le moment.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      <View style={styles.profileCard}>
-        <View style={styles.profileTop}>
-          {account.avatarUrl ? (
-            <Image source={{ uri: account.avatarUrl }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarInitial}>
-                {account.displayName.slice(0, 1).toUpperCase()}
-              </Text>
-            </View>
-          )}
-          <View style={styles.profileIdentity}>
-            <Text style={styles.profileName}>{account.displayName}</Text>
-            <Text style={styles.profileMeta}>{account.email}</Text>
-            <Text style={styles.profileHint}>
-              Session sauvegardée localement et synchronisée avec Firebase.
-            </Text>
+  const renderDashboard = () => {
+    return (
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <Header displayName={account.displayName} />
+
+        <View style={styles.scoreCardContainer}>
+          <ScoreCard
+            totalScore={account.totalScore}
+            partiesPlayed={account.gamesPlayed}
+            bestScore={account.bestScore}
+            streak={7}
+          />
+        </View>
+
+        {/* Grid Row 1: Orange (Nouveau Quiz) & White (Battle Royale) */}
+        <View style={styles.gridRow1}>
+          <View style={styles.orangeCardWrapper}>
+            <QuizCard
+              variant="primary"
+              title="Nouveau Quiz"
+              subtitle="Génère avec l'IA"
+              icon="🧠"
+              onClick={() => setActiveTab('quiz')}
+            />
+          </View>
+          <View style={styles.battleCardWrapper}>
+            <QuizCard
+              variant="secondary"
+              title="Battle"
+              subtitle="Royale"
+              icon="⚔️"
+              iconColor="#ee6845"
+              onClick={() => setActiveTab('battle')}
+            />
           </View>
         </View>
-        <View style={styles.statsRow}>
-          <Stat label="Parties" value={account.gamesPlayed} />
-          <Stat label="Total" value={account.totalScore} />
-          <Stat label="Best" value={account.bestScore} />
-        </View>
-        <TouchableOpacity
-          style={[styles.secondaryButton, uploadingAvatar && styles.disabled]}
-          disabled={uploadingAvatar}
-          onPress={handleAvatarUpload}
-        >
-          <Text style={styles.secondaryButtonText}>
-            {uploadingAvatar ? 'Upload...' : 'Choisir une photo de profil'}
-          </Text>
-        </TouchableOpacity>
-      </View>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Quiz solo intelligent</Text>
-        <Text style={styles.cardText}>
-          Choisis un thème, puis définis obligatoirement le nombre de questions
-          avant de lancer le mode {questionTypeLabel[questionType]}. Les QCM ont
-          au maximum 5 choix et les QRO peuvent être corrigées souplement ou
-          strictement.
-        </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="ex: Mathématiques, Science-Fiction..."
-          placeholderTextColor="#6B778C"
-          value={theme}
-          onChangeText={setTheme}
-          editable={!loading}
-          returnKeyType="done"
-          onSubmitEditing={handleStart}
-        />
-        <TouchableOpacity style={styles.mediaButton} onPress={handleThemeMedia}>
-          <Text style={styles.mediaButtonText}>
-            Charger un support de thème (audio, vidéo, image, document)
-          </Text>
-        </TouchableOpacity>
+        {/* Grid Row 2: Classement & Défi du jour */}
+        <View style={styles.gridRow2}>
+          <View style={styles.halfCardWrapper}>
+            <QuizCard
+              variant="secondary"
+              title="Classement"
+              subtitle="Top 12 mondial"
+              icon="🏆"
+              iconColor="#7a317a"
+              onClick={() => setActiveTab('top')}
+            />
+          </View>
+          <View style={styles.halfCardWrapper}>
+            <QuizCard
+              variant="secondary"
+              title="Défi du jour"
+              subtitle="Cinéma 90's"
+              icon="🔥"
+              iconColor="#ee6845"
+              onClick={handleDailyChallenge}
+            />
+          </View>
+        </View>
+
+        {/* Section: Support de thème */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Support de thème</Text>
+          <TouchableOpacity onPress={handleThemeMedia} activeOpacity={0.7}>
+            <Text style={styles.seeAllText}>Voir tout {'>'}</Text>
+          </TouchableOpacity>
+        </View>
+
         {themeMedia ? (
           <View style={styles.mediaBadge}>
             <Text style={styles.mediaBadgeTitle}>{themeMedia.name}</Text>
@@ -210,129 +225,217 @@ const HomeView = ({
           </View>
         ) : null}
 
-        <Text style={styles.optionLabel}>Format des questions</Text>
-        <View style={styles.segmentedRow}>
-          <OptionChip
-            active={questionType === 'mixed'}
-            label="Mixte"
-            onPress={() => setQuestionType('mixed')}
-          />
-          <OptionChip
-            active={questionType === 'mcq'}
-            label="QCM"
-            onPress={() => setQuestionType('mcq')}
-          />
-          <OptionChip
-            active={questionType === 'open'}
-            label="QRO"
-            onPress={() => setQuestionType('open')}
-          />
+        <View style={styles.pillsRow}>
+          <TouchableOpacity style={styles.pillButton} onPress={handleThemeMedia} activeOpacity={0.8}>
+            <Text style={styles.pillEmoji}>🖼️</Text>
+            <Text style={styles.pillText}>Image</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.pillButton} onPress={handleThemeMedia} activeOpacity={0.8}>
+            <Text style={styles.pillEmoji}>🎧</Text>
+            <Text style={styles.pillText}>Audio</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.pillButton} onPress={handleThemeMedia} activeOpacity={0.8}>
+            <Text style={styles.pillEmoji}>📹</Text>
+            <Text style={styles.pillText}>Vidéo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.pillButton} onPress={handleThemeMedia} activeOpacity={0.8}>
+            <Text style={styles.pillEmoji}>📄</Text>
+            <Text style={styles.pillText}>PDF</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  };
+
+  const renderQuizGeneratorForm = () => {
+    return (
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Header displayName={account.displayName} />
+        
+        <View style={styles.logoSection}>
+          <LogoMark compact subtitle="Génère tes quiz avec l'IA" />
         </View>
 
-        <View style={styles.settingsRow}>
-          <View style={styles.settingBox}>
-            <Text style={styles.optionLabel}>Nombre de questions</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="numeric"
-              placeholder="5"
-              placeholderTextColor="#6B778C"
-              value={questionCount}
-              onChangeText={value =>
-                setQuestionCount(clampNumber(value, 1, 20))
-              }
+        <View style={styles.card}>
+          <Text style={styles.label}>Quiz solo intelligent</Text>
+          <Text style={styles.cardText}>
+            Choisis un thème, puis définis obligatoirement le nombre de questions
+            avant de lancer le mode {questionTypeLabel[questionType]}. Les QCM ont
+            au maximum 5 choix et les QRO peuvent être corrigées souplement ou
+            strictement.
+          </Text>
+          <TextInput
+            style={styles.input}
+            placeholder="ex: Mathématiques, Science-Fiction..."
+            placeholderTextColor="#6B778C"
+            value={theme}
+            onChangeText={setTheme}
+            editable={!loading}
+            returnKeyType="done"
+            onSubmitEditing={handleStart}
+          />
+          <TouchableOpacity style={styles.mediaButton} onPress={handleThemeMedia}>
+            <Text style={styles.mediaButtonText}>
+              Charger un support de thème (audio, vidéo, image, document)
+            </Text>
+          </TouchableOpacity>
+          {themeMedia ? (
+            <View style={styles.mediaBadge}>
+              <Text style={styles.mediaBadgeTitle}>{themeMedia.name}</Text>
+              <Text style={styles.mediaBadgeText}>
+                {themeMedia.type || 'type inconnu'}
+                {themeMedia.size ? ` · ${Math.round(themeMedia.size / 1024)} Ko` : ''}
+              </Text>
+              <TouchableOpacity onPress={() => setThemeMedia(null)}>
+                <Text style={styles.mediaRemove}>Retirer</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          <Text style={styles.optionLabel}>Format des questions</Text>
+          <View style={styles.segmentedRow}>
+            <OptionChip
+              active={questionType === 'mixed'}
+              label="Mixte"
+              onPress={() => setQuestionType('mixed')}
+            />
+            <OptionChip
+              active={questionType === 'mcq'}
+              label="QCM"
+              onPress={() => setQuestionType('mcq')}
+            />
+            <OptionChip
+              active={questionType === 'open'}
+              label="QRO"
+              onPress={() => setQuestionType('open')}
             />
           </View>
-          {questionType !== 'open' ? (
+
+          <View style={styles.settingsRow}>
             <View style={styles.settingBox}>
-              <Text style={styles.optionLabel}>Choix QCM</Text>
+              <Text style={styles.optionLabel}>Nombre de questions</Text>
               <TextInput
                 style={styles.input}
                 keyboardType="numeric"
-                placeholder="4"
+                placeholder="5"
                 placeholderTextColor="#6B778C"
-                value={choiceCount}
-                onChangeText={value => setChoiceCount(clampNumber(value, 2, 5))}
+                value={questionCount}
+                onChangeText={value =>
+                  setQuestionCount(clampNumber(value, 1, 20))
+                }
               />
             </View>
+            {questionType !== 'open' ? (
+              <View style={styles.settingBox}>
+                <Text style={styles.optionLabel}>Choix QCM</Text>
+                <TextInput
+                  style={styles.input}
+                  keyboardType="numeric"
+                  placeholder="4"
+                  placeholderTextColor="#6B778C"
+                  value={choiceCount}
+                  onChangeText={value => setChoiceCount(clampNumber(value, 2, 5))}
+                />
+              </View>
+            ) : null}
+          </View>
+
+          {questionType !== 'mcq' ? (
+            <>
+              <Text style={styles.optionLabel}>Correction des réponses ouvertes</Text>
+              <View style={styles.segmentedRow}>
+                <OptionChip
+                  active={openAnswerMode === 'flexible'}
+                  label="Souple"
+                  onPress={() => setOpenAnswerMode('flexible')}
+                />
+                <OptionChip
+                  active={openAnswerMode === 'exact'}
+                  label="Nom exact"
+                  onPress={() => setOpenAnswerMode('exact')}
+                />
+              </View>
+              <Text style={styles.helperText}>
+                Souple accepte synonymes et petites fautes. Nom exact exige la
+                bonne orthographe pour les personnes, lieux ou termes précis.
+              </Text>
+            </>
           ) : null}
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              (!theme.trim() || loading) && styles.buttonDisabled,
+            ]}
+            onPress={handleStart}
+            disabled={loading || !theme.trim()}
+          >
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Générer {normalizedQuestionCount} questions</Text>
+            )}
+          </TouchableOpacity>
         </View>
+      </ScrollView>
+    );
+  };
 
-        {questionType !== 'mcq' ? (
-          <>
-            <Text style={styles.optionLabel}>Correction des réponses ouvertes</Text>
-            <View style={styles.segmentedRow}>
-              <OptionChip
-                active={openAnswerMode === 'flexible'}
-                label="Souple"
-                onPress={() => setOpenAnswerMode('flexible')}
-              />
-              <OptionChip
-                active={openAnswerMode === 'exact'}
-                label="Nom exact"
-                onPress={() => setOpenAnswerMode('exact')}
-              />
-            </View>
-            <Text style={styles.helperText}>
-              Souple accepte synonymes et petites fautes. Nom exact exige la
-              bonne orthographe pour les personnes, lieux ou termes précis.
-            </Text>
-          </>
-        ) : null}
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'home':
+        return renderDashboard();
+      case 'quiz':
+        return renderQuizGeneratorForm();
+      case 'battle':
+        return (
+          <BattleRoyaleView
+            account={account}
+            navigation={navigation as any}
+            onBack={() => setActiveTab('home')}
+            onStartBattle={onStartBattle}
+          />
+        );
+      case 'top':
+        return (
+          <LeaderboardView
+            onBack={() => setActiveTab('home')}
+          />
+        );
+      case 'profile':
+        return (
+          <ProfileView
+            account={account}
+            navigation={navigation as any}
+            onAccountUpdated={onAccountUpdated}
+            onSignOut={onSignOut}
+          />
+        );
+      default:
+        return renderDashboard();
+    }
+  };
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-        <TouchableOpacity
-          style={[
-            styles.button,
-            (!theme.trim() || loading) && styles.buttonDisabled,
-          ]}
-          onPress={handleStart}
-          disabled={loading || !theme.trim()}
-        >
-          {loading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.buttonText}>Générer {normalizedQuestionCount} questions</Text>
-          )}
-        </TouchableOpacity>
+  return (
+    <View style={styles.container}>
+      <View style={styles.contentContainer}>
+        {renderContent()}
       </View>
-
-      <View style={styles.actionsGrid}>
-        <TouchableOpacity style={styles.modeButton} onPress={onBattle}>
-          <Text style={styles.modeTitle}>Battle Royale</Text>
-          <Text style={styles.modeText}>
-            Crée une salle synchronisée, partage le code et lance un quiz en
-            élimination.
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.modeButton} onPress={onLeaderboard}>
-          <Text style={styles.modeTitle}>Scores</Text>
-          <Text style={styles.modeText}>
-            Consulte les meilleurs scores synchronisés depuis le serveur.
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity style={styles.signOutButton} onPress={onSignOut}>
-        <Text style={styles.signOutText}>Déconnexion</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.settingsButton}
-        onPress={() => navigation.navigate('Settings')}
-      >
-        <Text style={styles.settingsText}>Paramètres</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      
+      <BottomNavigation
+        items={NAV_ITEMS}
+        activeItem={activeTab}
+        onItemPress={(tabId) => setActiveTab(tabId as any)}
+      />
+    </View>
   );
 };
-
-const Stat = ({ label, value }: { label: string; value: number }) => (
-  <View style={styles.statBox}>
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
-);
 
 const clampNumber = (value: string, min: number, max: number) => {
   const numeric = Math.max(min, Math.min(max, Math.floor(Number(value) || min)));
@@ -361,100 +464,25 @@ const OptionChip = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.primary,
-    flexGrow: 1,
-    padding: SPACING.lg,
+    flex: 1,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 24,
+  contentContainer: {
+    flex: 1,
   },
-  logo: {
-    color: 'white',
-    fontSize: 48,
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    color: COLORS.secondary,
-    fontSize: 16,
-    marginTop: 5,
-    textAlign: 'center',
-  },
-  profileCard: {
-    backgroundColor: 'white',
-    borderRadius: 24,
-    gap: 12,
-    marginBottom: 18,
-    padding: SPACING.lg,
-  },
-  profileTop: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 14,
-  },
-  avatar: {
-    borderRadius: 36,
-    height: 72,
-    width: 72,
-  },
-  avatarPlaceholder: {
-    alignItems: 'center',
+  scrollContainer: {
     backgroundColor: COLORS.primary,
-    borderColor: COLORS.secondary,
-    borderRadius: 36,
-    borderWidth: 2,
-    height: 72,
-    justifyContent: 'center',
-    width: 72,
+    flexGrow: 1,
+    paddingBottom: SPACING.xl,
   },
-  avatarInitial: {
-    color: COLORS.textOnDark,
-    fontSize: 28,
-    fontWeight: '900',
-  },
-  profileIdentity: {
-    flex: 1,
-  },
-  profileName: {
-    color: COLORS.text,
-    fontSize: 24,
-    fontWeight: '800',
-  },
-  profileMeta: {
-    color: '#6B778C',
-    fontSize: 13,
-  },
-  profileHint: {
-    color: COLORS.success,
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 4,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  statBox: {
-    backgroundColor: '#F4F5F7',
-    borderRadius: 12,
-    flex: 1,
-    padding: 12,
-  },
-  statValue: {
-    color: COLORS.primary,
-    fontSize: 20,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  statLabel: {
-    color: COLORS.text,
-    fontSize: 12,
-    textAlign: 'center',
+  logoSection: {
+    marginVertical: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
   },
   card: {
     backgroundColor: 'white',
     borderRadius: 20,
     marginBottom: 18,
+    marginHorizontal: SPACING.lg,
     padding: SPACING.xl,
   },
   label: {
@@ -529,6 +557,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAF2FF',
     borderRadius: 14,
     gap: 4,
+    marginHorizontal: SPACING.lg,
     marginBottom: 14,
     padding: 12,
   },
@@ -575,56 +604,81 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  secondaryButton: {
-    alignItems: 'center',
-    borderColor: COLORS.secondary,
-    borderRadius: 10,
-    borderWidth: 1,
-    padding: 12,
+  // Dashboard Specific Styles
+  scoreCardContainer: {
+    marginHorizontal: SPACING.lg,
+    marginBottom: 18,
   },
-  secondaryButtonText: {
-    color: COLORS.primary,
-    fontWeight: '800',
-  },
-  disabled: {
-    opacity: 0.6,
-  },
-  actionsGrid: {
+  gridRow1: {
+    flexDirection: 'row',
+    marginHorizontal: SPACING.lg,
+    marginBottom: 12,
     gap: 12,
   },
-  modeButton: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderColor: COLORS.secondary,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: SPACING.lg,
+  gridRow2: {
+    flexDirection: 'row',
+    marginHorizontal: SPACING.lg,
+    marginBottom: 18,
+    gap: 12,
   },
-  modeTitle: {
+  orangeCardWrapper: {
+    flex: 1.8,
+  },
+  battleCardWrapper: {
+    flex: 1,
+  },
+  halfCardWrapper: {
+    flex: 1,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginHorizontal: SPACING.lg,
+    marginTop: 12,
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '900',
     color: 'white',
-    fontSize: 18,
-    fontWeight: '800',
   },
-  modeText: {
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 4,
-  },
-  signOutButton: {
-    alignSelf: 'center',
-    marginTop: 24,
-    padding: 12,
-  },
-  signOutText: {
-    color: 'white',
-    textDecorationLine: 'underline',
-  },
-  settingsButton: {
-    alignSelf: 'center',
-    marginTop: 10,
-    padding: 12,
-  },
-  settingsText: {
+  seeAllText: {
+    fontSize: 12,
     color: COLORS.secondary,
-    textDecorationLine: 'underline',
+    fontWeight: '700',
+  },
+  pillsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    marginBottom: 24,
+    gap: 8,
+  },
+  pillButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#e7e5e4',
+    paddingVertical: 10,
+    gap: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  pillEmoji: {
+    fontSize: 14,
+  },
+  pillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#2e1d33',
   },
 });
 

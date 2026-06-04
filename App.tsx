@@ -1,122 +1,48 @@
-import React from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import LogoMark from './src/components/LogoMark';
-import AuthController, { UserAccount } from './src/controllers/AuthController';
-import BattleRoyaleController, {
-  BattleRoyaleRoom,
-} from './src/controllers/BattleRoyaleController';
-import ScoreController, { GameMode } from './src/controllers/ScoreController';
-import { QuizState } from './src/controllers/QuizController';
-import AuthView from './src/views/AuthView';
-import BattleRoyaleView from './src/views/BattleRoyaleView';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+
+// Real View Imports
 import HomeView from './src/views/HomeView';
-import LeaderboardView from './src/views/LeaderboardView';
+import AuthView from './src/views/AuthView';
 import QuizView from './src/views/QuizView';
+import BattleRoyaleView from './src/views/BattleRoyaleView';
+import LeaderboardView from './src/views/LeaderboardView';
+import ProfileView from './src/views/ProfileView';
 import SettingsView from './src/views/SettingsView';
 
-type ActiveQuiz = {
-  state: QuizState;
-  mode: GameMode;
-  battleRoom?: BattleRoyaleRoom;
-};
+// Controller & Type Imports
+import AuthController, { UserAccount } from './src/controllers/AuthController';
+import ScoreController from './src/controllers/ScoreController';
+import BattleRoyaleController from './src/controllers/BattleRoyaleController';
+import { QuizState } from './src/controllers/QuizController';
 
 const Stack = createNativeStackNavigator();
 
-const App = () => {
-  const [account, setAccount] = React.useState<UserAccount | null>(null);
-  const [activeQuiz, setActiveQuiz] = React.useState<ActiveQuiz | null>(null);
-  const [restoringSession, setRestoringSession] = React.useState(true);
-  const [savingScore, setSavingScore] = React.useState(false);
+export default function App() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [account, setAccount] = useState<UserAccount | null>(null);
 
-  React.useEffect(() => {
-    let mounted = true;
-    AuthController.restoreSession()
-      .then(savedAccount => {
-        if (mounted && savedAccount) setAccount(savedAccount);
-      })
-      .finally(() => {
-        if (mounted) setRestoringSession(false);
-      });
-
-    return () => {
-      mounted = false;
+  // Restore session on mount
+  useEffect(() => {
+    const restore = async () => {
+      try {
+        const acc = await AuthController.restoreSession();
+        setAccount(acc);
+      } catch (err) {
+        console.error("Session restoration failed:", err);
+      } finally {
+        setIsLoading(false);
+      }
     };
+    restore();
   }, []);
 
-  const handleAuthenticated = (nextAccount: UserAccount) => {
-    setAccount(nextAccount);
-  };
-
-  const handleSignOut = async () => {
-    await AuthController.signOut();
-    setAccount(null);
-    setActiveQuiz(null);
-  };
-
-  const handleBattleStart = (room: BattleRoyaleRoom) => {
-    if (!room.questions || room.questions.length === 0) {
-      return;
-    }
-
-    setActiveQuiz({
-      mode: 'battle_royale',
-      battleRoom: room,
-      state: {
-        theme: room.config.theme,
-        questions: room.questions,
-        hearts: 1,
-        score: 0,
-        currentIndex: 0,
-        timeLimitSeconds:
-          room.config.mode === 'timed_mcq'
-            ? room.config.timeLimitSeconds
-            : undefined,
-      },
-    });
-  };
-
-  const handleQuizComplete = async (finalScore: number, quiz: QuizState) => {
-    if (!account || !activeQuiz) {
-      return;
-    }
-
-    setSavingScore(true);
-    try {
-      const result = await ScoreController.recordScore(
-        account,
-        quiz.theme,
-        finalScore,
-        activeQuiz.mode,
-      );
-      await AuthController.setCurrentAccount(result.account);
-      setAccount(result.account);
-
-      if (activeQuiz.mode === 'battle_royale' && activeQuiz.battleRoom) {
-        await BattleRoyaleController.finishPlayer(
-          activeQuiz.battleRoom,
-          account,
-          finalScore,
-        );
-      }
-    } finally {
-      setSavingScore(false);
-    }
-  };
-
-  if (restoringSession || savingScore) {
+  if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <LogoMark
-          compact
-          subtitle={
-            restoringSession
-              ? 'Restauration de ta session...'
-              : 'Sauvegarde du score...'
-          }
-        />
-        <ActivityIndicator color="#21E7FF" size="large" />
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#ee6845" />
       </View>
     );
   }
@@ -124,86 +50,137 @@ const App = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!account ? (
-          <Stack.Screen name="Auth">
-            {props => <AuthView {...props} onAuthenticated={handleAuthenticated} />}
-          </Stack.Screen>
-        ) : (
+        {account ? (
           <>
             <Stack.Screen name="Home">
-              {props => (
+              {(props) => (
                 <HomeView
                   {...props}
                   account={account}
-                  onAccountUpdated={setAccount}
-                  onBattle={() => props.navigation.navigate('Battle')}
-                  onLeaderboard={() => props.navigation.navigate('Leaderboard')}
-                  onQuizReady={quiz => setActiveQuiz({ state: quiz, mode: 'solo' })}
-                  onSignOut={handleSignOut}
+                  onAccountUpdated={(updatedAcc) => setAccount(updatedAcc)}
+                  onSignOut={async () => {
+                    await AuthController.signOut();
+                    setAccount(null);
+                  }}
+                  onStartBattle={(room) => {
+                    const quizState = {
+                      theme: room.config.theme,
+                      questions: room.questions || [],
+                      hearts: 3,
+                      score: 0,
+                      currentIndex: 0,
+                      timeLimitSeconds: room.config.mode === 'timed_mcq' ? room.config.timeLimitSeconds : undefined,
+                    };
+                    props.navigation.navigate('Quiz', { quiz: quizState, mode: 'battle_royale', room });
+                  }}
+                  onQuizReady={(quiz) => props.navigation.navigate('Quiz', { quiz, mode: 'solo' })}
                 />
               )}
             </Stack.Screen>
-            <Stack.Screen name="Battle">
-              {props => (
+
+            <Stack.Screen name="Quiz">
+              {(props) => {
+                const { quiz, mode = 'solo', room } = (props.route.params as any) || {};
+                return (
+                  <QuizView
+                    {...props}
+                    initialQuiz={quiz}
+                    mode={mode}
+                    onComplete={async (finalScore, completedQuiz) => {
+                      try {
+                        if (mode === 'battle_royale' && room) {
+                          await BattleRoyaleController.finishPlayer(room, account, finalScore);
+                        } else {
+                          await ScoreController.recordScore(account, completedQuiz.theme, finalScore, 'solo');
+                        }
+                        const updatedAccount = await AuthController.restoreSession();
+                        if (updatedAccount) {
+                          setAccount(updatedAccount);
+                        }
+                      } catch (err) {
+                        console.error('onComplete error:', err);
+                      }
+                    }}
+                    onExit={() => props.navigation.navigate('Home')}
+                  />
+                );
+              }}
+            </Stack.Screen>
+
+            <Stack.Screen name="BattleRoyale">
+              {(props) => (
                 <BattleRoyaleView
                   {...props}
                   account={account}
                   onBack={() => props.navigation.goBack()}
-                  onStartBattle={handleBattleStart}
+                  onStartBattle={(room) => {
+                    const quizState: QuizState = {
+                      theme: room.config.theme,
+                      questions: (room.questions || []) as any,
+                      hearts: 3,
+                      score: 0,
+                      currentIndex: 0,
+                      timeLimitSeconds: room.config.mode === 'timed_mcq' ? room.config.timeLimitSeconds : undefined,
+                    };
+                    props.navigation.navigate('Quiz', { quiz: quizState, mode: 'battle_royale', room });
+                  }}
                 />
               )}
             </Stack.Screen>
+
             <Stack.Screen name="Leaderboard">
-              {props => (
+              {(props) => (
                 <LeaderboardView
                   {...props}
                   onBack={() => props.navigation.goBack()}
                 />
               )}
             </Stack.Screen>
-            <Stack.Screen name="Settings">
-              {props => (
-                <SettingsView
+
+            <Stack.Screen name="Profile">
+              {(props) => (
+                <ProfileView
                   {...props}
-                  onBack={() => props.navigation.goBack()}
+                  account={account}
+                  onAccountUpdated={(updatedAcc) => setAccount(updatedAcc)}
+                  onSignOut={async () => {
+                    await AuthController.signOut();
+                    setAccount(null);
+                  }}
                 />
               )}
             </Stack.Screen>
-            {activeQuiz && (
-              <Stack.Screen name="Quiz">
-                {props => (
-                  <QuizView
-                    {...props}
-                    initialQuiz={activeQuiz.state}
-                    mode={activeQuiz.mode}
-                    onComplete={handleQuizComplete}
-                    onExit={() => {
-                      setActiveQuiz(null);
-                    }}
-                  />
-                )}
-              </Stack.Screen>
-            )}
           </>
+        ) : (
+          <Stack.Screen name="Auth">
+            {(props) => (
+              <AuthView
+                {...props}
+                onAuthenticated={(acc) => setAccount(acc)}
+              />
+            )}
+          </Stack.Screen>
         )}
+        
+        {/* Settings view is always accessible for debug/config */}
+        <Stack.Screen name="Settings">
+          {(props) => (
+            <SettingsView
+              {...props}
+              onBack={() => props.navigation.goBack()}
+            />
+          )}
+        </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  loadingContainer: {
+  center: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0052CC',
-    gap: 16,
-  },
-  loadingText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '700',
+    alignItems: 'center',
+    backgroundColor: '#1f1122',
   },
 });
-
-export default App;
