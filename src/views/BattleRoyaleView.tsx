@@ -16,12 +16,14 @@ import { COLORS, SPACING } from '../utils/theme';
 
 type BattleRoyaleViewProps = {
   account: UserAccount;
+  navigation: any;
   onBack: () => void;
   onStartBattle: (room: BattleRoyaleRoom) => void;
 };
 
 const BattleRoyaleView = ({
   account,
+  navigation,
   onBack,
   onStartBattle,
 }: BattleRoyaleViewProps) => {
@@ -95,6 +97,7 @@ const BattleRoyaleView = ({
       const activeRoom = await BattleRoyaleController.startRoom(room);
       setRoom(activeRoom);
       onStartBattle(activeRoom);
+      navigation.navigate('Quiz');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Demarrage impossible.');
     } finally {
@@ -163,6 +166,7 @@ const BattleRoyaleView = ({
         if (room.status === 'waiting' && updatedRoom.status === 'active') {
           setRoom(updatedRoom);
           onStartBattle(updatedRoom);
+          navigation.navigate('Quiz');
         } else {
           setRoom(updatedRoom);
         }
@@ -172,7 +176,7 @@ const BattleRoyaleView = ({
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [room, account, onStartBattle]);
+  }, [room, account, onStartBattle, navigation]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>

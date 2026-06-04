@@ -81,6 +81,7 @@ const HomeView = ({
         questionType,
       });
       onQuizReady(quiz);
+      navigation.navigate('Quiz');
     } catch (err) {
       setError(
         err instanceof Error
