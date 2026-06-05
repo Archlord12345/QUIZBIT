@@ -10,9 +10,11 @@ on:
       - main
       - 'cursor/**'
 
+# Une seule build a la fois par branche ; les pushes suivants attendent
+# (evite d'annuler un assembleRelease deja a 90 % lors de commits rapides).
 concurrency:
   group: android-release-apk-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-release-apk:

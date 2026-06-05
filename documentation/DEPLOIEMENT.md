@@ -119,6 +119,8 @@ Workflow : `.github/workflows/android-apk.yml`
 
 Déclenchements : push `main`, `cursor/**`, PR vers `main`, `workflow_dispatch`.
 
+**Concurrence** : une build à la fois par branche ; les commits rapides sur `main` **attendent** la fin de la build en cours (elles ne l'annulent plus). Si un run affiche `cancelled`, vérifie s'il a été remplacé par un run plus récent sur le même commit ou relance manuellement **Actions → Build Android Release APK → Run workflow**.
+
 Étapes principales :
 
 1. Node 22.11 + Java 17 + Android SDK 36
