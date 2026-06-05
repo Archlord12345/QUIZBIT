@@ -10,8 +10,65 @@ const {
   ORDER_BY,
   normalizeRow,
 } = require('../firestore-normalize');
+const { resolveAvatarUrl } = require('../default-avatar');
 
 const PAGE_SIZE = 100;
+
+const loadUsersById = async idToken => {
+  try {
+    const { rows } = await listWithFallback('users', idToken);
+    return Object.fromEntries(
+      rows
+        .map(row => normalizeRow('users', row))
+        .filter(user => user?.id)
+        .map(user => [user.id, user]),
+    );
+  } catch {
+    return {};
+  }
+};
+
+const enrichRowsWithAvatars = async (resolvedName, rows, idToken) => {
+  const needsUsers = resolvedName === 'scores' || resolvedName === 'battleRooms';
+  if (!needsUsers) {
+    return rows.map(row => normalizeRow(resolvedName, row));
+  }
+
+  const usersById = await loadUsersById(idToken);
+
+  return rows.map(row => {
+    const normalized = normalizeRow(resolvedName, row);
+    if (resolvedName === 'scores') {
+      const user = usersById[normalized.userId];
+      return {
+        ...normalized,
+        avatarUrl: resolveAvatarUrl(
+          user?.avatarUrl || normalized.avatarUrl,
+          normalized.userId || normalized.id,
+          normalized.displayName || user?.displayName,
+        ),
+      };
+    }
+    if (resolvedName === 'battleRooms') {
+      const players = Array.isArray(normalized.players) ? normalized.players : [];
+      return {
+        ...normalized,
+        players: players.map(player => {
+          const user = usersById[player.userId];
+          return {
+            ...player,
+            avatarUrl: resolveAvatarUrl(
+              user?.avatarUrl,
+              player.userId,
+              player.displayName || user?.displayName,
+            ),
+          };
+        }),
+      };
+    }
+    return normalized;
+  });
+};
 
 const listWithFallback = async (collection, idToken) => {
   const orders = ORDER_BY[collection] || [''];
@@ -53,12 +110,18 @@ module.exports = async (req, res) => {
       idToken,
     );
 
+    const enrichedRows = await enrichRowsWithAvatars(
+      resolvedName,
+      rows,
+      idToken,
+    );
+
     return res.status(200).json({
       ok: true,
       firestoreReady: true,
       collection: resolvedName,
-      rows: rows.map(row => normalizeRow(resolvedName, row)),
-      count: rows.length,
+      rows: enrichedRows,
+      count: enrichedRows.length,
     });
   } catch (error) {
     const message = error.message || 'Lecture Firestore impossible.';

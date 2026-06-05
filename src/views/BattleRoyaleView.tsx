@@ -24,6 +24,7 @@ import {
 import { ThemeMediaSection } from '../components/ThemeMediaSection';
 import VoiceController from '../controllers/VoiceController';
 import { MAX_VOICE_RECORD_MS } from '../utils/voiceRecorder';
+import { resolveRoomHostId } from '../utils/battleRoomHost';
 import { getApiMode } from '../utils/api';
 
 type BattleRoyaleViewProps = {
@@ -506,10 +507,11 @@ const BattleRoyaleView = ({
           </Text>
           <Text style={styles.sectionTitle}>Joueurs</Text>
           {room.players.map(player => {
-            const isHost = player.userId === room.hostId;
+            const hostId = resolveRoomHostId(room);
+            const isHost = player.userId === hostId;
             let statusText = 'en attente';
             if (room.status === 'waiting') {
-              statusText = isHost ? 'dans le lobby (créateur)' : 'dans le lobby';
+              statusText = isHost ? 'dans le lobby (propriétaire)' : 'dans le lobby';
             } else if (room.status === 'active') {
               statusText = player.finished ? `${player.score} pts` : 'en cours de jeu';
             } else if (room.status === 'finished') {
@@ -587,13 +589,16 @@ const BattleRoyaleView = ({
           ) : null}
 
           {(() => {
-            const isHost = room.hostId === account.id;
+            const hostId = resolveRoomHostId(room);
+            const isHost = hostId === account.id;
             const isPlayer = room.players.some(
               player => player.userId === account.id,
             );
             const canLaunch =
               room.status === 'waiting' &&
-              (isHost || (isOfflineMode && isPlayer));
+              (isOfflineMode ? isPlayer : isHost);
+            const waitingForHost =
+              room.status === 'waiting' && isPlayer && !isHost && !isOfflineMode;
 
             return (
               <>
@@ -606,7 +611,7 @@ const BattleRoyaleView = ({
                       Lancer le battle
                     </Text>
                   </TouchableOpacity>
-                ) : !isOfflineMode ? (
+                ) : waitingForHost ? (
                   <View style={styles.waitingForHostContainer}>
                     <Text style={styles.waitingForHostText}>
                       En attente du lancement par le créateur de la salle...

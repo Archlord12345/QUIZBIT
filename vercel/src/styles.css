@@ -315,7 +315,7 @@ h2 {
   border-bottom: 1px solid var(--qb-line-soft);
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(72px, 96px) minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   min-height: 44px;
   padding: 12px 0;
 }
@@ -942,6 +942,47 @@ table {
 .details-avatar-meta {
   display: grid;
   gap: 4px;
+}
+
+.profile-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.profile-card {
+  align-items: center;
+  background: var(--qb-surface-muted);
+  border: 1px solid var(--qb-line-soft);
+  border-radius: 16px;
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.profile-card-meta {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.profile-card-meta strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatar-stack {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.activity-row-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
 }
 
 .btn.danger {

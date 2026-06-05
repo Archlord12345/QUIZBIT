@@ -40,11 +40,27 @@ const normalizeQuiz = doc => ({
   createdAt: doc.createdAt || doc.updatedAt || doc.date || null,
 });
 
-const normalizeUser = doc => ({
-  ...doc,
-  displayName:
-    doc.displayName || doc.username || doc.name || doc.email?.split('@')[0] || 'Player',
-});
+const normalizeUser = doc => {
+  const displayName =
+    doc.displayName ||
+    doc.username ||
+    doc.name ||
+    doc.email?.split('@')[0] ||
+    'Player';
+  const id = String(doc.id || doc.userId || '').trim();
+  let avatarUrl = String(doc.avatarUrl || doc.photoURL || doc.avatar || '').trim();
+  try {
+    const { resolveAvatarUrl } = require('../default-avatar');
+    avatarUrl = resolveAvatarUrl(avatarUrl, id, displayName);
+  } catch {
+    // keep raw avatarUrl if helper unavailable
+  }
+  return {
+    ...doc,
+    displayName,
+    avatarUrl,
+  };
+};
 
 const normalizeScore = doc => ({
   ...doc,

@@ -88,10 +88,45 @@ const pickQuestions = (state, prompt, count, options = {}) => {
   }));
 };
 
-const toLobbySummary = room => {
+const PLACEHOLDER_PLAYER_IDS = new Set(['offline-demo']);
+
+const normalizeBattleRoom = room => {
+  if (!room || typeof room !== 'object') return room;
   const players = Array.isArray(room.players) ? room.players : [];
+  const realPlayers = players.filter(
+    player => player?.userId && !PLACEHOLDER_PLAYER_IDS.has(player.userId),
+  );
+  const activePlayers = realPlayers.length > 0 ? realPlayers : players;
+  let hostId = String(room.hostId || '').trim();
+  const hostIsReal = hostId && activePlayers.some(player => player.userId === hostId);
+
+  if (!hostIsReal && activePlayers.length > 0) {
+    hostId = activePlayers[0].userId;
+  } else if (!hostIsReal) {
+    hostId = '';
+  }
+
+  return {
+    ...room,
+    hostId,
+    players: activePlayers,
+  };
+};
+
+const saveBattleRoom = (code, room) => {
+  const normalized = normalizeBattleRoom(room);
+  mutateStore(state => ({
+    ...state,
+    battleRooms: { ...state.battleRooms, [code]: normalized },
+  }));
+  return normalized;
+};
+
+const toLobbySummary = room => {
+  const normalized = normalizeBattleRoom(room);
+  const players = Array.isArray(normalized.players) ? normalized.players : [];
   const host =
-    players.find(player => player.userId === room.hostId) || players[0] || null;
+    players.find(player => player.userId === normalized.hostId) || players[0] || null;
   return {
     code: String(room.code || room.id || '').trim().toUpperCase(),
     theme: String(room.config?.theme || 'Culture generale').trim(),
@@ -99,8 +134,8 @@ const toLobbySummary = room => {
     mode: room.config?.mode === 'timed_mcq' ? 'timed_mcq' : 'classic',
     playerCount: players.length,
     maxPlayers: Math.max(2, Number(room.config?.maxPlayers || 10)),
-    hostName: host?.displayName || 'Hote',
-    createdAt: room.createdAt || null,
+    hostName: host?.displayName || (normalized.hostId ? 'Hote' : 'En attente'),
+    createdAt: normalized.createdAt || null,
   };
 };
 
@@ -477,8 +512,7 @@ export const handleOfflineApi = async (req, res, routeName) => {
           quizSource: String(config.quizSource || '').trim(),
           createdAt: new Date().toISOString(),
         };
-        mutateStore(s => ({ ...s, battleRooms: { ...s.battleRooms, [code]: room } }));
-        return json(res, 200, { ok: true, room });
+        return json(res, 200, { ok: true, room: saveBattleRoom(code, room) });
       }
 
       case 'battle-room-list': {
@@ -488,36 +522,48 @@ export const handleOfflineApi = async (req, res, routeName) => {
 
       case 'battle-room-join': {
         const user = getUserFromRequest(body, state);
+        if (!user) return json(res, 401, { ok: false, message: 'Compte offline requis.' });
         const code = String(body.code || '').trim().toUpperCase();
-        const room = state.battleRooms[code];
+        let room = state.battleRooms[code];
         if (!room) throw new Error('Salle introuvable.');
         if (room.status !== 'waiting') throw new Error('La partie a deja demarre.');
-        const exists = room.players.some(player => player.userId === user.id);
+        const players = Array.isArray(room.players) ? room.players : [];
+        const exists = players.some(player => player.userId === user.id);
         if (!exists) {
-          room.players.push({
-            userId: user.id,
-            displayName: user.displayName,
-            score: 0,
-            eliminated: false,
-            finished: false,
-          });
+          const maxPlayers = Math.max(2, Number(room.config?.maxPlayers || 10));
+          const activeCount = players.filter(
+            player => !PLACEHOLDER_PLAYER_IDS.has(player.userId),
+          ).length;
+          if (activeCount >= maxPlayers) throw new Error('Cette salle est complete.');
+          room = {
+            ...room,
+            players: [
+              ...players.filter(player => !PLACEHOLDER_PLAYER_IDS.has(player.userId)),
+              {
+                userId: user.id,
+                displayName: user.displayName,
+                score: 0,
+                eliminated: false,
+                finished: false,
+              },
+            ],
+          };
         }
-        mutateStore(s => ({ ...s, battleRooms: { ...s.battleRooms, [code]: room } }));
-        return json(res, 200, { ok: true, room });
+        return json(res, 200, { ok: true, room: saveBattleRoom(code, room) });
       }
 
       case 'battle-room-get': {
         const code = String(body.code || '').trim().toUpperCase();
         const room = state.battleRooms[code];
         if (!room) throw new Error('Salle introuvable.');
-        return json(res, 200, { ok: true, room });
+        return json(res, 200, { ok: true, room: saveBattleRoom(code, room) });
       }
 
       case 'battle-room-start': {
         const user = getUserFromRequest(body, state);
         if (!user) return json(res, 401, { ok: false, message: 'Compte offline requis.' });
         const code = String(body.code || '').trim().toUpperCase();
-        const room = state.battleRooms[code];
+        const room = saveBattleRoom(code, state.battleRooms[code]);
         if (!room) throw new Error('Salle introuvable.');
         if (room.status !== 'waiting') throw new Error('La partie a deja demarre.');
         const isPlayer = room.players.some(player => player.userId === user.id);
@@ -528,11 +574,13 @@ export const handleOfflineApi = async (req, res, routeName) => {
             : Array.isArray(body.questions) && body.questions.length
             ? body.questions
             : pickQuestions(state, room.config.theme, room.config.questionCount, body);
-        room.status = 'active';
-        room.questions = questions;
-        room.chatMessages = [];
-        mutateStore(s => ({ ...s, battleRooms: { ...s.battleRooms, [code]: room } }));
-        return json(res, 200, { ok: true, room });
+        const nextRoom = {
+          ...room,
+          status: 'active',
+          questions,
+          chatMessages: [],
+        };
+        return json(res, 200, { ok: true, room: saveBattleRoom(code, nextRoom) });
       }
 
       case 'battle-room-finish': {

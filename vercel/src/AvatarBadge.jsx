@@ -25,8 +25,11 @@ export function AvatarBadge({
         <img
           alt={`Avatar de ${displayName}`}
           className="avatar-badge-image"
+          crossOrigin="anonymous"
           height={size}
+          loading="lazy"
           onError={() => setFailed(true)}
+          referrerPolicy="no-referrer"
           src={uri}
           width={size}
         />

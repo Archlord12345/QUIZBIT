@@ -1004,8 +1004,6 @@ function addBattleRoom() {
     document.getElementById('battle-mode')?.value === 'timed_mcq'
       ? 'timed_mcq'
       : 'classic';
-  const host =
-    state.users.find(user => user.id === 'offline-demo') || state.users[0];
   const questions = salonQuizDraft?.questions?.length
     ? normalizeSalonQuestions(salonQuizDraft.questions, questionCount)
     : [];
@@ -1021,18 +1019,8 @@ function addBattleRoom() {
         id: uid('battle'),
         code,
         status: 'waiting',
-        hostId: host?.id || '',
-        players: host
-          ? [
-              {
-                userId: host.id,
-                displayName: host.displayName,
-                score: 0,
-                eliminated: false,
-                finished: false,
-              },
-            ]
-          : [],
+        hostId: '',
+        players: [],
         chatMessages: [],
         questions,
         quizSource: salonQuizDraft?.label || '',

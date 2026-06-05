@@ -11,13 +11,38 @@ const battleRoomsToArray = battleRooms => {
   return Object.values(battleRooms).filter(Boolean);
 };
 
+const PLACEHOLDER_PLAYER_IDS = new Set(['offline-demo']);
+
+const normalizeBattleRoom = room => {
+  if (!room || typeof room !== 'object') return room;
+  const players = Array.isArray(room.players) ? room.players : [];
+  const realPlayers = players.filter(
+    player => player?.userId && !PLACEHOLDER_PLAYER_IDS.has(player.userId),
+  );
+  const activePlayers = realPlayers.length > 0 ? realPlayers : players;
+  let hostId = String(room.hostId || '').trim();
+  const hostIsReal = hostId && activePlayers.some(player => player.userId === hostId);
+
+  if (!hostIsReal && activePlayers.length > 0) {
+    hostId = activePlayers[0].userId;
+  } else if (!hostIsReal) {
+    hostId = '';
+  }
+
+  return {
+    ...room,
+    hostId,
+    players: activePlayers,
+  };
+};
+
 const battleRoomsToMap = rooms => {
   const list = Array.isArray(rooms) ? rooms : battleRoomsToArray(rooms);
   return list.reduce((map, room) => {
     if (!room) return map;
     const code = String(room.code || room.id || '').trim().toUpperCase();
     if (!code) return map;
-    map[code] = { ...room, code };
+    map[code] = normalizeBattleRoom({ ...room, code });
     return map;
   }, {});
 };

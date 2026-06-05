@@ -378,12 +378,18 @@ export default function App() {
   useEffect(() => {
     setGlobalFilter('');
     setSelectedRecord(null);
-    if (
-      currentPage === 'offline-studio' ||
-      currentPage === 'dashboard' ||
-      currentPage === 'settings'
-    ) {
+    if (currentPage === 'offline-studio' || currentPage === 'settings') {
       return;
+    }
+    if (currentPage === 'dashboard') {
+      fetchCollection('users');
+      fetchCollection('scores');
+      fetchCollection('battle');
+      fetchCollection('questions');
+      return;
+    }
+    if (currentPage !== 'users') {
+      fetchCollection('users');
     }
     fetchCollection(currentPage);
   }, [currentPage, fetchCollection]);
@@ -407,6 +413,9 @@ export default function App() {
         type: 'Score',
         label: `${score.displayName || 'Player'} - ${score.score || 0} pts`,
         date: score.createdAt,
+        userId: score.userId,
+        avatarUrl: score.avatarUrl,
+        displayName: score.displayName || 'Player',
       })),
       ...quizzes.map(quiz => ({
         type: 'Quiz',
@@ -442,8 +451,23 @@ export default function App() {
 
   const refreshData = useCallback(() => {
     fetchStats();
-    if (isCrudPage(currentPage)) fetchCollection(currentPage);
+    if (currentPage === 'dashboard') {
+      fetchCollection('users');
+      fetchCollection('scores');
+      fetchCollection('battle');
+      fetchCollection('questions');
+      return;
+    }
+    if (isCrudPage(currentPage)) {
+      if (currentPage !== 'users') fetchCollection('users');
+      fetchCollection(currentPage);
+    }
   }, [currentPage, fetchCollection, fetchStats]);
+
+  const usersById = useMemo(
+    () => Object.fromEntries((users || []).map(user => [user.id, user])),
+    [users],
+  );
 
   const openCrudCreate = useCallback(() => {
     if (!isCrudPage(currentPage)) return;
@@ -641,7 +665,12 @@ export default function App() {
             transition={{ duration: 0.22 }}
           >
             {currentPage === 'dashboard' && (
-              <Dashboard stats={stats} analytics={analytics} />
+              <Dashboard
+                analytics={analytics}
+                stats={stats}
+                users={users}
+                usersById={usersById}
+              />
             )}
             {currentPage === 'offline-studio' && <OfflineQuizStudio />}
             {currentPage !== 'dashboard' &&
@@ -653,7 +682,7 @@ export default function App() {
                 onEdit={openCrudEdit}
                 page={currentPage}
                 rows={currentRows}
-                users={users}
+                usersById={usersById}
                 globalFilter={globalFilter}
                 setGlobalFilter={setGlobalFilter}
                 selectedRecord={selectedRecord}
@@ -780,7 +809,7 @@ const CHART_TOOLTIP_STYLE = {
   color: '#2e1d33',
 };
 
-function Dashboard({ analytics, stats }) {
+function Dashboard({ analytics, stats, users = [], usersById = {} }) {
   const kpis = [
     ['Players', stats.players],
     ['Quizzes', stats.quizzes],
@@ -869,6 +898,28 @@ function Dashboard({ analytics, stats }) {
           </ResponsiveContainer>
         </div>
       </Panel>
+      <Panel title="Profils joueurs" className="wide">
+        <div className="profile-grid">
+          {users.length ? (
+            users.map(user => (
+              <div className="profile-card" key={user.id}>
+                <AvatarBadge
+                  avatarUrl={user.avatarUrl}
+                  seed={user.id}
+                  displayName={user.displayName || user.email || 'Player'}
+                  size={52}
+                />
+                <div className="profile-card-meta">
+                  <strong>{user.displayName || 'Player'}</strong>
+                  <span className="avatar-cell-sub">{user.email || '—'}</span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <EmptyState label="Aucun profil charge." />
+          )}
+        </div>
+      </Panel>
       <Panel title="Activity" className="wide">
         <div className="activity-list">
           {analytics.recentActivity.length ? (
@@ -880,8 +931,22 @@ function Dashboard({ analytics, stats }) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.03 }}
               >
-                <span className="activity-type">{row.type}</span>
-                <strong>{row.label}</strong>
+                {row.userId ? (
+                  <AvatarBadge
+                    avatarUrl={
+                      row.avatarUrl || usersById[row.userId]?.avatarUrl
+                    }
+                    seed={row.userId}
+                    displayName={row.displayName || 'Player'}
+                    size={32}
+                  />
+                ) : (
+                  <span className="activity-type">{row.type}</span>
+                )}
+                <div className="activity-row-copy">
+                  <span className="activity-type">{row.type}</span>
+                  <strong>{row.label}</strong>
+                </div>
                 <small>{safeDate(row.date)}</small>
               </motion.div>
             ))
@@ -924,15 +989,11 @@ function DataPage({
   onEdit,
   page,
   rows,
-  users,
+  usersById = {},
   selectedRecord,
   setGlobalFilter,
   setSelectedRecord,
 }) {
-  const usersById = useMemo(
-    () => Object.fromEntries((users || []).map(user => [user.id, user])),
-    [users],
-  );
   const columns = useMemo(
     () =>
       getColumns(page, {
@@ -1129,7 +1190,7 @@ function getColumns(page, { crudBusy, onDelete, onEdit, onSelect, usersById = {}
           return (
             <div className="avatar-cell">
               <AvatarBadge
-                avatarUrl={user?.avatarUrl}
+                avatarUrl={record.avatarUrl || user?.avatarUrl}
                 seed={record.userId || record.id}
                 displayName={name}
                 size={36}
@@ -1159,7 +1220,28 @@ function getColumns(page, { crudBusy, onDelete, onEdit, onSelect, usersById = {}
       ),
     },
     { header: 'Theme', cell: info => info.row.original.config?.theme || 'N/A' },
-    { header: 'Players', cell: info => info.row.original.players?.length || 0 },
+    {
+      header: 'Joueurs',
+      cell: info => {
+        const players = info.row.original.players || [];
+        if (!players.length) return '—';
+        return (
+          <div className="avatar-stack">
+            {players.map(player => (
+              <AvatarBadge
+                key={player.userId || player.displayName}
+                avatarUrl={
+                  player.avatarUrl || usersById[player.userId]?.avatarUrl
+                }
+                seed={player.userId}
+                displayName={player.displayName || 'Player'}
+                size={32}
+              />
+            ))}
+          </div>
+        );
+      },
+    },
     { header: 'Status', cell: info => info.row.original.status || 'waiting' },
     { header: 'Winner', cell: info => info.row.original.winnerId || 'N/A' },
     { header: 'Date', cell: info => safeDate(info.row.original.createdAt) },
