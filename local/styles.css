@@ -18,6 +18,13 @@ textarea {
   font: inherit;
 }
 
+.section-subtitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 1rem 0 0.5rem;
+  color: var(--text-muted, #78716c);
+}
+
 .shell {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);

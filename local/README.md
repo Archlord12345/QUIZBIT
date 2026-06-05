@@ -46,8 +46,20 @@ démarre `ollama serve` si besoin, télécharge le modèle `smollm2:135m-instruc
 
 ## Panel admin
 
-- Dashboard, quiz, joueurs, scores, battle rooms
+- Dashboard, quiz, joueurs, scores, **salons** (creation + chargement JSON quiz par salon)
 - **Import / Export** JSON (quiz exportés depuis Vercel)
+
+### Salons (battle offline)
+
+1. Menu **Salons** → **Creer un salon**
+2. Renseigne theme, joueurs max, nombre de questions, mode
+3. Charge le quiz du salon :
+   - choix dans la **banque locale** (quiz deja importes), ou
+   - **fichier JSON** (`quizbit-quiz-v1` depuis Vercel / Studio)
+4. **Creer le salon** → code affiche dans la liste
+5. App mobile (mode offline) → onglet Rejoindre → code du salon
+
+Les questions JSON sont stockees sur le salon : au demarrage de la partie, l API utilise ce quiz (pas la banque generique).
 - **Synchroniser avec le serveur** : pousse `localStorage` vers l'API
 - Au chargement, le panel récupère l'état du serveur (partagé avec l'app)
 

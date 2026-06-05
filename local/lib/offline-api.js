@@ -439,6 +439,10 @@ export const handleOfflineApi = async (req, res, routeName) => {
             },
           ],
           chatMessages: [],
+          questions: Array.isArray(config.questions)
+            ? config.questions.slice(0, Math.max(3, Math.min(20, Number(config.questionCount || 5))))
+            : [],
+          quizSource: String(config.quizSource || '').trim(),
           createdAt: new Date().toISOString(),
         };
         mutateStore(s => ({ ...s, battleRooms: { ...s.battleRooms, [code]: room } }));
@@ -484,7 +488,9 @@ export const handleOfflineApi = async (req, res, routeName) => {
         if (!room) throw new Error('Salle introuvable.');
         if (room.hostId !== user.id) throw new Error('Seul l hote peut lancer la partie.');
         const questions =
-          Array.isArray(body.questions) && body.questions.length
+          Array.isArray(room.questions) && room.questions.length
+            ? room.questions.slice(0, room.config.questionCount)
+            : Array.isArray(body.questions) && body.questions.length
             ? body.questions
             : pickQuestions(state, room.config.theme, room.config.questionCount, body);
         room.status = 'active';

@@ -45,13 +45,15 @@ let state = loadState();
 let currentPage = 'dashboard';
 let editing = null;
 let ollamaHealth = null;
+/** Quiz charge pour le prochain salon ({ label, theme, questions }). */
+let salonQuizDraft = null;
 
 const pages = [
   ['dashboard', 'Dashboard'],
   ['quizzes', 'Quiz'],
   ['users', 'Joueurs'],
   ['scores', 'Scores'],
-  ['battleRooms', 'Battle Rooms'],
+  ['battleRooms', 'Salons'],
   ['tools', 'Import / Export'],
   ['settings', 'Parametres'],
 ];
@@ -271,7 +273,7 @@ function renderDashboard() {
       ${statCard('Quiz', state.quizzes.length)}
       ${statCard('Joueurs', state.users.length)}
       ${statCard('Scores', state.scores.length)}
-      ${statCard('Battle Rooms', state.battleRooms.length)}
+      ${statCard('Salons', state.battleRooms.length)}
       ${statCard('Best Score', bestScore)}
     </section>
   `;
@@ -396,34 +398,71 @@ function renderScores() {
   `;
 }
 
+function renderSalonQuizStatus() {
+  if (!salonQuizDraft?.questions?.length) {
+    return 'Aucun quiz charge — banque locale utilisee au demarrage de la partie.';
+  }
+  return `Quiz charge : <strong>${escapeHtml(salonQuizDraft.label)}</strong> — ${salonQuizDraft.questions.length} question(s) pretes pour ce salon.`;
+}
+
 function renderBattleRooms() {
+  const quizOptions = state.quizzes
+    .map(
+      quiz =>
+        `<option value="${escapeHtml(quiz.id)}">${escapeHtml(quiz.theme)} (${quiz.questions.length} q.)</option>`,
+    )
+    .join('');
   return `
     <section class="card">
-      <h2>Creer battle room</h2>
+      <h2>Creer un salon</h2>
+      <p class="hint-box">
+        Cree un lobby battle offline. Charge un quiz JSON (export Vercel / Studio) ou choisis une banque locale.
+        Les joueurs rejoignent via l app mobile en mode offline avec le code du salon.
+      </p>
       <div class="form-grid">
-        <input id="battle-theme" placeholder="Theme" />
+        <input id="battle-theme" placeholder="Theme du salon" value="${escapeHtml(salonQuizDraft?.theme || '')}" />
         <input id="battle-players" type="number" min="2" value="10" placeholder="Max joueurs" />
-        <input id="battle-questions" type="number" min="3" value="5" placeholder="Questions" />
+        <input id="battle-questions" type="number" min="3" max="20" value="5" placeholder="Questions jouees" />
         <input id="battle-elimination" type="number" min="0" value="20" placeholder="Score elimination" />
+        <select id="battle-mode">
+          <option value="classic">Mode classique</option>
+          <option value="timed_mcq">QCM chrono</option>
+        </select>
       </div>
-      <button class="button" id="add-battle">Ajouter battle room</button>
+      <h3 class="section-subtitle">Quiz du salon</h3>
+      <div class="form-grid">
+        <select id="battle-quiz-select">
+          <option value="">— Choisir dans la banque locale —</option>
+          ${quizOptions}
+        </select>
+        <label class="file-button">
+          Charger un JSON quiz
+          <input id="battle-quiz-file" type="file" accept="application/json,.json" />
+        </label>
+        <button type="button" class="button secondary" id="battle-quiz-clear">Effacer le quiz</button>
+      </div>
+      <p id="salon-quiz-status" class="hint-box">${renderSalonQuizStatus()}</p>
+      <button class="button" id="add-battle">Creer le salon</button>
     </section>
-    ${table(
-      ['Code', 'Theme', 'Max', 'Questions', 'Elimination', 'Status', 'Actions'],
-      state.battleRooms,
-      room => `
+    <section class="card">
+      <h2>Salons actifs</h2>
+      ${table(
+        ['Code', 'Theme', 'Quiz', 'Joueurs', 'Questions', 'Statut', 'Actions'],
+        state.battleRooms,
+        room => `
       <td><strong>${room.code}</strong></td>
-      <td>${escapeHtml(room.config.theme)}</td>
-      <td>${room.config.maxPlayers}</td>
-      <td>${room.config.questionCount}</td>
-      <td>${room.config.eliminationScore}</td>
-      <td>${room.status}</td>
+      <td>${escapeHtml(room.config?.theme || '')}</td>
+      <td>${room.questions?.length ? `${room.questions.length} q. JSON` : room.quizSource ? escapeHtml(room.quizSource) : 'Banque auto'}</td>
+      <td>${(room.players || []).length}/${room.config?.maxPlayers || '?'}</td>
+      <td>${room.config?.questionCount ?? '—'}</td>
+      <td><span class="badge ${room.status === 'active' ? 'battle' : 'solo'}">${room.status || 'waiting'}</span></td>
       <td class="row-actions">
         <button class="button secondary" data-edit-battle="${room.id}">Modifier</button>
         <button class="button danger" data-delete-battle="${room.id}">Supprimer</button>
       </td>
     `,
-    )}
+      )}
+    </section>
   `;
 }
 
@@ -527,6 +566,17 @@ function bindPageActions() {
   document
     .getElementById('add-battle')
     ?.addEventListener('click', addBattleRoom);
+  document
+    .getElementById('battle-quiz-select')
+    ?.addEventListener('change', event =>
+      selectSalonQuizFromBank(event.target.value),
+    );
+  document
+    .getElementById('battle-quiz-file')
+    ?.addEventListener('change', importSalonQuizFile);
+  document
+    .getElementById('battle-quiz-clear')
+    ?.addEventListener('click', clearSalonQuizDraft);
   document.getElementById('export-json')?.addEventListener('click', exportJson);
   document.getElementById('import-json')?.addEventListener('click', importJson);
   document.getElementById('reset-local')?.addEventListener('click', resetLocal);
@@ -835,37 +885,147 @@ function addScore() {
   });
 }
 
+function normalizeSalonQuestions(rawQuestions, limit) {
+  if (!Array.isArray(rawQuestions)) return [];
+  return rawQuestions
+    .map((question, index) => ({
+      id: question.id || uid('question'),
+      text: String(question.text || '').trim() || `Question ${index + 1}`,
+      answer: String(question.answer || '').trim(),
+      options: Array.isArray(question.options)
+        ? question.options.slice(0, 5)
+        : undefined,
+      exactAnswer: Boolean(question.exactAnswer),
+      type: question.type === 'open' ? 'open' : 'mcq',
+    }))
+    .filter(question => question.text && question.answer)
+    .slice(0, Math.max(3, Math.min(20, Number(limit) || 5)));
+}
+
+function setSalonQuizDraft(draft) {
+  salonQuizDraft = draft;
+  const status = document.getElementById('salon-quiz-status');
+  if (status) {
+    status.innerHTML = renderSalonQuizStatus();
+  }
+  const themeInput = document.getElementById('battle-theme');
+  if (themeInput && draft?.theme && !themeInput.value.trim()) {
+    themeInput.value = draft.theme;
+  }
+}
+
+function selectSalonQuizFromBank(quizId) {
+  if (!quizId) {
+    setSalonQuizDraft(null);
+    return;
+  }
+  const quiz = state.quizzes.find(item => item.id === quizId);
+  if (!quiz?.questions?.length) {
+    alert('Quiz introuvable ou sans questions.');
+    return;
+  }
+  setSalonQuizDraft({
+    label: quiz.theme,
+    theme: quiz.theme,
+    questions: quiz.questions,
+  });
+}
+
+function importSalonQuizFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result || '{}'));
+      const normalized = normalizeImportedQuiz(parsed);
+      if (!normalized?.questions?.length) {
+        throw new Error('JSON invalide : tableau questions requis.');
+      }
+      setSalonQuizDraft({
+        label: normalized.theme,
+        theme: normalized.theme,
+        questions: normalized.questions,
+      });
+    } catch (error) {
+      alert(`Import salon impossible: ${error.message}`);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function clearSalonQuizDraft() {
+  const select = document.getElementById('battle-quiz-select');
+  if (select) select.value = '';
+  setSalonQuizDraft(null);
+}
+
 function addBattleRoom() {
   const theme =
-    document.getElementById('battle-theme').value.trim() || 'Culture generale';
+    document.getElementById('battle-theme').value.trim() ||
+    salonQuizDraft?.theme ||
+    'Culture generale';
+  const questionCount = Math.max(
+    3,
+    Math.min(20, Number(document.getElementById('battle-questions').value) || 5),
+  );
+  const mode =
+    document.getElementById('battle-mode')?.value === 'timed_mcq'
+      ? 'timed_mcq'
+      : 'classic';
+  const host =
+    state.users.find(user => user.id === 'offline-demo') || state.users[0];
+  const questions = salonQuizDraft?.questions?.length
+    ? normalizeSalonQuestions(salonQuizDraft.questions, questionCount)
+    : [];
+  if (salonQuizDraft?.questions?.length && !questions.length) {
+    alert('Le quiz charge ne contient aucune question valide.');
+    return;
+  }
+  const code = Math.random().toString(36).slice(2, 8).toUpperCase();
   mutate({
     ...state,
     battleRooms: [
       {
         id: uid('battle'),
-        code: Math.random().toString(36).slice(2, 8).toUpperCase(),
+        code,
         status: 'waiting',
-        players: [],
+        hostId: host?.id || '',
+        players: host
+          ? [
+              {
+                userId: host.id,
+                displayName: host.displayName,
+                score: 0,
+                eliminated: false,
+                finished: false,
+              },
+            ]
+          : [],
+        chatMessages: [],
+        questions,
+        quizSource: salonQuizDraft?.label || '',
         config: {
           theme,
+          mode,
           maxPlayers: Math.max(
             2,
             Number(document.getElementById('battle-players').value) || 10,
           ),
-          questionCount: Math.max(
-            3,
-            Number(document.getElementById('battle-questions').value) || 5,
-          ),
+          questionCount,
           eliminationScore: Math.max(
             0,
             Number(document.getElementById('battle-elimination').value) || 20,
           ),
+          timeLimitSeconds: 15,
         },
         createdAt: new Date().toISOString(),
       },
       ...state.battleRooms,
     ],
   });
+  salonQuizDraft = null;
 }
 
 async function removeById(key, id) {

@@ -96,6 +96,10 @@ export const handleAdminCrud = body => {
           players: data?.players || existing?.players || [],
           chatMessages: data?.chatMessages || existing?.chatMessages || [],
           hostId: data?.hostId || existing?.hostId || '',
+          questions: Array.isArray(data?.questions)
+            ? data.questions
+            : existing?.questions || [],
+          quizSource: data?.quizSource || existing?.quizSource || '',
           config: {
             theme:
               data?.config?.theme ||
