@@ -4,6 +4,7 @@ import { AvatarImage } from './AvatarImage';
 import { LeaderboardUser } from '../types';
 import { GameMode } from '../controllers/ScoreController';
 import { COLORS } from '../utils/theme';
+import { getCurrentSeasonLabel } from '../utils/season';
 import { LAYOUT, UI } from '../utils/ui';
 
 interface LeaderboardCardProps {
@@ -19,7 +20,7 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
   ranks,
   onBackClick,
   showBackButton = Boolean(onBackClick),
-  activeSeason = "Saison 4",
+  activeSeason = getCurrentSeasonLabel(),
   selectedMode,
   onSelectMode,
 }) => {
@@ -30,10 +31,10 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
   const others = ranks.filter((item) => item.rank > 3).sort((a, b) => a.rank - b.rank);
   const emptyMessage =
     selectedMode === 'battle_royale'
-      ? 'Aucun score Battle pour le moment. Termine une partie Battle Royale pour apparaitre ici.'
+      ? `Aucun score Battle pour ${activeSeason}. Termine une partie Battle Royale ce mois-ci pour apparaitre ici.`
       : selectedMode === 'solo'
-      ? 'Aucun score Solo pour le moment. Joue un quiz pour apparaitre ici.'
-      : 'Aucun score enregistre pour le moment. Joue un quiz ou une Battle Royale.';
+      ? `Aucun score Solo pour ${activeSeason}. Joue un quiz ce mois-ci pour apparaitre ici.`
+      : `Aucun score pour ${activeSeason}. Joue un quiz ou une Battle Royale ce mois-ci.`;
 
   return (
     <View style={styles.container}>
@@ -54,7 +55,9 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
         <Text style={styles.headerTitle}>Classement</Text>
 
         <View style={styles.seasonBadge}>
-          <Text style={styles.seasonText}>{activeSeason}</Text>
+          <Text numberOfLines={1} style={styles.seasonText}>
+            {activeSeason}
+          </Text>
         </View>
       </View>
 
@@ -322,7 +325,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: UI.chipBorder,
     borderRadius: 999,
-    paddingHorizontal: 12,
+    flexShrink: 1,
+    maxWidth: 132,
+    paddingHorizontal: 10,
     paddingVertical: 6,
   },
   seasonText: {

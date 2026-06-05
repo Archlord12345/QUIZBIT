@@ -809,6 +809,25 @@ const CHART_TOOLTIP_STYLE = {
   color: '#2e1d33',
 };
 
+const CHART_HEIGHT = {
+  lg: 280,
+  md: 240,
+};
+
+function DashboardChart({ children, size = 'lg' }) {
+  const height = CHART_HEIGHT[size] || CHART_HEIGHT.lg;
+  return (
+    <div
+      className={`dashboard-chart dashboard-chart-${size}`}
+      style={{ '--dashboard-chart-height': `${height}px` }}
+    >
+      <ResponsiveContainer width="100%" height={height} minWidth={0}>
+        {children}
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 function Dashboard({ analytics, stats, users = [], usersById = {} }) {
   const kpis = [
     ['Players', stats.players],
@@ -835,68 +854,62 @@ function Dashboard({ analytics, stats, users = [], usersById = {} }) {
         ))}
       </div>
       <Panel title="Top scores" className="wide">
-        <div className="dashboard-chart dashboard-chart-lg">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={scoreData}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="rgba(122,49,122,.12)"
-              />
-              <XAxis dataKey="name" stroke="#78716c" tick={{ fontSize: 12 }} />
-              <YAxis stroke="#78716c" tick={{ fontSize: 12 }} />
-              <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-              <Bar dataKey="score" fill="#7a317a" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <DashboardChart size="lg">
+          <BarChart data={scoreData}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="rgba(122,49,122,.12)"
+            />
+            <XAxis dataKey="name" stroke="#78716c" tick={{ fontSize: 12 }} />
+            <YAxis stroke="#78716c" tick={{ fontSize: 12 }} />
+            <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+            <Bar dataKey="score" fill="#7a317a" radius={[8, 8, 0, 0]} />
+          </BarChart>
+        </DashboardChart>
       </Panel>
       <Panel title="Battle rooms">
-        <div className="dashboard-chart dashboard-chart-lg">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={roomData}
-                dataKey="value"
-                innerRadius={58}
-                outerRadius={92}
-                paddingAngle={5}
-              >
-                {roomData.map(entry => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+        <DashboardChart size="lg">
+          <PieChart>
+            <Pie
+              data={roomData}
+              dataKey="value"
+              innerRadius={58}
+              outerRadius={92}
+              paddingAngle={5}
+            >
+              {roomData.map(entry => (
+                <Cell key={entry.name} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+          </PieChart>
+        </DashboardChart>
       </Panel>
       <Panel title="Score split">
-        <div className="dashboard-chart dashboard-chart-md">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={[
-                { name: 'Solo', value: analytics.soloScores },
-                { name: 'Battle', value: analytics.battleScores },
-              ]}
-            >
-              <defs>
-                <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#7a317a" stopOpacity={0.75} />
-                  <stop offset="95%" stopColor="#ee6845" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="name" stroke="#78716c" tick={{ fontSize: 12 }} />
-              <YAxis stroke="#78716c" tick={{ fontSize: 12 }} />
-              <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="#7a317a"
-                fill="url(#scoreGradient)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        <DashboardChart size="md">
+          <AreaChart
+            data={[
+              { name: 'Solo', value: analytics.soloScores },
+              { name: 'Battle', value: analytics.battleScores },
+            ]}
+          >
+            <defs>
+              <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#7a317a" stopOpacity={0.75} />
+                <stop offset="95%" stopColor="#ee6845" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <XAxis dataKey="name" stroke="#78716c" tick={{ fontSize: 12 }} />
+            <YAxis stroke="#78716c" tick={{ fontSize: 12 }} />
+            <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke="#7a317a"
+              fill="url(#scoreGradient)"
+            />
+          </AreaChart>
+        </DashboardChart>
       </Panel>
       <Panel title="Profils joueurs" className="wide">
         <div className="profile-grid">

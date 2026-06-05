@@ -278,7 +278,8 @@ h2 {
 .panel {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: auto;
+  min-width: 0;
 }
 
 .panel h2 {
@@ -291,17 +292,20 @@ h2 {
 }
 
 .dashboard-chart {
-  flex: 1;
-  min-height: 220px;
+  flex: 0 0 auto;
+  height: var(--dashboard-chart-height, 260px);
+  min-height: var(--dashboard-chart-height, 260px);
+  min-width: 0;
+  position: relative;
   width: 100%;
 }
 
 .dashboard-chart-lg {
-  min-height: 260px;
+  --dashboard-chart-height: 280px;
 }
 
 .dashboard-chart-md {
-  min-height: 240px;
+  --dashboard-chart-height: 240px;
 }
 
 .activity-list {

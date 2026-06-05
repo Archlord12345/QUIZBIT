@@ -9,6 +9,11 @@ const require = createRequire(import.meta.url);
 const { buildDefaultAvatarUrl, resolveAvatarUrl } = require(
   '../../vercel/lib/default-avatar.js',
 );
+const {
+  getSeasonKey,
+  isDateInSeason,
+  rankBestScoresForSeason,
+} = require('../../vercel/lib/season.js');
 
 const uid = prefix => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
@@ -396,9 +401,15 @@ export const handleOfflineApi = async (req, res, routeName) => {
 
       case 'scores-list': {
         const mode = body.mode;
-        const scores = [...state.scores]
-          .filter(score => !mode || score.mode === mode)
-          .sort((a, b) => Number(b.score) - Number(a.score))
+        const seasonKey = String(body.season || getSeasonKey()).trim() || getSeasonKey();
+        const scores = rankBestScoresForSeason(
+          state.scores.filter(
+            score =>
+              isDateInSeason(score.createdAt, seasonKey) &&
+              (!mode || score.mode === mode),
+          ),
+          seasonKey,
+        )
           .slice(0, 50)
           .map(score => {
             const user = state.users.find(item => item.id === score.userId);
@@ -411,7 +422,7 @@ export const handleOfflineApi = async (req, res, routeName) => {
               ),
             };
           });
-        return json(res, 200, { ok: true, scores });
+        return json(res, 200, { ok: true, season: seasonKey, scores });
       }
 
       case 'scores-record': {

@@ -11,6 +11,7 @@ import { UserAccount } from '../controllers/AuthController';
 import { LeaderboardCard } from '../components/LeaderboardCard';
 import { LeaderboardUser } from '../types';
 import { getInitials, resolveAvatarUrl } from '../utils/defaultAvatar';
+import { buildSeasonBadgeLabel } from '../utils/season';
 import { COLORS } from '../utils/theme';
 
 type LeaderboardViewProps = {
@@ -89,7 +90,7 @@ const LeaderboardView = ({
           ranks={mappedRanks}
           onBackClick={onBack}
           showBackButton={!embedded && Boolean(onBack)}
-          activeSeason={mode === 'battle_royale' ? "Mode Battle" : mode === 'solo' ? "Mode Solo" : "Saison 4"}
+          activeSeason={buildSeasonBadgeLabel(mode)}
           selectedMode={mode}
           onSelectMode={setMode}
         />

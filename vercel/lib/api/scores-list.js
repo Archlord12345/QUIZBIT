@@ -1,13 +1,19 @@
 const { listDocuments } = require('../firebase-rest');
 const { verifyIdToken } = require('../auth-verify');
 const { resolveAvatarUrl } = require('../default-avatar');
+const {
+  getSeasonKey,
+  isDateInSeason,
+  rankBestScoresForSeason,
+} = require('../season');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ ok: false, message: 'Method not allowed' });
   }
-  const { idToken, mode } = req.body || {};
+  const { idToken, mode, season } = req.body || {};
+  const seasonKey = String(season || getSeasonKey()).trim() || getSeasonKey();
   if (!idToken) {
     return res.status(400).json({ ok: false, message: 'idToken requis.' });
   }
@@ -19,10 +25,14 @@ module.exports = async (req, res) => {
     } catch {
       scores = await listDocuments('scores', idToken, 100, '');
     }
-    const filtered = scores
-      .filter(score => !mode || score.mode === mode)
-      .sort((left, right) => Number(right.score || 0) - Number(left.score || 0))
-      .slice(0, 50);
+    const filtered = rankBestScoresForSeason(
+      scores.filter(
+        score =>
+          isDateInSeason(score.createdAt, seasonKey) &&
+          (!mode || score.mode === mode),
+      ),
+      seasonKey,
+    ).slice(0, 50);
 
     let usersById = {};
     try {
@@ -36,6 +46,7 @@ module.exports = async (req, res) => {
 
     return res.status(200).json({
       ok: true,
+      season: seasonKey,
       scores: filtered.map(score => {
         const user = usersById[score.userId];
         return {

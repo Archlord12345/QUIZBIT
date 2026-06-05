@@ -1,5 +1,6 @@
 import AuthController, { UserAccount } from './AuthController';
 import { apiPost } from '../utils/api';
+import { getSeasonKey } from '../utils/season';
 
 export type GameMode = 'solo' | 'battle_royale';
 
@@ -21,6 +22,7 @@ type RecordScoreResponse = {
 
 type LeaderboardResponse = {
   ok: boolean;
+  season?: string;
   scores: ScoreEntry[];
 };
 
@@ -55,6 +57,7 @@ class ScoreController {
   async getLeaderboard(
     mode?: GameMode,
     accountOverride?: UserAccount,
+    season: string = getSeasonKey(),
   ): Promise<ScoreEntry[]> {
     const account = accountOverride || AuthController.getCurrentAccount();
     if (!account?.idToken) {
@@ -63,6 +66,7 @@ class ScoreController {
     const response = await apiPost<LeaderboardResponse>('/api/scores-list', {
       idToken: account.idToken,
       mode,
+      season,
     });
     return response.scores;
   }
