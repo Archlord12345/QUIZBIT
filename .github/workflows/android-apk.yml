@@ -133,7 +133,7 @@ jobs:
           {
             echo '## APK Android release généré'
             echo ''
-            echo "Artifact: `quizbit-release-apk-${{ github.run_number }}`"
+            echo "Artifact: quizbit-release-apk-${{ github.run_number }}"
             echo ''
             echo "Télécharge l'APK release depuis l'onglet **Artifacts** de ce run GitHub Actions."
           } >> "$GITHUB_STEP_SUMMARY"
