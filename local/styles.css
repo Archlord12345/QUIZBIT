@@ -41,27 +41,53 @@ textarea {
 }
 
 .brand {
-  align-items: flex-start;
+  align-items: center;
   border-bottom: 1px solid var(--sidebar-line);
-  display: grid;
-  gap: 6px;
+  display: flex;
+  gap: 14px;
   margin-bottom: 28px;
   padding-bottom: 20px;
 }
 
-.brand span {
+.brand strong {
   color: var(--sidebar-text);
-  font-size: 26px;
+  display: block;
+  font-size: 24px;
   font-weight: 900;
   letter-spacing: 0.02em;
 }
 
-.brand small {
+.brand span {
   color: var(--sidebar-accent);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.14em;
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.brand-logo {
+  align-items: center;
+  background: radial-gradient(
+    circle,
+    rgb(238 104 69 / 24%),
+    rgb(255 255 255 / 12%)
+  );
+  border: 1px solid var(--sidebar-line-strong);
+  border-radius: 20px;
+  box-shadow: 0 0 28px rgb(238 104 69 / 16%);
+  display: grid;
+  flex-shrink: 0;
+  height: 58px;
+  overflow: hidden;
+  place-items: center;
+  width: 58px;
+}
+
+.brand-logo img {
+  height: 54px;
+  object-fit: contain;
+  width: 54px;
 }
 
 .nav-button {

@@ -17,3 +17,5 @@ The command regenerates:
 - Android launcher icons (`ic_launcher`, `ic_launcher_round`)
 - Android splash logo (`drawable-nodpi/logo_splash.png`)
 - React Native runtime logo (`src/assets/logo.png`)
+- Panel admin Vercel (`vercel/src/assets/logo.png`)
+- Panel admin local (`local/assets/logo.png`)

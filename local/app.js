@@ -129,7 +129,15 @@ function render() {
   app.innerHTML = `
     <div class="shell">
       <aside class="sidebar">
-        <div class="brand"><span>QuizBit</span><small>Mode offline</small></div>
+        <div class="brand">
+          <div class="brand-logo">
+            <img src="/assets/logo.png" alt="QuizBit logo" />
+          </div>
+          <div>
+            <strong>QuizBit</strong>
+            <span>Mode offline</span>
+          </div>
+        </div>
         <nav>${pages
           .map(
             ([id, label]) => `

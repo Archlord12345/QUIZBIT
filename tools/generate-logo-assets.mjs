@@ -6,7 +6,17 @@ import sharp from 'sharp';
 const root = process.cwd();
 const source = path.join(root, 'logo', 'quizbit-logo.png');
 const androidRes = path.join(root, 'android', 'app', 'src', 'main', 'res');
-const runtimeLogo = path.join(root, 'src', 'assets', 'logo.png');
+const panelLogos = [
+  { label: 'Mobile app', path: path.join(root, 'src', 'assets', 'logo.png') },
+  {
+    label: 'Panel Vercel',
+    path: path.join(root, 'vercel', 'src', 'assets', 'logo.png'),
+  },
+  {
+    label: 'Panel local',
+    path: path.join(root, 'local', 'assets', 'logo.png'),
+  },
+];
 const splashLogo = path.join(androidRes, 'drawable-nodpi', 'logo_splash.png');
 
 const launcherTargets = [
@@ -44,14 +54,22 @@ const makeRound = size => {
   return makeSquare(size).composite([{ input: svgMask, blend: 'dest-in' }]).png();
 };
 
+const writePanelLogo = async targetPath =>
+  sharp(source)
+    .resize(512, 512, {
+      fit: 'contain',
+      background: { r: 5, g: 8, b: 22, alpha: 0 },
+    })
+    .png()
+    .toFile(targetPath);
+
 await ensureSource();
-await fs.mkdir(path.dirname(runtimeLogo), { recursive: true });
 await fs.mkdir(path.dirname(splashLogo), { recursive: true });
 
-await sharp(source)
-  .resize(512, 512, { fit: 'contain', background: { r: 5, g: 8, b: 22, alpha: 0 } })
-  .png()
-  .toFile(runtimeLogo);
+for (const logo of panelLogos) {
+  await fs.mkdir(path.dirname(logo.path), { recursive: true });
+  await writePanelLogo(logo.path);
+}
 
 await sharp(source)
   .resize(420, 420, { fit: 'contain', background: { r: 5, g: 8, b: 22, alpha: 0 } })
@@ -66,3 +84,7 @@ for (const [folder, size] of launcherTargets) {
 }
 
 console.log('QuizBit logo assets generated from logo/quizbit-logo.png');
+for (const logo of panelLogos) {
+  console.log(`- ${logo.label}: ${path.relative(root, logo.path)}`);
+}
+console.log('- Android splash + launcher icons');
