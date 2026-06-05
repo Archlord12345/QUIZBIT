@@ -31,6 +31,7 @@ export const defaultDocument = page => {
       displayName: 'Nouveau joueur',
       email: 'joueur@exemple.com',
       gamesPlayed: 0,
+      cups: 0,
       totalScore: 0,
       bestScore: 0,
     };

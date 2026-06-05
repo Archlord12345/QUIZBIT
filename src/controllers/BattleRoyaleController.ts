@@ -3,6 +3,12 @@ import type { ThemeMediaPayload } from '../utils/themeMediaPayload';
 import { apiPost } from '../utils/api';
 import { UserAccount } from './AuthController';
 
+export type BattleRoomFinishResult = {
+  room: BattleRoyaleRoom;
+  cupAwarded: boolean;
+  account?: UserAccount;
+};
+
 export type BattleRoyaleMode = 'classic' | 'timed_mcq';
 
 export type BattleRoyaleConfig = {
@@ -57,6 +63,8 @@ export type BattleLobbySummary = {
 type BattleRoomResponse = {
   ok: boolean;
   room: BattleRoyaleRoom;
+  cupAwarded?: boolean;
+  account?: UserAccount;
 };
 
 type BattleRoomListResponse = {
@@ -162,7 +170,7 @@ class BattleRoyaleController {
     room: BattleRoyaleRoom,
     account: UserAccount,
     score: number,
-  ): Promise<BattleRoyaleRoom> {
+  ): Promise<BattleRoomFinishResult> {
     this.assertAuthenticated(account);
     const response = await apiPost<BattleRoomResponse>('/api/battle-room-finish', {
       account,
@@ -170,7 +178,11 @@ class BattleRoyaleController {
       idToken: account.idToken,
       score,
     });
-    return response.room;
+    return {
+      room: response.room,
+      cupAwarded: Boolean(response.cupAwarded),
+      account: response.account,
+    };
   }
 
   private normalizeConfig(config: BattleRoyaleConfig): BattleRoyaleConfig {

@@ -59,6 +59,7 @@ const normalizeUser = doc => {
     ...doc,
     displayName,
     avatarUrl,
+    cups: Math.max(0, Number(doc.cups || 0)),
   };
 };
 

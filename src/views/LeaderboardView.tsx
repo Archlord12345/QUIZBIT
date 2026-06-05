@@ -65,6 +65,7 @@ const LeaderboardView = ({
       score.userId,
       score.displayName,
     ),
+    cups: Math.max(0, Number(score.cups || 0)),
     isCurrentUser: score.userId === account.id,
     change: 0,
   }));

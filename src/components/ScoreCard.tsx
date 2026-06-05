@@ -6,6 +6,7 @@ interface ScoreCardProps {
   totalScore: number;
   partiesPlayed: number;
   bestScore: number;
+  cups: number;
   streak: number;
 }
 
@@ -13,6 +14,7 @@ export const ScoreCard: React.FC<ScoreCardProps> = ({
   totalScore,
   partiesPlayed,
   bestScore,
+  cups,
   streak,
 }) => {
   return (
@@ -29,6 +31,8 @@ export const ScoreCard: React.FC<ScoreCardProps> = ({
 
         <View style={styles.trophyBadge}>
           <Text style={styles.trophyEmoji}>🏆</Text>
+          <Text style={styles.cupsValue}>{cups || 0}</Text>
+          <Text style={styles.cupsLabel}>Coupes</Text>
         </View>
       </View>
 
@@ -97,9 +101,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   trophyBadge: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    minWidth: 72,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 18,
     backgroundColor: 'rgba(238, 104, 69, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -107,7 +112,20 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(238, 104, 69, 0.35)',
   },
   trophyEmoji: {
-    fontSize: 22,
+    fontSize: 18,
+  },
+  cupsValue: {
+    color: COLORS.textOnDark,
+    fontSize: 18,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  cupsLabel: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
   statsRow: {
     flexDirection: 'row',

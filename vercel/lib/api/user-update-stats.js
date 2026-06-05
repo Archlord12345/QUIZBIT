@@ -6,7 +6,7 @@ module.exports = async (req, res) => {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ ok: false, message: 'Method not allowed' });
   }
-  const { idToken, score, userId } = req.body || {};
+  const { awardCup, idToken, score, userId } = req.body || {};
   if (!idToken || !userId) {
     return res
       .status(400)
@@ -23,6 +23,7 @@ module.exports = async (req, res) => {
       gamesPlayed: Number(current.gamesPlayed || 0) + 1,
       totalScore: Number(current.totalScore || 0) + numericScore,
       bestScore: Math.max(Number(current.bestScore || 0), numericScore),
+      cups: Number(current.cups || 0) + (awardCup ? 1 : 0),
       updatedAt: new Date().toISOString(),
     };
     await setDocument('users', auth.uid, account, idToken);

@@ -15,6 +15,7 @@ const defaultState = () => ({
       password: 'demo123',
       displayName: 'Joueur Demo',
       gamesPlayed: 0,
+      cups: 0,
       totalScore: 0,
       bestScore: 0,
       avatarUrl: '',

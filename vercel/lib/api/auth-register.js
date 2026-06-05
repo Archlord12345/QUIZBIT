@@ -41,6 +41,7 @@ module.exports = async (req, res) => {
       gamesPlayed: 0,
       totalScore: 0,
       bestScore: 0,
+      cups: 0,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

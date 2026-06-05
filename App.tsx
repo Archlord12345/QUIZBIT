@@ -15,6 +15,7 @@ import AuthController, { UserAccount } from './src/controllers/AuthController';
 import ScoreController from './src/controllers/ScoreController';
 import BattleRoyaleController from './src/controllers/BattleRoyaleController';
 import { requestAppPermissions } from './src/utils/appPermissions';
+import { isSoloQuizSuccessful } from './src/utils/gameRewards';
 
 const Stack = createNativeStackNavigator();
 
@@ -103,26 +104,39 @@ export default function App() {
                             );
                           setAccount(updated);
                           try {
-                            await BattleRoyaleController.finishPlayer(
-                              room,
-                              account,
-                              finalScore,
-                            );
+                            const finishResult =
+                              await BattleRoyaleController.finishPlayer(
+                                room,
+                                account,
+                                finalScore,
+                              );
+                            if (finishResult.account) {
+                              await AuthController.applyAccountUpdate(
+                                finishResult.account,
+                              );
+                              setAccount(finishResult.account);
+                            }
+                            return { cupAwarded: finishResult.cupAwarded };
                           } catch (finishErr) {
                             console.error('finishPlayer error:', finishErr);
                           }
-                        } else {
-                          const { account: updated } =
-                            await ScoreController.recordScore(
-                              account,
-                              completedQuiz.theme,
-                              finalScore,
-                              'solo',
-                            );
-                          setAccount(updated);
+                          return { cupAwarded: false };
                         }
+
+                        const soloSuccess = isSoloQuizSuccessful(completedQuiz);
+                        const { account: updated } =
+                          await ScoreController.recordScore(
+                            account,
+                            completedQuiz.theme,
+                            finalScore,
+                            'solo',
+                            { awardCup: soloSuccess },
+                          );
+                        setAccount(updated);
+                        return { cupAwarded: soloSuccess };
                       } catch (err) {
                         console.error('onComplete error:', err);
+                        return { cupAwarded: false };
                       }
                     }}
                     onExit={() => props.navigation.navigate('Home')}

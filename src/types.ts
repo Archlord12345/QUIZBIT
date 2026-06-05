@@ -14,6 +14,7 @@ export interface LeaderboardUser {
   initials: string;
   avatarUrl: string;
   userId: string;
+  cups: number;
   isCurrentUser?: boolean;
   change: number;
 }

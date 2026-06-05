@@ -1178,6 +1178,7 @@ function getColumns(page, { crudBusy, onDelete, onEdit, onSelect, usersById = {}
       { header: 'Total', cell: info => info.row.original.totalScore || 0 },
       { header: 'Best', cell: info => info.row.original.bestScore || 0 },
       { header: 'Played', cell: info => info.row.original.gamesPlayed || 0 },
+      { header: 'Coupes', cell: info => info.row.original.cups || 0 },
       {
         header: 'Photo',
         cell: info => {

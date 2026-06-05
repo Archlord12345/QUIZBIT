@@ -11,6 +11,7 @@ export type UserAccount = {
   gamesPlayed: number;
   totalScore: number;
   bestScore: number;
+  cups: number;
   idToken?: string;
 };
 
@@ -42,6 +43,7 @@ class AuthController {
   private normalizeAccount(account: UserAccount): UserAccount {
     return {
       ...account,
+      cups: Math.max(0, Number(account.cups || 0)),
       avatarUrl: resolveAvatarUrl(
         account.avatarUrl,
         account.id,
@@ -104,15 +106,22 @@ class AuthController {
   async updateScoreStats(
     account: UserAccount,
     score: number,
+    awardCup = false,
   ): Promise<UserAccount> {
     this.assertAuthenticated(account);
     const response = await apiPost<AuthResponse>('/api/user-update-stats', {
       idToken: account.idToken,
       userId: account.id,
       score,
+      awardCup,
     });
     await this.setCurrentAccount(response.account);
     return response.account;
+  }
+
+  async applyAccountUpdate(account: UserAccount): Promise<UserAccount> {
+    await this.setCurrentAccount(account);
+    return account;
   }
 
   async signOut() {

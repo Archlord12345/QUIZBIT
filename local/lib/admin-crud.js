@@ -187,6 +187,7 @@ export const handleAdminCrud = body => {
           ),
           totalScore: Number(data?.totalScore ?? list[index]?.totalScore ?? 0),
           bestScore: Number(data?.bestScore ?? list[index]?.bestScore ?? 0),
+          cups: Number(data?.cups ?? list[index]?.cups ?? 0),
           avatarUrl: data?.avatarUrl || list[index]?.avatarUrl || '',
         };
         if (index >= 0) list[index] = { ...list[index], ...user };

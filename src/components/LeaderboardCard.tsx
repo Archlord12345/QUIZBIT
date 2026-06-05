@@ -266,9 +266,9 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
                   )}
                 </View>
 
-                {/* Decorative Trophy Indicator Badge */}
                 <View style={styles.trophyIndicator}>
                   <Text style={styles.trophyIndicatorText}>🏆</Text>
+                  <Text style={styles.trophyCountText}>{item.cups || 0}</Text>
                 </View>
               </View>
             </View>
@@ -676,5 +676,11 @@ const styles = StyleSheet.create({
   },
   trophyIndicatorText: {
     fontSize: 12,
+  },
+  trophyCountText: {
+    color: COLORS.primary,
+    fontSize: 10,
+    fontWeight: '900',
+    marginTop: 1,
   },
 });

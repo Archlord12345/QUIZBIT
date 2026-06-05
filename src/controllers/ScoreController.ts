@@ -9,6 +9,7 @@ export type ScoreEntry = {
   userId: string;
   displayName: string;
   avatarUrl?: string;
+  cups?: number;
   theme: string;
   score: number;
   mode: GameMode;
@@ -32,6 +33,7 @@ class ScoreController {
     theme: string,
     score: number,
     mode: GameMode,
+    options?: { awardCup?: boolean },
   ): Promise<{ account: UserAccount; scoreEntry: ScoreEntry }> {
     if (!account.idToken) {
       throw new Error('Session Vercel/Firebase manquante. Reconnecte-toi.');
@@ -50,6 +52,7 @@ class ScoreController {
     const updatedAccount = await AuthController.updateScoreStats(
       account,
       score,
+      Boolean(options?.awardCup),
     );
     return { account: updatedAccount, scoreEntry: savedScore.scoreEntry };
   }

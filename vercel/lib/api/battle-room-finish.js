@@ -1,5 +1,6 @@
 const { getDocument, setDocument } = require('../firebase-rest');
 const { assertAccountId, clampScore, verifyIdToken } = require('../auth-verify');
+const { incrementUserCups } = require('../user-cups');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -39,7 +40,26 @@ module.exports = async (req, res) => {
       winnerId: allFinished ? survivors[0]?.userId || winner?.userId : room.winnerId,
     };
     await setDocument('battleRooms', cleanCode, updatedRoom, idToken);
-    return res.status(200).json({ ok: true, room: updatedRoom });
+
+    let cupAwarded = false;
+    let account = null;
+    if (allFinished && updatedRoom.winnerId) {
+      const winnerAccount = await incrementUserCups(
+        updatedRoom.winnerId,
+        idToken,
+      );
+      if (winnerAccount && updatedRoom.winnerId === auth.uid) {
+        cupAwarded = true;
+        account = { ...winnerAccount, idToken };
+      }
+    }
+
+    return res.status(200).json({
+      ok: true,
+      room: updatedRoom,
+      cupAwarded,
+      account,
+    });
   } catch (error) {
     return res.status(400).json({ ok: false, message: error.message || 'Fin battle impossible.' });
   }

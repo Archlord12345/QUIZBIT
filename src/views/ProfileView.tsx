@@ -92,6 +92,7 @@ const ProfileView = ({
           <Stat label="Parties" value={account.gamesPlayed} />
           <Stat label="Total" value={account.totalScore} />
           <Stat label="Best" value={account.bestScore} />
+          <Stat label="Coupes" value={account.cups || 0} />
         </View>
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}

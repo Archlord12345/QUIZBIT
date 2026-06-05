@@ -163,8 +163,22 @@ const accountFromUser = (user, idToken) => ({
   gamesPlayed: user.gamesPlayed,
   totalScore: user.totalScore,
   bestScore: user.bestScore,
+  cups: Math.max(0, Number(user.cups || 0)),
   idToken,
 });
+
+const incrementOfflineUserCups = (state, userId, amount = 1) =>
+  mutateStore(current => ({
+    ...current,
+    users: current.users.map(item =>
+      item.id === userId
+        ? {
+            ...item,
+            cups: Math.max(0, Number(item.cups || 0) + Math.max(0, Number(amount || 0))),
+          }
+        : item,
+    ),
+  }));
 
 export const handleOfflineApi = async (req, res, routeName) => {
   if (req.method === 'OPTIONS') {
@@ -272,6 +286,7 @@ export const handleOfflineApi = async (req, res, routeName) => {
           gamesPlayed: 0,
           totalScore: 0,
           bestScore: 0,
+          cups: 0,
           avatarUrl: buildDefaultAvatarUrl(userId, displayName),
         };
         mutateStore(s => ({ ...s, users: [user, ...s.users] }));
@@ -420,6 +435,7 @@ export const handleOfflineApi = async (req, res, routeName) => {
                 score.userId,
                 score.displayName || user?.displayName,
               ),
+              cups: Math.max(0, Number(user?.cups || 0)),
             };
           });
         return json(res, 200, { ok: true, season: seasonKey, scores });
@@ -451,6 +467,7 @@ export const handleOfflineApi = async (req, res, routeName) => {
         const user = getUserFromRequest(body, state);
         if (!user) return json(res, 401, { ok: false, message: 'Session offline invalide.' });
         const score = Math.max(0, Number(body.score || 0));
+        const awardCup = Boolean(body.awardCup);
         const next = mutateStore(s => ({
           ...s,
           users: s.users.map(item =>
@@ -460,6 +477,7 @@ export const handleOfflineApi = async (req, res, routeName) => {
                   gamesPlayed: item.gamesPlayed + 1,
                   totalScore: item.totalScore + score,
                   bestScore: Math.max(item.bestScore, score),
+                  cups: Number(item.cups || 0) + (awardCup ? 1 : 0),
                 }
               : item,
           ),
@@ -611,13 +629,23 @@ export const handleOfflineApi = async (req, res, routeName) => {
             : player,
         );
         const allFinished = room.players.every(player => player.finished);
+        let cupAwarded = false;
+        let account = null;
         if (allFinished) {
           room.status = 'finished';
           const winner = [...room.players].sort((a, b) => b.score - a.score)[0];
           room.winnerId = winner?.userId;
         }
         mutateStore(s => ({ ...s, battleRooms: { ...s.battleRooms, [code]: room } }));
-        return json(res, 200, { ok: true, room });
+        if (allFinished && room.winnerId) {
+          const nextState = incrementOfflineUserCups(loadStore(), room.winnerId);
+          const winner = nextState.users.find(item => item.id === room.winnerId);
+          if (winner && room.winnerId === user.id) {
+            cupAwarded = true;
+            account = accountFromUser(winner, body.idToken);
+          }
+        }
+        return json(res, 200, { ok: true, room, cupAwarded, account });
       }
 
       case 'battle-room-chat': {

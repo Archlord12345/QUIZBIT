@@ -17,7 +17,10 @@ import { LAYOUT, RADIUS, SHADOW, UI } from '../utils/ui';
 type QuizViewProps = {
   initialQuiz: QuizState;
   mode: GameMode;
-  onComplete: (finalScore: number, quiz: QuizState) => Promise<void>;
+  onComplete: (
+    finalScore: number,
+    quiz: QuizState,
+  ) => Promise<{ cupAwarded?: boolean } | void>;
   onExit: () => void;
 };
 
@@ -30,6 +33,7 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
     'success' | 'error' | 'warning' | ''
   >('');
   const [completedScore, setCompletedScore] = useState<number | null>(null);
+  const [cupAwarded, setCupAwarded] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(
     initialQuiz.timeLimitSeconds || 0,
   );
@@ -46,7 +50,8 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
   const timedQuestionSeconds = quizState.timeLimitSeconds || 0;
 
   const completeQuiz = async (finalScore: number) => {
-    await onComplete(finalScore, quizState);
+    const result = await onComplete(finalScore, quizState);
+    setCupAwarded(Boolean(result?.cupAwarded));
     setCompletedScore(finalScore);
   };
 
@@ -194,6 +199,9 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
             {mode === 'battle_royale' ? 'Battle Royale terminée' : 'Quiz terminé'}
           </Text>
           <Text style={styles.summaryScore}>Score final : {completedScore}</Text>
+          {cupAwarded ? (
+            <Text style={styles.summaryCup}>🏆 +1 coupe gagnée !</Text>
+          ) : null}
           {mode === 'battle_royale' ? (
             <Text style={styles.summaryIntro}>
               Ton score est enregistré dans le classement (onglet Top → filtre Battle).
@@ -488,6 +496,12 @@ const styles = StyleSheet.create({
   summaryScore: {
     color: COLORS.accent,
     fontSize: 20,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  summaryCup: {
+    color: COLORS.primary,
+    fontSize: 16,
     fontWeight: '900',
     textAlign: 'center',
   },

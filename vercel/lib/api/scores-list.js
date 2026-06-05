@@ -56,6 +56,7 @@ module.exports = async (req, res) => {
             score.userId,
             score.displayName || user?.displayName,
           ),
+          cups: Math.max(0, Number(user?.cups || 0)),
         };
       }),
     });
