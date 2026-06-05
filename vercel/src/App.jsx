@@ -595,10 +595,14 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (currentPage === 'settings') {
-      runDiagnostic('mistral', () => testServerEndpoint('/api/test-mistral'));
+    if (currentPage !== 'settings') return;
+    runDiagnostic('mistral', () => testServerEndpoint('/api/test-mistral'));
+    if (getPanelAdminKey()) {
+      diagnostics.firebase();
+      diagnostics.auth();
     }
-  }, [currentPage, runDiagnostic]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
   return (
     <div className="admin-shell">
@@ -708,7 +712,7 @@ function Sidebar({ currentPage, onPage }) {
         })}
       </nav>
       <div className="sidebar-note">
-        Palette alignee sur l app mobile (#050816, cyan #21E7FF, accent #2D7DFF).
+        Palette alignee sur l app mobile (creme #fdf8fa, violet #7a317a, corail #ee6845).
       </div>
     </aside>
   );
@@ -1362,42 +1366,73 @@ function SettingsPage({
           </div>
         ))}
       </Panel>
-      <FirestoreAccessPanel />
+      <FirestoreAccessPanel onConnected={diagnostics.firebase} />
       <AiPromptTester />
     </div>
   );
 }
 
-function FirestoreAccessPanel() {
+function FirestoreAccessPanel({ onConnected }) {
   const [panelKey, setPanelKey] = useState(getPanelAdminKey());
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const hasToken = Boolean(getStoredIdToken());
+  const [hasToken, setHasToken] = useState(() => Boolean(getStoredIdToken()));
+
+  useEffect(() => {
+    const syncSession = () => setHasToken(Boolean(getStoredIdToken()));
+    window.addEventListener(FIRESTORE_SESSION_EVENT, syncSession);
+    return () =>
+      window.removeEventListener(FIRESTORE_SESSION_EVENT, syncSession);
+  }, []);
 
   const savePanelKey = () => {
-    setSessionPanelKey(panelKey);
+    const clean = panelKey.trim();
+    if (!clean) {
+      setMessage('Saisis la cle admin (identique a ADMIN_PANEL_KEY sur Vercel).');
+      return;
+    }
+    setSessionPanelKey(clean);
     setMessage('Cle panel enregistree pour cette session.');
   };
 
   const loginFirestore = async () => {
+    if (!getPanelAdminKey()) {
+      setMessage(
+        'Etape 1 : enregistre la cle admin panel avant de connecter Firestore.',
+      );
+      return;
+    }
+    const cleanEmail = email.trim();
+    if (!cleanEmail.includes('@') || password.length < 6) {
+      setMessage('Email et mot de passe Firebase requis (6 caracteres min).');
+      return;
+    }
+
     setLoading(true);
     setMessage('');
     try {
       const response = await fetch('/api/auth-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ email: cleanEmail, password }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.ok) {
         throw new Error(data.message || `HTTP ${response.status}`);
       }
-      setStoredIdToken(data.account?.idToken || '');
+      const token = data.account?.idToken || '';
+      if (!token) {
+        throw new Error('Connexion OK mais idToken Firebase manquant.');
+      }
+      setStoredIdToken(token);
+      setHasToken(true);
+      setPassword('');
       setMessage(
-        `Connecte en tant que ${data.account?.displayName || data.account?.email}.`,
+        `Connecte en tant que ${data.account?.displayName || data.account?.email}. Dashboard et CRUD Firestore actifs.`,
       );
+      onConnected?.();
     } catch (err) {
       setMessage(err.message || 'Connexion impossible.');
     } finally {
@@ -1407,6 +1442,7 @@ function FirestoreAccessPanel() {
 
   const logoutFirestore = () => {
     setStoredIdToken('');
+    setHasToken(false);
     setMessage('Session Firestore retiree.');
   };
 
@@ -1414,9 +1450,10 @@ function FirestoreAccessPanel() {
     <Panel title="Acces Firestore (panel admin)">
       <div className="ai-tester">
         <div className="ai-note">
-          Les lectures Firestore passent par l&apos;API avec ADMIN_PANEL_KEY. Sans
-          PANEL_FIRESTORE_EMAIL/PASSWORD sur Vercel, connecte un compte Firebase
-          ci-dessous (meme email que l&apos;app mobile, projet quizbit-cecc1).
+          <strong>Etape 1</strong> — Cle admin (ADMIN_PANEL_KEY sur Vercel).{' '}
+          <strong>Etape 2</strong> — Compte Firebase du projet quizbit-cecc1
+          (meme email/mot de passe que l&apos;app mobile). Alternative serveur :
+          variables PANEL_FIRESTORE_EMAIL et PANEL_FIRESTORE_PASSWORD sur Vercel.
         </div>
         {hasToken ? (
           <p className="ai-note" style={{ color: 'var(--green)' }}>
