@@ -15,6 +15,7 @@ import {
   setApiMode,
   setOfflineApiUrl,
 } from '../utils/api';
+import { checkApiHealth, OllamaHealth } from '../utils/networkHealth';
 import { COLORS, LINE, SPACING, PLACEHOLDER, INPUT_BG } from '../utils/theme';
 import { UI } from '../utils/ui';
 import { ScreenHeader, ScreenScroll, screenCardStyle } from '../components/ScreenLayout';
@@ -32,12 +33,34 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
       : 'http://localhost:3000',
   );
   const [saveHint, setSaveHint] = useState('');
+  const [ollamaStatus, setOllamaStatus] = useState<OllamaHealth | null>(null);
+  const [ollamaMessage, setOllamaMessage] = useState('');
+
+  const refreshOllama = async () => {
+    const health = await checkApiHealth();
+    if (health.mode !== 'local' || !health.ok) {
+      setOllamaStatus(null);
+      setOllamaMessage('');
+      return;
+    }
+    setOllamaStatus(health.ollama || null);
+    if (health.ollama?.available) {
+      setOllamaMessage(`IA locale active — modele ${health.ollama.model}`);
+    } else if (health.ollama?.enabled) {
+      setOllamaMessage(
+        `Ollama configure (${health.ollama.model}) — chargement au demarrage du serveur.`,
+      );
+    } else {
+      setOllamaMessage('Ollama desactive sur le serveur local.');
+    }
+  };
 
   const refresh = async () => {
     setIsOffline((await getApiMode()) === 'local');
     setApiUrl(await getApiBaseUrl());
     setOfflineServerUrl(await getOfflineApiUrl());
     setSaveHint('');
+    await refreshOllama();
   };
 
   useEffect(() => {
@@ -56,6 +79,7 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
     setApiUrl(nextBase);
     setOfflineServerUrl(await getOfflineApiUrl());
     setSaveHint('URL enregistrée.');
+    await refreshOllama();
   };
 
   return (
@@ -68,7 +92,7 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
             <Text style={styles.settingTitle}>Mode offline</Text>
             <Text style={styles.settingDescription}>
               Utilise le serveur local QuizBit (quiz, scores, battle) sans Internet.
-              Lance: cd local && npm start
+              Lance: npm run local:serve (Ollama charge automatiquement)
             </Text>
           </View>
           <Switch
@@ -117,6 +141,9 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
         {isOffline ? (
           <Text style={styles.demoHint}>
             Compte démo: demo@local.quizbit / demo123{'\n'}
+            {ollamaMessage
+              ? `${ollamaMessage}\n`
+              : 'Lance npm run local:serve pour demarrer le serveur et charger Ollama.\n'}
             {Platform.OS === 'android' && offlineServerUrl.includes('10.0.2.2')
               ? 'Attention: 10.0.2.2 fonctionne seulement sur emulateur. Sur telephone, mets l IP Wi-Fi du PC.'
               : 'Panel local: ouvre http://<IP-du-PC>:3000 dans le navigateur du PC.'}

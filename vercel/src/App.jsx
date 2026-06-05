@@ -456,7 +456,7 @@ export default function App() {
 
   const openCrudEdit = useCallback(
     record => {
-      if (!isCrudPage(currentPage)) return;
+      if (!isCrudPage(currentPage) || !record) return;
       const { id, ...rest } = record;
       setCrudModal({
         mode: 'edit',
@@ -1028,29 +1028,33 @@ function DataPage({
 }
 
 function getColumns(page, { crudBusy, onDelete, onEdit, onSelect }) {
-  const action = row => (
-    <div className="row-actions">
-      <button className="btn small" onClick={() => onSelect(row.original)}>
-        Voir
-      </button>
-      <button
-        className="btn small ghost"
-        disabled={crudBusy}
-        onClick={() => onEdit(row.original)}
-        title="Modifier"
-      >
-        <Pencil size={14} />
-      </button>
-      <button
-        className="btn small danger"
-        disabled={crudBusy}
-        onClick={() => onDelete(row.original)}
-        title="Supprimer"
-      >
-        <Trash2 size={14} />
-      </button>
-    </div>
-  );
+  const action = info => {
+    const record = info?.row?.original;
+    if (!record) return null;
+    return (
+      <div className="row-actions">
+        <button className="btn small" onClick={() => onSelect(record)}>
+          Voir
+        </button>
+        <button
+          className="btn small ghost"
+          disabled={crudBusy}
+          onClick={() => onEdit(record)}
+          title="Modifier"
+        >
+          <Pencil size={14} />
+        </button>
+        <button
+          className="btn small danger"
+          disabled={crudBusy}
+          onClick={() => onDelete(record)}
+          title="Supprimer"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+    );
+  };
   if (page === 'questions')
     return [
       {

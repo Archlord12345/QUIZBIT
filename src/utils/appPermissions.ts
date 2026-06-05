@@ -1,8 +1,12 @@
-import { PermissionsAndroid, Platform } from 'react-native';
+import {
+  PermissionsAndroid,
+  Platform,
+  type Permission,
+} from 'react-native';
 
-const getAndroidRuntimePermissions = (): string[] => {
+const getAndroidRuntimePermissions = (): Permission[] => {
   const version = Number(Platform.Version);
-  const permissions: string[] = [
+  const permissions: Permission[] = [
     PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
     PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
     PermissionsAndroid.PERMISSIONS.READ_MEDIA_AUDIO,

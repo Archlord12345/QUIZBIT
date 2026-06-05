@@ -44,6 +44,7 @@ const initialState = {
 let state = loadState();
 let currentPage = 'dashboard';
 let editing = null;
+let ollamaHealth = null;
 
 const pages = [
   ['dashboard', 'Dashboard'],
@@ -140,7 +141,7 @@ function render() {
       </aside>
       <main class="main qb-page">
         ${renderHeader()}
-        <div class="notice"><strong>Mode offline.</strong> Serveur API: <code>${getApiBase()}</code>. Les donnees sont synchronisees avec l app mobile. Importe un quiz JSON exporte depuis Vercel pour enrichir la banque locale.</div>
+        <div class="notice"><strong>Mode offline.</strong> Serveur API: <code>${getApiBase()}</code>. ${renderOllamaNotice()} Les donnees sont synchronisees avec l app mobile. Importe un quiz JSON exporte depuis Vercel pour enrichir la banque locale.</div>
         ${renderPage()}
       </main>
     </div>
@@ -152,7 +153,50 @@ function render() {
   });
   bindPageActions();
   if (currentPage === 'settings') {
-    testOllamaApi('ollama-settings-status');
+    refreshOllamaHealth('ollama-settings-status');
+  }
+  if (currentPage === 'quizzes') {
+    refreshOllamaHealth('ollama-status');
+  }
+}
+
+function renderOllamaNotice() {
+  if (!ollamaHealth) {
+    return 'Ollama: verification en cours... ';
+  }
+  if (ollamaHealth.available) {
+    return `Ollama actif (<code>${escapeHtml(ollamaHealth.model)}</code>). `;
+  }
+  if (ollamaHealth.enabled) {
+    return `Ollama configure (<code>${escapeHtml(ollamaHealth.model)}</code>) — chargement au demarrage. `;
+  }
+  return 'Ollama desactive. ';
+}
+
+async function refreshOllamaHealth(statusId) {
+  const status = statusId ? document.getElementById(statusId) : null;
+  if (status) status.textContent = 'Verification Ollama...';
+  try {
+    const response = await fetch(`${getApiBase()}/api/health`);
+    const data = await response.json();
+    ollamaHealth = data.ollama || null;
+    if (status) {
+      if (ollamaHealth?.available) {
+        status.textContent = `Ollama pret — ${ollamaHealth.model}`;
+      } else if (ollamaHealth?.enabled) {
+        status.textContent = `Ollama configure (${ollamaHealth.model}) — relance npm start si indisponible.`;
+      } else {
+        status.textContent = 'Ollama desactive sur ce serveur.';
+      }
+    }
+    if (currentPage === 'dashboard') {
+      render();
+    }
+  } catch (error) {
+    ollamaHealth = null;
+    if (status) {
+      status.textContent = error.message || 'Ollama: serveur local injoignable.';
+    }
   }
 }
 
@@ -243,7 +287,7 @@ function renderQuizzes() {
       <h2>Generer avec Ollama (IA locale)</h2>
       <p class="hint-box">
         Modele par defaut: <code>smollm2:135m-instruct-q4_1</code> (~98 Mo).
-        Installe-le avec <code>npm run setup:ollama</code> dans <code>local/</code>.
+        Charge automatiquement au demarrage via <code>npm run local:serve</code>.
       </p>
       <div class="form-grid">
         <input id="ollama-theme" placeholder="Theme (ex. Histoire de France)" />
@@ -910,4 +954,6 @@ function resetLocal() {
   mutate({ ...initialState });
 }
 
-pullStateFromServer().finally(() => render());
+pullStateFromServer()
+  .then(() => refreshOllamaHealth())
+  .finally(() => render());

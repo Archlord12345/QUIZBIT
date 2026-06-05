@@ -4,10 +4,20 @@ Serveur **tout-en-un** pour jouer à QuizBit **sans Internet** : panel admin + A
 
 ## Démarrer
 
+Depuis la racine du dépôt :
+
 ```sh
-cd local
+npm run local:serve
+```
+
+Ou depuis `local/` :
+
+```sh
 npm start
 ```
+
+Au démarrage, le script `prestart` configure automatiquement Ollama :
+démarre `ollama serve` si besoin, télécharge le modèle `smollm2:135m-instruct-q4_1` s'il est absent, puis lance le serveur.
 
 - **Panel admin** : http://localhost:3000/
 - **API mobile** : http://localhost:3000/api/…
@@ -45,11 +55,14 @@ npm start
 
 Le serveur local peut générer des quiz via **Ollama** (IA 100 % locale, sans cloud).
 
-### Installation du modèle (~98 Mo)
+### Modèle Ollama (~98 Mo)
+
+Chargé **automatiquement** à chaque `npm run local:serve` / `npm start`.
+
+Installation manuelle si besoin :
 
 ```sh
-cd local
-npm run setup:ollama
+npm run local:ollama
 ```
 
 Modèle par défaut : `smollm2:135m-instruct-q4_1` (98 Mo, sous la limite 100 Mo).

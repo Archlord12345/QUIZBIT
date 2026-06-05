@@ -1,11 +1,18 @@
 import { Platform } from 'react-native';
 import { getApiBaseUrl, getApiMode } from './api';
 
+export type OllamaHealth = {
+  enabled: boolean;
+  available: boolean;
+  model: string;
+};
+
 export type ApiHealth = {
   ok: boolean;
   url: string;
   mode: 'local' | 'remote';
   message: string;
+  ollama?: OllamaHealth;
 };
 
 const fetchWithTimeout = async (
@@ -31,14 +38,25 @@ export const checkApiHealth = async (): Promise<ApiHealth> => {
   try {
     const response = await fetchWithTimeout(healthPath, { method: 'GET' });
     if (response.ok) {
+      const data = (await response.json().catch(() => ({}))) as {
+        ollama?: OllamaHealth;
+      };
+      const ollama = mode === 'local' ? data.ollama : undefined;
+      let message =
+        mode === 'local'
+          ? 'Serveur local accessible.'
+          : 'API QuizBit accessible.';
+      if (ollama?.available && ollama.model) {
+        message = `Serveur local OK — Ollama ${ollama.model} pret.`;
+      } else if (ollama?.enabled && ollama.model) {
+        message = `Serveur local OK — Ollama (${ollama.model}) en chargement.`;
+      }
       return {
         ok: true,
         url,
         mode,
-        message:
-          mode === 'local'
-            ? 'Serveur local accessible.'
-            : 'API QuizBit accessible.',
+        message,
+        ollama,
       };
     }
     return {

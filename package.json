@@ -10,8 +10,9 @@
     "test": "jest",
     "logo": "node tools/generate-logo-assets.mjs",
     "local:server": "npm start --prefix local",
+    "local:serve": "npm start --prefix local",
     "local:ollama": "npm run setup:ollama --prefix local",
-    "postinstall": "node -e \"if(!process.env.VERCEL)require('child_process').execSync('patch-package',{stdio:'inherit'})\""
+    "postinstall": "node scripts/postinstall.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.1.1",

@@ -1,7 +1,7 @@
 {
   "version": 2,
   "name": "quizbit-admin",
-  "installCommand": "npm ci --prefix vercel",
+  "installCommand": "VERCEL=1 npm ci --prefix vercel && VERCEL=1 npm ci --ignore-scripts",
   "buildCommand": "npm run build --prefix vercel",
   "outputDirectory": "vercel/dist",
   "functions": {
