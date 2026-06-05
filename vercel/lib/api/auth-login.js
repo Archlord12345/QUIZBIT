@@ -3,6 +3,7 @@ const {
   getDocument,
   setDocument,
 } = require('../firebase-rest');
+const { buildDefaultAvatarUrl } = require('../default-avatar');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -28,14 +29,24 @@ module.exports = async (req, res) => {
     });
     let account = await getDocument('users', auth.localId, auth.idToken);
     if (!account) {
+      const displayName =
+        auth.displayName || cleanEmail.split('@')[0] || 'Player';
       account = {
         id: auth.localId,
         email: cleanEmail,
-        displayName: auth.displayName || cleanEmail.split('@')[0] || 'Player',
+        displayName,
+        avatarUrl: buildDefaultAvatarUrl(auth.localId, displayName),
         gamesPlayed: 0,
         totalScore: 0,
         bestScore: 0,
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      await setDocument('users', account.id, account, auth.idToken);
+    } else if (!String(account.avatarUrl || '').trim()) {
+      account = {
+        ...account,
+        avatarUrl: buildDefaultAvatarUrl(account.id, account.displayName),
         updatedAt: new Date().toISOString(),
       };
       await setDocument('users', account.id, account, auth.idToken);

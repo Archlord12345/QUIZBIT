@@ -1,5 +1,6 @@
 import CloudinaryModel from '../models/CloudinaryModel';
 import { apiPost } from '../utils/api';
+import { resolveAvatarUrl } from '../utils/defaultAvatar';
 import { clearSession, loadSession, saveSession } from '../utils/sessionStore';
 
 export type UserAccount = {
@@ -27,13 +28,26 @@ class AuthController {
 
   async restoreSession(): Promise<UserAccount | null> {
     const account = await loadSession();
-    this.currentAccount = account;
-    return account;
+    const normalized = account ? this.normalizeAccount(account) : null;
+    this.currentAccount = normalized;
+    return normalized;
   }
 
   async setCurrentAccount(account: UserAccount) {
-    this.currentAccount = account;
-    await saveSession(account);
+    const normalized = this.normalizeAccount(account);
+    this.currentAccount = normalized;
+    await saveSession(normalized);
+  }
+
+  private normalizeAccount(account: UserAccount): UserAccount {
+    return {
+      ...account,
+      avatarUrl: resolveAvatarUrl(
+        account.avatarUrl,
+        account.id,
+        account.displayName,
+      ),
+    };
   }
 
   async register(
@@ -70,9 +84,14 @@ class AuthController {
   async updateAvatar(
     account: UserAccount,
     imageUri: string,
+    mimeType = 'image/jpeg',
   ): Promise<UserAccount> {
     this.assertAuthenticated(account);
-    const upload = await CloudinaryModel.uploadImage(imageUri);
+    const upload = await CloudinaryModel.uploadImage(
+      imageUri,
+      account.idToken,
+      mimeType,
+    );
     const response = await apiPost<AuthResponse>('/api/user-update-avatar', {
       idToken: account.idToken,
       userId: account.id,

@@ -219,7 +219,11 @@ const HomeView = ({
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        <Header displayName={account.displayName} />
+        <Header
+          displayName={account.displayName}
+          avatarUrl={account.avatarUrl}
+          userId={account.id}
+        />
 
         <View style={styles.scoreCardContainer}>
           <ScoreCard

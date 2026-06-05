@@ -1,59 +1,83 @@
 /**
- * Tokens alignés sur src/utils/theme.ts (app mobile QuizBit)
+ * Tokens alignés sur src/utils/theme.ts + src/utils/ui.ts (app mobile QuizBit)
  */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  --qb-primary: #050816;
-  --qb-primary-soft: #0b1230;
-  --qb-secondary: #21e7ff;
-  --qb-background: #070a13;
-  --qb-surface: #10162a;
+  --qb-primary: #7a317a;
+  --qb-primary-dark: #4a204e;
+  --qb-primary-soft: #5b2861;
+  --qb-secondary: #ee6845;
+  --qb-accent: #ee6845;
+  --qb-background: #fdf8fa;
+  --qb-background-soft: #fcf5fb;
+  --qb-surface: #ffffff;
   --qb-surface-light: #ffffff;
-  --qb-text: #172b4d;
-  --qb-text-on-dark: #f8fbff;
-  --qb-muted: #94a3b8;
-  --qb-muted-soft: #6b778c;
-  --qb-line-soft: #dfe1e6;
-  --qb-input-bg: #fafbfc;
-  --qb-error: #ff4d6d;
-  --qb-success: #22c55e;
+  --qb-surface-muted: #fdfafb;
+  --qb-surface-elevated: #faebea;
+  --qb-text: #2e1d33;
+  --qb-text-on-dark: #ffffff;
+  --qb-muted: #78716c;
+  --qb-muted-soft: #57534e;
+  --qb-line-soft: #e7e5e4;
+  --qb-input-bg: #ffffff;
+  --qb-error: #f43f5e;
+  --qb-success: #10b981;
   --qb-warning: #f59e0b;
-  --qb-accent: #2d7dff;
-  --qb-violet: #8b5cf6;
-  --qb-glow: rgb(33 231 255 / 55%);
-  --qb-gradient-start: #050816;
-  --qb-gradient-mid: #0a1f44;
-  --qb-gradient-end: #4c1d95;
+  --qb-violet: #7a317a;
+  --qb-glow: rgb(238 104 69 / 35%);
+  --qb-gradient-start: #fdf8fa;
+  --qb-gradient-mid: #faebea;
+  --qb-gradient-end: #fcf5fb;
+  --qb-chip-bg: #fcf5fb;
+  --qb-chip-border: #f5ecf6;
+
+  /* Sidebar violet (marque mobile) */
+  --sidebar-bg-start: #4a204e;
+  --sidebar-bg-mid: #5b2861;
+  --sidebar-bg-end: #7a317a;
+  --sidebar-text: #ffffff;
+  --sidebar-muted: rgb(255 255 255 / 72%);
+  --sidebar-line: rgb(255 255 255 / 16%);
+  --sidebar-line-strong: rgb(255 255 255 / 28%);
+  --sidebar-accent: #ee6845;
+  --sidebar-hover: rgb(255 255 255 / 10%);
+  --sidebar-active: rgb(238 104 69 / 18%);
 
   /* Alias panels admin */
-  --bg: var(--qb-primary);
-  --bg-soft: var(--qb-background);
-  --panel: rgb(16 22 42 / 82%);
-  --panel-strong: rgb(11 18 48 / 94%);
-  --line: rgb(33 231 255 / 18%);
-  --line-strong: rgb(33 231 255 / 32%);
-  --text: var(--qb-text-on-dark);
+  --bg: var(--qb-background);
+  --bg-soft: var(--qb-background-soft);
+  --panel: rgb(255 255 255 / 94%);
+  --panel-strong: #ffffff;
+  --line: rgb(122 49 122 / 14%);
+  --line-strong: rgb(122 49 122 / 26%);
+  --text: var(--qb-text);
   --text-dark: var(--qb-text);
   --muted: var(--qb-muted);
   --cyan: var(--qb-secondary);
-  --blue: var(--qb-accent);
+  --blue: var(--qb-primary);
   --violet: var(--qb-violet);
   --green: var(--qb-success);
   --amber: var(--qb-warning);
   --red: var(--qb-error);
+  --focus-ring: rgb(122 49 122 / 14%);
+  --shadow-soft: rgb(46 29 51 / 8%);
+  --shadow-card: rgb(46 29 51 / 10%);
+  --code-bg: var(--qb-primary-dark);
+  --code-text: #f8f4fa;
+  --overlay: rgb(46 29 51 / 45%);
 }
 
 .quizbit-panel-bg {
-  background-color: var(--qb-primary);
+  background-color: var(--qb-background);
   background-image: radial-gradient(
       circle at 12% 8%,
-      rgb(33 231 255 / 16%),
+      rgb(122 49 122 / 10%),
       transparent 28rem
     ),
     radial-gradient(
       circle at 88% 4%,
-      rgb(139 92 246 / 18%),
+      rgb(238 104 69 / 12%),
       transparent 30rem
     ),
     linear-gradient(
@@ -65,21 +89,31 @@
 }
 
 .glass-panel {
+  background: var(--qb-surface-light);
+  border: 1px solid var(--qb-line-soft);
+  border-radius: 20px;
+  box-shadow: 0 10px 32px var(--shadow-card);
+  color: var(--qb-text);
+}
+
+.sidebar.glass-panel,
+.sidebar {
   background: linear-gradient(
-    145deg,
-    rgb(16 22 42 / 88%),
-    rgb(9 14 32 / 86%)
+    180deg,
+    var(--sidebar-bg-start) 0%,
+    var(--sidebar-bg-mid) 52%,
+    var(--sidebar-bg-end) 100%
   );
-  border: 1px solid var(--line);
-  box-shadow: 0 20px 60px rgb(0 0 0 / 38%), 0 0 0 1px rgb(33 231 255 / 6%);
-  backdrop-filter: blur(18px);
+  border-color: var(--sidebar-line);
+  box-shadow: 12px 0 40px rgb(74 32 78 / 18%);
+  color: var(--sidebar-text);
 }
 
 .card-surface {
   background: var(--qb-surface-light);
   border: 1px solid var(--qb-line-soft);
   border-radius: 20px;
-  box-shadow: 0 8px 28px rgb(5 8 22 / 28%);
+  box-shadow: 0 8px 28px var(--shadow-card);
   color: var(--qb-text);
 }
 
@@ -105,10 +139,10 @@
 }
 
 .btn-accent {
-  background: var(--qb-accent);
+  background: linear-gradient(135deg, var(--qb-primary), var(--qb-primary-soft));
   border: 0;
   border-radius: 10px;
-  box-shadow: 0 10px 24px rgb(45 125 255 / 28%);
+  box-shadow: 0 10px 24px rgb(122 49 122 / 24%);
   color: #fff;
   cursor: pointer;
   font-weight: 800;
@@ -117,13 +151,13 @@
 }
 
 .btn-accent:hover {
-  box-shadow: 0 12px 28px rgb(45 125 255 / 38%);
+  box-shadow: 0 12px 28px rgb(122 49 122 / 32%);
   transform: translateY(-1px);
 }
 
 .btn-chip {
-  background: var(--qb-surface-light);
-  border: 1px solid var(--qb-line-soft);
+  background: var(--qb-chip-bg);
+  border: 1px solid var(--qb-chip-border);
   border-radius: 999px;
   color: var(--qb-text);
   cursor: pointer;
@@ -157,11 +191,11 @@
 }
 
 .mode-pill.mcq {
-  background: rgb(34 197 94 / 18%);
-  color: #86efac;
+  background: rgb(16 185 129 / 14%);
+  color: #047857;
 }
 
 .mode-pill.open {
-  background: rgb(139 92 246 / 20%);
-  color: #c4b5fd;
+  background: rgb(122 49 122 / 14%);
+  color: var(--qb-primary);
 }

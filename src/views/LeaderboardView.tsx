@@ -10,6 +10,7 @@ import ScoreController, { GameMode, ScoreEntry } from '../controllers/ScoreContr
 import { UserAccount } from '../controllers/AuthController';
 import { LeaderboardCard } from '../components/LeaderboardCard';
 import { LeaderboardUser } from '../types';
+import { getInitials, resolveAvatarUrl } from '../utils/defaultAvatar';
 import { COLORS } from '../utils/theme';
 
 type LeaderboardViewProps = {
@@ -52,23 +53,19 @@ const LeaderboardView = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, active, refreshToken]);
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  // Map ScoreEntry[] to LeaderboardUser[]
   const mappedRanks: LeaderboardUser[] = scores.map((score, index) => ({
     rank: index + 1,
     name: score.displayName,
     score: score.score,
     initials: getInitials(score.displayName),
+    userId: score.userId,
+    avatarUrl: resolveAvatarUrl(
+      score.avatarUrl,
+      score.userId,
+      score.displayName,
+    ),
     isCurrentUser: score.userId === account.id,
-    change: 0, // Stable trend change indicator
+    change: 0,
   }));
 
   return (

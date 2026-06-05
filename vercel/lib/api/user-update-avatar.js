@@ -19,7 +19,8 @@ module.exports = async (req, res) => {
   if (!isSafeAvatarUrl(avatarUrl)) {
     return res.status(400).json({
       ok: false,
-      message: 'URL avatar invalide. Utilise un upload Cloudinary HTTPS.',
+      message:
+        'URL avatar invalide. La photo doit etre envoyee sur Cloudinary (HTTPS) avant enregistrement.',
     });
   }
   try {

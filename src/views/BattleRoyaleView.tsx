@@ -24,6 +24,7 @@ import {
 import { ThemeMediaSection } from '../components/ThemeMediaSection';
 import VoiceController from '../controllers/VoiceController';
 import { MAX_VOICE_RECORD_MS } from '../utils/voiceRecorder';
+import { getApiMode } from '../utils/api';
 
 type BattleRoyaleViewProps = {
   account: UserAccount;
@@ -40,6 +41,7 @@ const BattleRoyaleView = ({
   embedded = false,
   onStartBattle,
 }: BattleRoyaleViewProps) => {
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [theme, setTheme] = useState('Culture générale');
   const [themeMedia, setThemeMedia] = useState<ThemeMedia | null>(null);
   const [battleMode, setBattleMode] = useState<'classic' | 'timed_mcq'>(
@@ -72,6 +74,10 @@ const BattleRoyaleView = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordMs, isRecording]);
+
+  useEffect(() => {
+    getApiMode().then(mode => setIsOfflineMode(mode === 'local'));
+  }, []);
 
   const createRoom = async () => {
     setLoading(true);
@@ -580,27 +586,55 @@ const BattleRoyaleView = ({
             </Text>
           ) : null}
 
-          {room.hostId === account.id ? (
-            <>
-              <TouchableOpacity style={styles.primaryButton} onPress={startBattle}>
-                <Text style={styles.primaryButtonText}>Lancer le battle</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.dangerButton} onPress={deleteLobby}>
-                <Text style={styles.primaryButtonText}>Supprimer le lobby</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <View style={styles.waitingForHostContainer}>
-                <Text style={styles.waitingForHostText}>
-                  En attente du lancement par le créateur de la salle...
-                </Text>
-              </View>
-              <TouchableOpacity style={styles.dangerButton} onPress={() => setRoom(null)}>
-                <Text style={styles.primaryButtonText}>Quitter la salle</Text>
-              </TouchableOpacity>
-            </>
-          )}
+          {(() => {
+            const isHost = room.hostId === account.id;
+            const isPlayer = room.players.some(
+              player => player.userId === account.id,
+            );
+            const canLaunch =
+              room.status === 'waiting' &&
+              (isHost || (isOfflineMode && isPlayer));
+
+            return (
+              <>
+                {canLaunch ? (
+                  <TouchableOpacity
+                    style={styles.primaryButton}
+                    onPress={startBattle}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      Lancer le battle
+                    </Text>
+                  </TouchableOpacity>
+                ) : !isOfflineMode ? (
+                  <View style={styles.waitingForHostContainer}>
+                    <Text style={styles.waitingForHostText}>
+                      En attente du lancement par le créateur de la salle...
+                    </Text>
+                  </View>
+                ) : null}
+                {isHost ? (
+                  <TouchableOpacity
+                    style={styles.dangerButton}
+                    onPress={deleteLobby}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      Supprimer le lobby
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.dangerButton}
+                    onPress={() => setRoom(null)}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      Quitter la salle
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            );
+          })()}
         </View>
       )}
 

@@ -58,7 +58,7 @@
 .qb-select:focus,
 .qb-textarea:focus {
   border-color: var(--line-strong);
-  box-shadow: 0 0 0 3px rgb(33 231 255 / 12%);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 .qb-input::placeholder,
@@ -67,12 +67,57 @@
 }
 
 .qb-table td,
-.qb-table th {
+.qb-table th,
+table td,
+table th {
   vertical-align: middle;
 }
 
-.qb-table tbody tr:last-child td {
+.qb-table tbody tr:last-child td,
+table tbody tr:last-child td {
   border-bottom: 0;
+}
+
+/* Tableaux — texte lisible sur fond clair (panels local + Vercel) */
+.table-wrap,
+.table-card {
+  background: var(--qb-surface-light);
+  color: var(--qb-text);
+}
+
+.glass-panel:not(.sidebar) {
+  color: var(--qb-text);
+}
+
+table {
+  color: var(--qb-text);
+}
+
+table thead th {
+  background: var(--qb-surface-muted);
+  border-bottom: 1px solid var(--qb-line-soft);
+  color: var(--qb-muted);
+}
+
+table tbody td {
+  border-bottom: 1px solid var(--qb-line-soft);
+  color: var(--qb-text);
+}
+
+table tbody td strong,
+table thead th strong,
+table tbody td a {
+  color: var(--qb-text);
+}
+
+table tbody tr:hover td {
+  background: rgb(122 49 122 / 5%);
+  color: var(--qb-text);
+}
+
+table .empty,
+table .empty-state {
+  color: var(--qb-muted);
 }
 
 .qb-section-title {

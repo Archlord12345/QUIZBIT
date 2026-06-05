@@ -1,35 +1,34 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AvatarImage } from './AvatarImage';
 import { COLORS } from '../utils/theme';
 import { LAYOUT, UI } from '../utils/ui';
 
 interface HeaderProps {
   displayName: string;
+  avatarUrl?: string;
+  userId: string;
   onNotificationClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   displayName,
+  avatarUrl,
+  userId,
   onNotificationClick,
 }) => {
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   return (
     <View style={styles.container}>
       <View style={styles.profileSection}>
         <View style={styles.avatarWrapper}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>
-              {getInitials(displayName)}
-            </Text>
-          </View>
+          <AvatarImage
+            avatarUrl={avatarUrl}
+            seed={userId}
+            displayName={displayName}
+            size={44}
+            style={styles.avatarImage}
+            frameStyle={styles.avatarContainer}
+          />
           <View style={styles.statusDot} />
         </View>
 
@@ -67,12 +66,6 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   avatarContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.primarySoft,
-    justifyContent: 'center',
-    alignItems: 'center',
     borderWidth: 2,
     borderColor: COLORS.surface,
     shadowColor: '#2e1d33',
@@ -81,11 +74,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  avatarText: {
-    color: COLORS.textOnDark,
-    fontWeight: '900',
-    fontSize: 14,
-    letterSpacing: 0.5,
+  avatarImage: {
+    borderWidth: 0,
   },
   statusDot: {
     position: 'absolute',

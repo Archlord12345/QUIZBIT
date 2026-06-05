@@ -7,6 +7,7 @@ export type ScoreEntry = {
   id: string;
   userId: string;
   displayName: string;
+  avatarUrl?: string;
   theme: string;
   score: number;
   mode: GameMode;

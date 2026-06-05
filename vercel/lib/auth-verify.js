@@ -39,7 +39,10 @@ const isSafeAvatarUrl = url => {
     const host = parsed.hostname.toLowerCase();
     return (
       host === 'res.cloudinary.com' ||
-      host.endsWith('.cloudinary.com')
+      host.endsWith('.cloudinary.com') ||
+      host === 'ui-avatars.com' ||
+      host.endsWith('.ui-avatars.com') ||
+      host === 'api.dicebear.com'
     );
   } catch {
     return false;

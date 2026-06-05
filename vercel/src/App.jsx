@@ -27,7 +27,9 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
+import { AvatarBadge } from './AvatarBadge.jsx';
 import OfflineQuizStudio from './OfflineQuizStudio.jsx';
+import { hasCustomAvatar } from './defaultAvatar.js';
 import {
   PAGE_COLLECTION,
   defaultDocument,
@@ -651,6 +653,7 @@ export default function App() {
                 onEdit={openCrudEdit}
                 page={currentPage}
                 rows={currentRows}
+                users={users}
                 globalFilter={globalFilter}
                 setGlobalFilter={setGlobalFilter}
                 selectedRecord={selectedRecord}
@@ -771,18 +774,24 @@ function Banner({ children, tone = 'warn' }) {
   return <div className={`banner ${tone}`}>{children}</div>;
 }
 
+const CHART_TOOLTIP_STYLE = {
+  background: '#ffffff',
+  border: '1px solid #e7e5e4',
+  color: '#2e1d33',
+};
+
 function Dashboard({ analytics, stats }) {
   const kpis = [
-    ['Players', stats.players, '#22c55e'],
-    ['Quizzes', stats.quizzes, '#21e7ff'],
-    ['Scores', stats.scores, '#f59e0b'],
-    ['Battle Rooms', stats.battleRooms, '#8b5cf6'],
-    ['Avg Score', analytics.averageScore, '#2d7dff'],
+    ['Players', stats.players],
+    ['Quizzes', stats.quizzes],
+    ['Scores', stats.scores],
+    ['Battle Rooms', stats.battleRooms],
+    ['Avg Score', analytics.averageScore],
   ];
   const roomData = [
     { name: 'Waiting', value: analytics.waitingRooms, color: '#f59e0b' },
-    { name: 'Active', value: analytics.activeRooms, color: '#21e7ff' },
-    { name: 'Finished', value: analytics.finishedRooms, color: '#94a3b8' },
+    { name: 'Active', value: analytics.activeRooms, color: '#ee6845' },
+    { name: 'Finished', value: analytics.finishedRooms, color: '#78716c' },
   ];
   const scoreData = analytics.topScores.map(score => ({
     name: score.displayName || 'Player',
@@ -792,59 +801,73 @@ function Dashboard({ analytics, stats }) {
   return (
     <div className="dashboard-grid">
       <div className="kpi-grid">
-        {kpis.map(([label, value, color], index) => (
-          <Kpi
-            key={label}
-            label={label}
-            value={value}
-            color={color}
-            index={index}
-          />
+        {kpis.map(([label, value], index) => (
+          <Kpi key={label} label={label} value={value} index={index} />
         ))}
       </div>
       <Panel title="Top scores" className="wide">
-        <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={scoreData}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="rgba(148,163,184,.18)"
-            />
-            <XAxis dataKey="name" stroke="#94a3b8" />
-            <YAxis stroke="#94a3b8" />
-            <Tooltip
-              contentStyle={{
-                background: '#0b1230',
-                border: '1px solid rgba(33,231,255,.2)',
-                color: '#fff',
-              }}
-            />
-            <Bar dataKey="score" fill="#21e7ff" radius={[8, 8, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="dashboard-chart dashboard-chart-lg">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={scoreData}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(122,49,122,.12)"
+              />
+              <XAxis dataKey="name" stroke="#78716c" tick={{ fontSize: 12 }} />
+              <YAxis stroke="#78716c" tick={{ fontSize: 12 }} />
+              <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+              <Bar dataKey="score" fill="#7a317a" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </Panel>
       <Panel title="Battle rooms">
-        <ResponsiveContainer width="100%" height={260}>
-          <PieChart>
-            <Pie
-              data={roomData}
-              dataKey="value"
-              innerRadius={58}
-              outerRadius={92}
-              paddingAngle={5}
+        <div className="dashboard-chart dashboard-chart-lg">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={roomData}
+                dataKey="value"
+                innerRadius={58}
+                outerRadius={92}
+                paddingAngle={5}
+              >
+                {roomData.map(entry => (
+                  <Cell key={entry.name} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </Panel>
+      <Panel title="Score split">
+        <div className="dashboard-chart dashboard-chart-md">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={[
+                { name: 'Solo', value: analytics.soloScores },
+                { name: 'Battle', value: analytics.battleScores },
+              ]}
             >
-              {roomData.map(entry => (
-                <Cell key={entry.name} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip
-              contentStyle={{
-                background: '#0b1230',
-                border: '1px solid rgba(33,231,255,.2)',
-                color: '#fff',
-              }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+              <defs>
+                <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#7a317a" stopOpacity={0.75} />
+                  <stop offset="95%" stopColor="#ee6845" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="name" stroke="#78716c" tick={{ fontSize: 12 }} />
+              <YAxis stroke="#78716c" tick={{ fontSize: 12 }} />
+              <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="#7a317a"
+                fill="url(#scoreGradient)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </Panel>
       <Panel title="Activity" className="wide">
         <div className="activity-list">
@@ -857,7 +880,7 @@ function Dashboard({ analytics, stats }) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.03 }}
               >
-                <span>{row.type}</span>
+                <span className="activity-type">{row.type}</span>
                 <strong>{row.label}</strong>
                 <small>{safeDate(row.date)}</small>
               </motion.div>
@@ -867,43 +890,11 @@ function Dashboard({ analytics, stats }) {
           )}
         </div>
       </Panel>
-      <Panel title="Score split">
-        <ResponsiveContainer width="100%" height={220}>
-          <AreaChart
-            data={[
-              { name: 'Solo', value: analytics.soloScores },
-              { name: 'Battle', value: analytics.battleScores },
-            ]}
-          >
-            <defs>
-              <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="#21e7ff" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis dataKey="name" stroke="#94a3b8" />
-            <YAxis stroke="#94a3b8" />
-            <Tooltip
-              contentStyle={{
-                background: '#0b1230',
-                border: '1px solid rgba(33,231,255,.2)',
-                color: '#fff',
-              }}
-            />
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke="#8b5cf6"
-              fill="url(#scoreGradient)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </Panel>
     </div>
   );
 }
 
-function Kpi({ color, index, label, value }) {
+function Kpi({ index, label, value }) {
   return (
     <motion.div
       className="kpi-card glass-panel"
@@ -912,7 +903,7 @@ function Kpi({ color, index, label, value }) {
       transition={{ delay: index * 0.04 }}
     >
       <span>{label}</span>
-      <strong style={{ color }}>{value}</strong>
+      <strong>{value}</strong>
     </motion.div>
   );
 }
@@ -933,10 +924,15 @@ function DataPage({
   onEdit,
   page,
   rows,
+  users,
   selectedRecord,
   setGlobalFilter,
   setSelectedRecord,
 }) {
+  const usersById = useMemo(
+    () => Object.fromEntries((users || []).map(user => [user.id, user])),
+    [users],
+  );
   const columns = useMemo(
     () =>
       getColumns(page, {
@@ -944,8 +940,9 @@ function DataPage({
         onDelete,
         onEdit,
         onSelect: setSelectedRecord,
+        usersById,
       }),
-    [crudBusy, onDelete, onEdit, page, setSelectedRecord],
+    [crudBusy, onDelete, onEdit, page, setSelectedRecord, usersById],
   );
   const table = useReactTable({
     data: rows,
@@ -1024,14 +1021,16 @@ function DataPage({
           onClose={() => setSelectedRecord(null)}
           onDelete={onDelete}
           onEdit={onEdit}
+          page={page}
           record={selectedRecord}
+          usersById={usersById}
         />
       )}
     </div>
   );
 }
 
-function getColumns(page, { crudBusy, onDelete, onEdit, onSelect }) {
+function getColumns(page, { crudBusy, onDelete, onEdit, onSelect, usersById = {} }) {
   const action = info => {
     const record = info?.row?.original;
     if (!record) return null;
@@ -1081,32 +1080,64 @@ function getColumns(page, { crudBusy, onDelete, onEdit, onSelect }) {
   if (page === 'users')
     return [
       {
-        header: 'User',
-        cell: info => (
-          <strong>
-            {info.row.original.displayName ||
-              info.row.original.username ||
-              'Player'}
-          </strong>
-        ),
+        header: 'Joueur',
+        cell: info => {
+          const record = info.row.original;
+          const name =
+            record.displayName || record.username || 'Player';
+          return (
+            <div className="avatar-cell">
+              <AvatarBadge
+                avatarUrl={record.avatarUrl}
+                seed={record.id}
+                displayName={name}
+                size={40}
+              />
+              <div className="avatar-cell-meta">
+                <strong>{name}</strong>
+                <span className="avatar-cell-sub">{record.email || '—'}</span>
+              </div>
+            </div>
+          );
+        },
       },
-      { header: 'Email', accessorKey: 'email' },
       { header: 'Total', cell: info => info.row.original.totalScore || 0 },
       { header: 'Best', cell: info => info.row.original.bestScore || 0 },
       { header: 'Played', cell: info => info.row.original.gamesPlayed || 0 },
       {
-        header: 'Avatar',
-        cell: info => (info.row.original.avatarUrl ? 'Oui' : 'Non'),
+        header: 'Photo',
+        cell: info => {
+          const record = info.row.original;
+          const custom = hasCustomAvatar(record.avatarUrl);
+          return (
+            <span className={`pill ${custom ? 'mcq' : 'open'}`}>
+              {custom ? 'Personnalisee' : 'Par defaut'}
+            </span>
+          );
+        },
       },
       { header: 'Actions', cell: action },
     ];
   if (page === 'scores')
     return [
       {
-        header: 'Player',
-        cell: info => (
-          <strong>{info.row.original.displayName || 'Player'}</strong>
-        ),
+        header: 'Joueur',
+        cell: info => {
+          const record = info.row.original;
+          const user = usersById[record.userId];
+          const name = record.displayName || user?.displayName || 'Player';
+          return (
+            <div className="avatar-cell">
+              <AvatarBadge
+                avatarUrl={user?.avatarUrl}
+                seed={record.userId || record.id}
+                displayName={name}
+                size={36}
+              />
+              <strong>{name}</strong>
+            </div>
+          );
+        },
       },
       { header: 'Theme', accessorKey: 'theme' },
       {
@@ -1217,7 +1248,25 @@ function ModePill({ label, mode }) {
   return <span className={`pill ${mode || 'solo'}`}>{text}</span>;
 }
 
-function DetailsPanel({ crudBusy, onClose, onDelete, onEdit, record }) {
+function DetailsPanel({
+  crudBusy,
+  onClose,
+  onDelete,
+  onEdit,
+  page,
+  record,
+  usersById = {},
+}) {
+  const userRecord =
+    page === 'users'
+      ? record
+      : page === 'scores'
+      ? usersById[record.userId]
+      : null;
+  const displayName =
+    userRecord?.displayName || record.displayName || 'Player';
+  const avatarSeed = userRecord?.id || record.userId || record.id;
+
   return (
     <aside className="details-panel glass-panel">
       <div className="details-head">
@@ -1226,6 +1275,24 @@ function DetailsPanel({ crudBusy, onClose, onDelete, onEdit, record }) {
           Fermer
         </button>
       </div>
+      {page === 'users' || page === 'scores' ? (
+        <div className="details-avatar-row">
+          <AvatarBadge
+            avatarUrl={userRecord?.avatarUrl}
+            seed={avatarSeed}
+            displayName={displayName}
+            size={56}
+          />
+          <div className="details-avatar-meta">
+            <strong>{displayName}</strong>
+            <span className="avatar-cell-sub">
+              {hasCustomAvatar(userRecord?.avatarUrl)
+                ? 'Photo personnalisee'
+                : 'Avatar par defaut'}
+            </span>
+          </div>
+        </div>
+      ) : null}
       <div className="details-actions">
         <button
           className="btn small ghost"

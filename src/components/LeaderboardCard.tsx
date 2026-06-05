@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AvatarImage } from './AvatarImage';
 import { LeaderboardUser } from '../types';
 import { GameMode } from '../controllers/ScoreController';
 import { COLORS } from '../utils/theme';
@@ -105,9 +106,14 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
           <View style={styles.podiumColumn}>
             {/* User Avatar */}
             <View style={styles.avatarWrapper}>
-              <View style={[styles.avatarCircle, styles.avatarRank2]}>
-                <Text style={styles.avatarInitials}>{top2Input.initials}</Text>
-              </View>
+              <AvatarImage
+                avatarUrl={top2Input.avatarUrl}
+                seed={top2Input.userId}
+                displayName={top2Input.name}
+                size={56}
+                style={styles.podiumAvatar}
+                frameStyle={[styles.avatarCircle, styles.avatarRank2]}
+              />
             </View>
             {/* User Meta */}
             <Text style={styles.podiumName} numberOfLines={1}>
@@ -132,11 +138,14 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
             <Text style={styles.crownEmoji}>👑</Text>
             {/* User Avatar */}
             <View style={styles.avatarWrapper}>
-              <View style={[styles.avatarCircle, styles.avatarRank1]}>
-                <Text style={[styles.avatarInitials, styles.avatarInitialsRank1]}>
-                  {top1Input.initials}
-                </Text>
-              </View>
+              <AvatarImage
+                avatarUrl={top1Input.avatarUrl}
+                seed={top1Input.userId}
+                displayName={top1Input.name}
+                size={68}
+                style={styles.podiumAvatar}
+                frameStyle={[styles.avatarCircle, styles.avatarRank1]}
+              />
             </View>
             {/* User Meta */}
             <Text style={[styles.podiumName, styles.podiumNameRank1]} numberOfLines={1}>
@@ -159,9 +168,14 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
           <View style={styles.podiumColumn}>
             {/* User Avatar */}
             <View style={styles.avatarWrapper}>
-              <View style={[styles.avatarCircle, styles.avatarRank3]}>
-                <Text style={styles.avatarInitials}>{top3Input.initials}</Text>
-              </View>
+              <AvatarImage
+                avatarUrl={top3Input.avatarUrl}
+                seed={top3Input.userId}
+                displayName={top3Input.name}
+                size={56}
+                style={styles.podiumAvatar}
+                frameStyle={[styles.avatarCircle, styles.avatarRank3]}
+              />
             </View>
             {/* User Meta */}
             <Text style={styles.podiumName} numberOfLines={1}>
@@ -203,22 +217,19 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
                   <Text style={styles.rankNumber}>{item.rank}</Text>
                 </View>
 
-                {/* Avatar Initials circle */}
-                <View
-                  style={[
+                <AvatarImage
+                  avatarUrl={item.avatarUrl}
+                  seed={item.userId}
+                  displayName={item.name}
+                  size={40}
+                  style={styles.rankListAvatar}
+                  frameStyle={[
                     styles.rankAvatarCircle,
-                    isCurrentUser ? styles.rankAvatarCurrentUser : styles.rankAvatarNormal,
+                    isCurrentUser
+                      ? styles.rankAvatarCurrentUser
+                      : styles.rankAvatarNormal,
                   ]}
-                >
-                  <Text
-                    style={[
-                      styles.rankAvatarText,
-                      isCurrentUser ? styles.rankAvatarTextCurrentUser : styles.rankAvatarTextNormal,
-                    ]}
-                  >
-                    {item.initials}
-                  </Text>
-                </View>
+                />
 
                 {/* Name and score */}
                 <View style={styles.rankInfo}>
@@ -407,16 +418,23 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   avatarCircle: {
-    borderRadius: 999,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
     borderColor: 'white',
+    borderRadius: 999,
+    borderWidth: 2,
+    elevation: 3,
+    justifyContent: 'center',
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
+  },
+  podiumAvatar: {
+    borderWidth: 0,
+  },
+  rankListAvatar: {
+    borderWidth: 0,
   },
   avatarRank1: {
     width: 60,

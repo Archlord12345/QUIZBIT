@@ -420,26 +420,56 @@ function renderBattleRooms() {
         Les joueurs rejoignent via l app mobile en mode offline avec le code du salon.
       </p>
       <div class="form-grid">
-        <input id="battle-theme" placeholder="Theme du salon" value="${escapeHtml(salonQuizDraft?.theme || '')}" />
-        <input id="battle-players" type="number" min="2" value="10" placeholder="Max joueurs" />
-        <input id="battle-questions" type="number" min="3" max="20" value="5" placeholder="Questions jouees" />
-        <input id="battle-elimination" type="number" min="0" value="20" placeholder="Score elimination" />
-        <select id="battle-mode">
-          <option value="classic">Mode classique</option>
-          <option value="timed_mcq">QCM chrono</option>
-        </select>
+        <div class="form-field">
+          <label class="qb-label" for="battle-theme">Theme du salon</label>
+          <input
+            id="battle-theme"
+            placeholder="Ex. Culture generale, Histoire..."
+            value="${escapeHtml(salonQuizDraft?.theme || '')}"
+          />
+        </div>
+        <div class="form-field">
+          <label class="qb-label" for="battle-players">Max joueurs</label>
+          <input id="battle-players" type="number" min="2" max="100" value="10" />
+        </div>
+        <div class="form-field">
+          <label class="qb-label" for="battle-questions">Questions jouees</label>
+          <input id="battle-questions" type="number" min="3" max="20" value="5" />
+        </div>
+        <div class="form-field">
+          <label class="qb-label" for="battle-elimination">Score elimination</label>
+          <input id="battle-elimination" type="number" min="0" value="20" />
+        </div>
+        <div class="form-field">
+          <label class="qb-label" for="battle-mode">Mode de jeu</label>
+          <select id="battle-mode">
+            <option value="classic">Mode classique</option>
+            <option value="timed_mcq">QCM chrono</option>
+          </select>
+        </div>
       </div>
       <h3 class="section-subtitle">Quiz du salon</h3>
       <div class="form-grid">
-        <select id="battle-quiz-select">
-          <option value="">— Choisir dans la banque locale —</option>
-          ${quizOptions}
-        </select>
-        <label class="file-button">
-          Charger un JSON quiz
-          <input id="battle-quiz-file" type="file" accept="application/json,.json" />
-        </label>
-        <button type="button" class="button secondary" id="battle-quiz-clear">Effacer le quiz</button>
+        <div class="form-field">
+          <label class="qb-label" for="battle-quiz-select">Banque locale</label>
+          <select id="battle-quiz-select">
+            <option value="">— Choisir dans la banque locale —</option>
+            ${quizOptions}
+          </select>
+        </div>
+        <div class="form-field">
+          <span class="qb-label">Fichier JSON</span>
+          <label class="file-button">
+            Charger un JSON quiz
+            <input id="battle-quiz-file" type="file" accept="application/json,.json" />
+          </label>
+        </div>
+        <div class="form-field">
+          <span class="qb-label">Actions quiz</span>
+          <button type="button" class="button secondary" id="battle-quiz-clear">
+            Effacer le quiz
+          </button>
+        </div>
       </div>
       <p id="salon-quiz-status" class="hint-box">${renderSalonQuizStatus()}</p>
       <button class="button" id="add-battle">Creer le salon</button>

@@ -46,6 +46,9 @@ const serveStatic = (req, res) => {
   if (url.pathname === '/panel-layout.css') {
     return serveSharedCss(res, 'panel-layout.css');
   }
+  if (url.pathname === '/panel-surfaces.css') {
+    return serveSharedCss(res, 'panel-surfaces.css');
+  }
   let filePath = url.pathname === '/' ? '/index.html' : url.pathname;
   const safePath = path.normalize(filePath).replace(/^(\.\.[/\\])+/, '');
   const absolute = path.join(__dirname, safePath);

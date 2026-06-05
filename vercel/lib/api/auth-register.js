@@ -1,4 +1,5 @@
 const { firebaseAuthRequest, setDocument } = require('../firebase-rest');
+const { buildDefaultAvatarUrl } = require('../default-avatar');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -36,6 +37,7 @@ module.exports = async (req, res) => {
       id: auth.localId,
       email: cleanEmail,
       displayName: cleanName,
+      avatarUrl: buildDefaultAvatarUrl(auth.localId, cleanName),
       gamesPlayed: 0,
       totalScore: 0,
       bestScore: 0,

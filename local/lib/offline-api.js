@@ -1,8 +1,14 @@
+import { createRequire } from 'node:module';
 import { loadStore, mutateStore, saveStore } from './store.js';
 import {
   buildFallbackQuestions,
   normalizeGenerationOptions,
 } from './quiz-build.js';
+
+const require = createRequire(import.meta.url);
+const { buildDefaultAvatarUrl, resolveAvatarUrl } = require(
+  '../../vercel/lib/default-avatar.js',
+);
 
 const uid = prefix => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
@@ -113,7 +119,7 @@ const accountFromUser = (user, idToken) => ({
   id: user.id,
   email: user.email,
   displayName: user.displayName,
-  avatarUrl: user.avatarUrl || '',
+  avatarUrl: resolveAvatarUrl(user.avatarUrl, user.id, user.displayName),
   gamesPlayed: user.gamesPlayed,
   totalScore: user.totalScore,
   bestScore: user.bestScore,
@@ -217,15 +223,16 @@ export const handleOfflineApi = async (req, res, routeName) => {
         if (state.users.some(user => user.email === email)) {
           return json(res, 400, { ok: false, message: 'Un compte existe deja avec cet email.' });
         }
+        const userId = uid('user');
         const user = {
-          id: uid('user'),
+          id: userId,
           email,
           password,
           displayName,
           gamesPlayed: 0,
           totalScore: 0,
           bestScore: 0,
-          avatarUrl: '',
+          avatarUrl: buildDefaultAvatarUrl(userId, displayName),
         };
         mutateStore(s => ({ ...s, users: [user, ...s.users] }));
         const token = issueToken(user.id);
@@ -240,11 +247,25 @@ export const handleOfflineApi = async (req, res, routeName) => {
           .trim()
           .toLowerCase();
         const password = String(body.password || '');
-        const user = state.users.find(
+        let user = state.users.find(
           item => item.email === email && item.password === password,
         );
         if (!user) {
           return json(res, 400, { ok: false, message: 'Email ou mot de passe invalide.' });
+        }
+        if (!String(user.avatarUrl || '').trim()) {
+          const next = mutateStore(s => ({
+            ...s,
+            users: s.users.map(item =>
+              item.id === user.id
+                ? {
+                    ...item,
+                    avatarUrl: buildDefaultAvatarUrl(item.id, item.displayName),
+                  }
+                : item,
+            ),
+          }));
+          user = next.users.find(item => item.id === user.id) || user;
         }
         const token = issueToken(user.id);
         return json(res, 200, {
@@ -343,7 +364,18 @@ export const handleOfflineApi = async (req, res, routeName) => {
         const scores = [...state.scores]
           .filter(score => !mode || score.mode === mode)
           .sort((a, b) => Number(b.score) - Number(a.score))
-          .slice(0, 50);
+          .slice(0, 50)
+          .map(score => {
+            const user = state.users.find(item => item.id === score.userId);
+            return {
+              ...score,
+              avatarUrl: resolveAvatarUrl(
+                user?.avatarUrl,
+                score.userId,
+                score.displayName || user?.displayName,
+              ),
+            };
+          });
         return json(res, 200, { ok: true, scores });
       }
 
@@ -483,10 +515,13 @@ export const handleOfflineApi = async (req, res, routeName) => {
 
       case 'battle-room-start': {
         const user = getUserFromRequest(body, state);
+        if (!user) return json(res, 401, { ok: false, message: 'Compte offline requis.' });
         const code = String(body.code || '').trim().toUpperCase();
         const room = state.battleRooms[code];
         if (!room) throw new Error('Salle introuvable.');
-        if (room.hostId !== user.id) throw new Error('Seul l hote peut lancer la partie.');
+        if (room.status !== 'waiting') throw new Error('La partie a deja demarre.');
+        const isPlayer = room.players.some(player => player.userId === user.id);
+        if (!isPlayer) throw new Error('Rejoins le salon avant de lancer la partie.');
         const questions =
           Array.isArray(room.questions) && room.questions.length
             ? room.questions.slice(0, room.config.questionCount)
@@ -559,6 +594,36 @@ export const handleOfflineApi = async (req, res, routeName) => {
           return { ...s, battleRooms: nextRooms };
         });
         return json(res, 200, { ok: true });
+      }
+
+      case 'cloudinary-upload': {
+        const user = getUserFromRequest(body, state);
+        if (!user) {
+          return json(res, 401, { ok: false, message: 'Session offline invalide.' });
+        }
+        const imageBase64 = String(body.imageBase64 || '')
+          .replace(/^data:[^;]+;base64,/, '')
+          .trim();
+        if (!imageBase64) {
+          throw new Error('Image manquante.');
+        }
+        const mimeType = String(body.mimeType || 'image/jpeg');
+        try {
+          const { uploadImageBase64 } = await import(
+            '../../vercel/lib/cloudinary-client.js'
+          );
+          const result = await uploadImageBase64({ imageBase64, mimeType });
+          return json(res, 200, {
+            ok: true,
+            url: result.url,
+            publicId: result.publicId,
+          });
+        } catch {
+          return json(res, 200, {
+            ok: true,
+            url: `data:${mimeType};base64,${imageBase64}`,
+          });
+        }
       }
 
       case 'test-gemini':

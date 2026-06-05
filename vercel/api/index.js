@@ -14,6 +14,7 @@ const handlers = {
   'battle-room-join': require('../lib/api/battle-room-join'),
   'battle-room-list': require('../lib/api/battle-room-list'),
   'battle-room-start': require('../lib/api/battle-room-start'),
+  'cloudinary-upload': require('../lib/api/cloudinary-upload'),
   'firebase-auth': require('../lib/api/test-firebase-auth'),
   'generate-questions': require('../lib/api/generate-questions'),
   'scores-list': require('../lib/api/scores-list'),

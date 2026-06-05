@@ -1,5 +1,6 @@
 const { listDocuments } = require('../firebase-rest');
 const { verifyIdToken } = require('../auth-verify');
+const { resolveAvatarUrl } = require('../default-avatar');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -22,9 +23,30 @@ module.exports = async (req, res) => {
       .filter(score => !mode || score.mode === mode)
       .sort((left, right) => Number(right.score || 0) - Number(left.score || 0))
       .slice(0, 50);
+
+    let usersById = {};
+    try {
+      const users = await listDocuments('users', idToken, 200);
+      usersById = Object.fromEntries(
+        users.map(user => [user.id, user]),
+      );
+    } catch {
+      usersById = {};
+    }
+
     return res.status(200).json({
       ok: true,
-      scores: filtered,
+      scores: filtered.map(score => {
+        const user = usersById[score.userId];
+        return {
+          ...score,
+          avatarUrl: resolveAvatarUrl(
+            user?.avatarUrl,
+            score.userId,
+            score.displayName || user?.displayName,
+          ),
+        };
+      }),
     });
   } catch (error) {
     return res

@@ -1,0 +1,98 @@
+/**
+ * Surfaces et boutons communs — panels local + Vercel (alignés)
+ */
+
+/* Cartes contenu principal (équivalent .card local) */
+.glass-panel:not(.sidebar) {
+  background: var(--qb-surface-light);
+  border: 1px solid var(--qb-line-soft);
+  border-radius: 20px;
+  box-shadow: 0 10px 32px var(--shadow-card);
+  backdrop-filter: none;
+  color: var(--qb-text);
+}
+
+.panel-surface,
+.card {
+  background: var(--qb-surface-light);
+  border: 1px solid var(--qb-line-soft);
+  border-radius: 20px;
+  box-shadow: 0 10px 32px var(--shadow-card);
+  color: var(--qb-text);
+}
+
+.notice,
+.banner.warn {
+  background: rgb(238 104 69 / 10%);
+  border: 1px solid rgb(238 104 69 / 24%);
+  border-radius: 16px;
+  color: var(--qb-text);
+  line-height: 1.55;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+}
+
+.notice strong,
+.banner.warn strong {
+  color: var(--qb-secondary);
+}
+
+.notice code,
+.banner.warn code {
+  background: rgb(122 49 122 / 10%);
+  border-radius: 8px;
+  color: var(--qb-primary);
+  font-size: 12px;
+  padding: 2px 8px;
+}
+
+.hint-box {
+  color: var(--qb-muted-soft);
+  font-size: 13px;
+  line-height: 1.55;
+  margin-top: 12px;
+}
+
+.hint-box strong {
+  color: var(--qb-text);
+}
+
+/* Bouton principal violet (comme .button local) */
+.btn-primary-violet,
+.button,
+.btn-accent {
+  background: linear-gradient(135deg, var(--qb-primary), var(--qb-primary-soft));
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgb(122 49 122 / 22%);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.btn-primary-violet:hover,
+.button:hover,
+.btn-accent:hover {
+  box-shadow: 0 10px 24px rgb(122 49 122 / 30%);
+  transform: translateY(-1px);
+}
+
+.button.secondary,
+.btn.ghost {
+  background: var(--qb-surface-light);
+  border: 1px solid var(--qb-line-soft);
+  box-shadow: none;
+  color: var(--qb-text);
+}
+
+.button.secondary:hover,
+.btn.ghost:hover {
+  background: var(--qb-chip-bg);
+  border-color: var(--qb-primary);
+}
+
+.stat-value,
+.kpi-card strong {
+  color: var(--qb-primary);
+}

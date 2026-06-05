@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { AvatarImage } from '../components/AvatarImage';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AuthController, { UserAccount } from '../controllers/AuthController';
 import { pickAvatarFromLibrary } from '../utils/avatarPicker';
@@ -45,6 +45,7 @@ const ProfileView = ({
       const updatedAccount = await AuthController.updateAvatar(
         account,
         avatar.uri,
+        avatar.type || 'image/jpeg',
       );
       onAccountUpdated(updatedAccount);
     } catch (err) {
@@ -71,15 +72,13 @@ const ProfileView = ({
 
       <View style={[screenCardStyle, styles.profileCard]}>
         <View style={styles.profileTop}>
-          {account.avatarUrl ? (
-            <Image source={{ uri: account.avatarUrl }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarInitial}>
-                {account.displayName.slice(0, 1).toUpperCase()}
-              </Text>
-            </View>
-          )}
+          <AvatarImage
+            avatarUrl={account.avatarUrl}
+            seed={account.id}
+            displayName={account.displayName}
+            size={80}
+            style={styles.avatar}
+          />
           <View style={styles.profileIdentity}>
             <Text style={styles.profileName}>{account.displayName}</Text>
             <Text style={styles.profileMeta}>{account.email}</Text>
@@ -146,21 +145,6 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     height: 80,
     width: 80,
-  },
-  avatarPlaceholder: {
-    alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.accent,
-    borderRadius: 40,
-    borderWidth: 2,
-    height: 80,
-    justifyContent: 'center',
-    width: 80,
-  },
-  avatarInitial: {
-    color: COLORS.textOnDark,
-    fontSize: 32,
-    fontWeight: '900',
   },
   profileIdentity: {
     flex: 1,
