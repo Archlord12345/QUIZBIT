@@ -1,4 +1,4 @@
-const { getDocument, setDocument } = require('../firebase-rest');
+const { getDocument, setDocument } = require('./firebase-rest');
 
 const incrementUserCups = async (userId, idToken, amount = 1) => {
   const current = await getDocument('users', userId, idToken);
