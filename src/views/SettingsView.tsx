@@ -6,19 +6,18 @@ import {
   TouchableOpacity,
   View,
   Switch,
-  ScrollView,
   Platform,
 } from 'react-native';
 import {
-  buildLocalApiUrl,
   getApiBaseUrl,
   getApiMode,
-  getOfflineApiHost,
+  getOfflineApiUrl,
   setApiMode,
-  setOfflineApiHost,
+  setOfflineApiUrl,
 } from '../utils/api';
-import { COLORS, SPACING, PLACEHOLDER, LINE, INPUT_BG } from '../utils/theme';
-import { RADIUS, SHADOW, UI } from '../utils/ui';
+import { COLORS, LINE, SPACING, PLACEHOLDER, INPUT_BG } from '../utils/theme';
+import { UI } from '../utils/ui';
+import { ScreenHeader, ScreenScroll, screenCardStyle } from '../components/ScreenLayout';
 
 type SettingsViewProps = {
   onBack: () => void;
@@ -27,14 +26,18 @@ type SettingsViewProps = {
 const SettingsView = ({ onBack }: SettingsViewProps) => {
   const [isOffline, setIsOffline] = useState(false);
   const [apiUrl, setApiUrl] = useState('');
-  const [offlineHost, setOfflineHost] = useState(
-    Platform.OS === 'android' ? '10.0.2.2' : 'localhost',
+  const [offlineServerUrl, setOfflineServerUrl] = useState(
+    Platform.OS === 'android'
+      ? 'http://10.0.2.2:3000'
+      : 'http://localhost:3000',
   );
+  const [saveHint, setSaveHint] = useState('');
 
   const refresh = async () => {
     setIsOffline((await getApiMode()) === 'local');
     setApiUrl(await getApiBaseUrl());
-    setOfflineHost(await getOfflineApiHost());
+    setOfflineServerUrl(await getOfflineApiUrl());
+    setSaveHint('');
   };
 
   useEffect(() => {
@@ -47,25 +50,19 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
     setApiUrl(await getApiBaseUrl());
   };
 
-  const saveOfflineHost = async () => {
-    await setOfflineApiHost(offlineHost);
-    if (isOffline) {
-      setApiUrl(await buildLocalApiUrl());
-    }
+  const saveOfflineServer = async () => {
+    await setOfflineApiUrl(offlineServerUrl);
+    const nextBase = await getApiBaseUrl();
+    setApiUrl(nextBase);
+    setOfflineServerUrl(await getOfflineApiUrl());
+    setSaveHint('URL enregistrée.');
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Retour</Text>
-        </TouchableOpacity>
-        <View style={styles.headerSpacer} />
-      </View>
+    <ScreenScroll>
+      <ScreenHeader title="Paramètres" onBack={onBack} />
 
-      <Text style={styles.pageTitle}>Paramètres</Text>
-
-      <View style={styles.card}>
+      <View style={[screenCardStyle, styles.card]}>
         <View style={styles.settingRow}>
           <View style={styles.settingTextContainer}>
             <Text style={styles.settingTitle}>Mode offline</Text>
@@ -84,20 +81,31 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
 
         <View style={styles.divider} />
 
-        <Text style={styles.urlLabel}>IP / hôte du serveur local</Text>
+        <Text style={styles.urlLabel}>URL du serveur local</Text>
         <Text style={styles.settingDescription}>
-          Émulateur Android: 10.0.2.2 · Téléphone réel: IP de ton PC (ex. 192.168.1.42)
+          Saisis l&apos;adresse complète du serveur (panel + API). Exemples :{'\n'}
+          http://10.0.2.2:3000 (émulateur Android){'\n'}
+          http://192.168.1.42:3000 (téléphone sur le même Wi‑Fi){'\n'}
+          Tu peux aussi indiquer seulement l&apos;IP ou l&apos;hôte (port 3000 par défaut).
         </Text>
         <TextInput
           style={styles.hostInput}
-          value={offlineHost}
-          onChangeText={setOfflineHost}
-          placeholder="10.0.2.2"
+          value={offlineServerUrl}
+          onChangeText={text => {
+            setOfflineServerUrl(text);
+            setSaveHint('');
+          }}
+          placeholder="http://10.0.2.2:3000"
           placeholderTextColor={PLACEHOLDER}
           autoCapitalize="none"
-          onSubmitEditing={saveOfflineHost}
-          onBlur={saveOfflineHost}
+          autoCorrect={false}
+          keyboardType="url"
+          onSubmitEditing={saveOfflineServer}
         />
+        <TouchableOpacity style={styles.saveUrlButton} onPress={saveOfflineServer}>
+          <Text style={styles.saveUrlButtonText}>Enregistrer l&apos;URL du serveur</Text>
+        </TouchableOpacity>
+        {saveHint ? <Text style={styles.saveHint}>{saveHint}</Text> : null}
 
         <View style={styles.divider} />
 
@@ -109,50 +117,23 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
         {isOffline ? (
           <Text style={styles.demoHint}>
             Compte démo: demo@local.quizbit / demo123{'\n'}
-            Panel: http://localhost:3000
+            {Platform.OS === 'android' && offlineServerUrl.includes('10.0.2.2')
+              ? 'Attention: 10.0.2.2 fonctionne seulement sur emulateur. Sur telephone, mets l IP Wi-Fi du PC.'
+              : 'Panel local: ouvre http://<IP-du-PC>:3000 dans le navigateur du PC.'}
           </Text>
-        ) : null}
+        ) : (
+          <Text style={styles.demoHint}>
+            Mode cloud actif — connexion via Firebase (quizbit-admin.vercel.app).
+          </Text>
+        )}
       </View>
-    </ScrollView>
+    </ScreenScroll>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.primary,
-    flexGrow: 1,
-    padding: SPACING.lg,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: SPACING.xl,
-    marginTop: SPACING.sm,
-  },
-  headerSpacer: {
-    width: 70,
-  },
-  backButton: {
-    padding: SPACING.md,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 14,
-  },
-  backButtonText: {
-    color: COLORS.textOnDark,
-    fontWeight: '800',
-  },
-  pageTitle: {
-    color: COLORS.textOnDark,
-    fontSize: 32,
-    fontWeight: '900',
-    marginBottom: SPACING.lg,
-  },
   card: {
-    backgroundColor: COLORS.surfaceLight,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.xl,
-    ...SHADOW.card,
+    marginTop: 0,
   },
   settingRow: {
     flexDirection: 'row',
@@ -213,6 +194,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 18,
     marginTop: SPACING.md,
+  },
+  saveUrlButton: {
+    alignItems: 'center',
+    backgroundColor: COLORS.accent,
+    borderRadius: 10,
+    marginTop: 4,
+    paddingVertical: 14,
+  },
+  saveUrlButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  saveHint: {
+    color: COLORS.success,
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 8,
   },
 });
 

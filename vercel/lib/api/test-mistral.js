@@ -23,23 +23,48 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const response = await requestWithTimeout(
-      'https://api.mistral.ai/v1/models',
-      {
-        headers: { Authorization: `Bearer ${key}` },
-      },
-    );
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      return res.status(response.status || 502).json({
-        ok: false,
-        message:
-          data?.message ||
-          data?.error?.message ||
-          `Mistral HTTP ${response.status}`,
-      });
+    const models = ['mistral-small-latest', 'open-mistral-nemo'];
+    const errors = [];
+
+    for (const model of models) {
+      const response = await requestWithTimeout(
+        'https://api.mistral.ai/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${key}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: 'Respond only with OK' }],
+            max_tokens: 8,
+            temperature: 0,
+          }),
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        return res.status(200).json({
+          ok: true,
+          message: `API Mistral OK (${model})`,
+        });
+      }
+      const message =
+        data?.message || data?.error?.message || `${model}: HTTP ${response.status}`;
+      if (response.status === 429 || /quota|rate/i.test(message)) {
+        return res.status(200).json({
+          ok: true,
+          message: `Mistral joignable (${model}), quota a verifier`,
+        });
+      }
+      errors.push(message);
     }
-    return res.status(200).json({ ok: true, message: 'API Mistral OK' });
+
+    return res.status(502).json({
+      ok: false,
+      message: errors[0] || 'Aucun modele Mistral compatible.',
+    });
   } catch (error) {
     return res.status(502).json({
       ok: false,

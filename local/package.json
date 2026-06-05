@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node server.mjs",
     "start:static": "python3 -m http.server 4173",
-    "check": "node --check app.js && node --check server.mjs && node --check lib/offline-api.js"
+    "setup:ollama": "bash scripts/setup-ollama.sh",
+    "check": "node --check app.js && node --check server.mjs && node --check lib/offline-api.js && node --check lib/ollama-generate.js && node --check lib/quiz-build.js"
   }
 }

@@ -1,4 +1,8 @@
 import { loadStore, mutateStore, saveStore } from './store.js';
+import {
+  buildFallbackQuestions,
+  normalizeGenerationOptions,
+} from './quiz-build.js';
 
 const uid = prefix => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
@@ -78,40 +82,32 @@ const pickQuestions = (state, prompt, count, options = {}) => {
   }));
 };
 
-const buildFallbackQuestions = (prompt, count, options) => {
-  const theme = String(prompt || 'Quiz offline').trim();
-  const questionType = options.questionType || 'mixed';
-  const choiceCount = Math.max(2, Math.min(5, Number(options.choiceCount || 4)));
-  const items = [];
-
-  for (let index = 0; index < count; index += 1) {
-    const useOpen =
-      questionType === 'open' ||
-      (questionType === 'mixed' && index % 2 === 1);
-    if (useOpen) {
-      items.push({
-        id: uid('open'),
-        text: `Question ouverte ${index + 1} sur ${theme}`,
-        answer: `Reponse ${index + 1}`,
-        type: 'open',
-        exactAnswer: options.openAnswerMode === 'exact',
-      });
-      continue;
-    }
-    const answer = 'A';
-    const optionsList = Array.from({ length: choiceCount }, (_, i) =>
-      String.fromCharCode(65 + i),
-    );
-    items.push({
-      id: uid('mcq'),
-      text: `Question ${index + 1} sur ${theme}`,
-      answer,
-      options: optionsList,
-      type: 'mcq',
-    });
-  }
-  return items;
+const toLobbySummary = room => {
+  const players = Array.isArray(room.players) ? room.players : [];
+  const host =
+    players.find(player => player.userId === room.hostId) || players[0] || null;
+  return {
+    code: String(room.code || room.id || '').trim().toUpperCase(),
+    theme: String(room.config?.theme || 'Culture generale').trim(),
+    status: room.status === 'active' ? 'active' : 'waiting',
+    mode: room.config?.mode === 'timed_mcq' ? 'timed_mcq' : 'classic',
+    playerCount: players.length,
+    maxPlayers: Math.max(2, Number(room.config?.maxPlayers || 10)),
+    hostName: host?.displayName || 'Hote',
+    createdAt: room.createdAt || null,
+  };
 };
+
+const battleRoomsList = state =>
+  Object.values(state.battleRooms || {})
+    .filter(Boolean)
+    .filter(room => room.status === 'waiting' || room.status === 'active')
+    .map(toLobbySummary)
+    .sort(
+      (left, right) =>
+        new Date(right.createdAt || 0).getTime() -
+        new Date(left.createdAt || 0).getTime(),
+    );
 
 const accountFromUser = (user, idToken) => ({
   id: user.id,
@@ -130,11 +126,44 @@ export const handleOfflineApi = async (req, res, routeName) => {
   }
 
   if (req.method === 'GET' && routeName === 'health') {
-    return json(res, 200, { ok: true, mode: 'offline', message: 'QuizBit local API' });
+    let ollama = { enabled: false, available: false, model: '' };
+    try {
+      const { getOllamaConfig, isOllamaAvailable } = await import(
+        './ollama-generate.js'
+      );
+      const config = getOllamaConfig();
+      ollama = {
+        enabled: config.enabled,
+        model: config.model,
+        available: await isOllamaAvailable(),
+      };
+    } catch {
+      // ignore
+    }
+    return json(res, 200, {
+      ok: true,
+      mode: 'offline',
+      message: 'QuizBit local API',
+      ollama,
+    });
+  }
+
+  if (req.method === 'GET' && routeName === 'test-ollama') {
+    try {
+      const { testOllama } = await import('./ollama-generate.js');
+      const result = await testOllama();
+      return json(res, 200, { ok: true, ...result });
+    } catch (error) {
+      return json(res, 502, {
+        ok: false,
+        message: error.message || 'Ollama indisponible.',
+      });
+    }
   }
 
   if (req.method === 'GET' && routeName === 'admin/state') {
-    return json(res, 200, { ok: true, state: loadStore() });
+    const { stateForPanel } = await import('./admin-crud.js');
+    return json(res, 200, { ok: true, state: stateForPanel(loadStore()) });
   }
 
   if (req.method !== 'POST') {
@@ -153,8 +182,22 @@ export const handleOfflineApi = async (req, res, routeName) => {
     if (!body.state || typeof body.state !== 'object') {
       return json(res, 400, { ok: false, message: 'state requis.' });
     }
-    saveStore({ ...loadStore(), ...body.state });
+    const { stateFromPanel } = await import('./admin-crud.js');
+    saveStore({ ...loadStore(), ...stateFromPanel(body.state) });
     return json(res, 200, { ok: true });
+  }
+
+  if (routeName === 'admin/crud') {
+    try {
+      const { handleAdminCrud, stateForPanel } = await import('./admin-crud.js');
+      const next = handleAdminCrud(body);
+      return json(res, 200, { ok: true, state: stateForPanel(next) });
+    } catch (error) {
+      return json(res, 400, {
+        ok: false,
+        message: error.message || 'CRUD admin impossible.',
+      });
+    }
   }
 
   const state = loadStore();
@@ -222,14 +265,55 @@ export const handleOfflineApi = async (req, res, routeName) => {
         if (!user && body.idToken) {
           return json(res, 401, { ok: false, message: 'Session offline invalide.' });
         }
-        const questions = pickQuestions(state, prompt || 'Quiz audio offline', count, body);
+
+        const provider = String(body.provider || 'auto').trim();
+        const wantsOllama = provider === 'ollama' || provider === 'auto';
+        if (wantsOllama) {
+          try {
+            const { generateQuestionsWithOllama, isOllamaAvailable } =
+              await import('./ollama-generate.js');
+            if (await isOllamaAvailable()) {
+              const result = await generateQuestionsWithOllama(
+                prompt || 'Quiz depuis support media',
+                count,
+                body,
+                body.mediaPayload,
+              );
+              return json(res, 200, { ok: true, ...result });
+            }
+            if (provider === 'ollama') {
+              return json(res, 503, {
+                ok: false,
+                message:
+                  'Ollama indisponible. Lance: npm run setup:ollama (dans local/).',
+              });
+            }
+          } catch (error) {
+            if (provider === 'ollama') {
+              return json(res, 502, {
+                ok: false,
+                message: error.message || 'Generation Ollama impossible.',
+              });
+            }
+          }
+        }
+
+        const questions = pickQuestions(
+          state,
+          prompt || 'Quiz audio offline',
+          count,
+          normalizeGenerationOptions(body),
+        );
         return json(res, 200, {
           ok: true,
           provider: 'offline',
           model: 'quizbit-local-store',
           questions,
+          fallbackFrom: wantsOllama ? 'ollama' : undefined,
           offlineNote: body.mediaPayload
-            ? 'Mode offline: media analyse via quiz importe ou questions locales.'
+            ? 'Ollama indisponible ou echec: questions depuis banque locale / generiques.'
+            : wantsOllama
+            ? 'Ollama indisponible: questions depuis banque locale ou generiques.'
             : undefined,
         });
       }
@@ -258,7 +342,8 @@ export const handleOfflineApi = async (req, res, routeName) => {
         const mode = body.mode;
         const scores = [...state.scores]
           .filter(score => !mode || score.mode === mode)
-          .sort((a, b) => Number(b.score) - Number(a.score));
+          .sort((a, b) => Number(b.score) - Number(a.score))
+          .slice(0, 50);
         return json(res, 200, { ok: true, scores });
       }
 
@@ -358,6 +443,11 @@ export const handleOfflineApi = async (req, res, routeName) => {
         };
         mutateStore(s => ({ ...s, battleRooms: { ...s.battleRooms, [code]: room } }));
         return json(res, 200, { ok: true, room });
+      }
+
+      case 'battle-room-list': {
+        getUserFromRequest(body, state);
+        return json(res, 200, { ok: true, rooms: battleRoomsList(state) });
       }
 
       case 'battle-room-join': {

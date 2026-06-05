@@ -10,7 +10,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import LogoMark from '../components/LogoMark';
 import { UserAccount } from '../controllers/AuthController';
 import { LoginForm } from '../components/LoginForm';
-import { COLORS, SPACING } from '../utils/theme';
+import { COLORS, LINE, SPACING } from '../utils/theme';
+import { LAYOUT } from '../utils/ui';
 
 type AuthViewProps = NativeStackScreenProps<any> & {
   onAuthenticated: (account: UserAccount) => void;
@@ -44,7 +45,8 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'center',
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.background,
+    paddingHorizontal: LAYOUT.screenPaddingH,
     paddingVertical: SPACING.xl,
   },
   logoContainer: {
@@ -55,13 +57,13 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: LINE,
   },
   settingsText: {
-    color: COLORS.secondary,
+    color: COLORS.primary,
     fontSize: 13,
     fontWeight: '800',
   },

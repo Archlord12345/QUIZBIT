@@ -7,22 +7,24 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import HomeView from './src/views/HomeView';
 import AuthView from './src/views/AuthView';
 import QuizView from './src/views/QuizView';
-import BattleRoyaleView from './src/views/BattleRoyaleView';
-import LeaderboardView from './src/views/LeaderboardView';
-import ProfileView from './src/views/ProfileView';
 import SettingsView from './src/views/SettingsView';
+import { COLORS } from './src/utils/theme';
 
 // Controller & Type Imports
 import AuthController, { UserAccount } from './src/controllers/AuthController';
 import ScoreController from './src/controllers/ScoreController';
 import BattleRoyaleController from './src/controllers/BattleRoyaleController';
-import { QuizState } from './src/controllers/QuizController';
+import { requestAppPermissions } from './src/utils/appPermissions';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [account, setAccount] = useState<UserAccount | null>(null);
+
+  useEffect(() => {
+    requestAppPermissions();
+  }, []);
 
   // Restore session on mount
   useEffect(() => {
@@ -92,13 +94,23 @@ export default function App() {
                     onComplete={async (finalScore, completedQuiz) => {
                       try {
                         if (mode === 'battle_royale' && room) {
-                          await BattleRoyaleController.finishPlayer(
-                            room,
-                            account,
-                            finalScore,
-                          );
-                          const refreshed = await AuthController.restoreSession();
-                          if (refreshed) setAccount(refreshed);
+                          const { account: updated } =
+                            await ScoreController.recordScore(
+                              account,
+                              completedQuiz.theme || room.config.theme,
+                              finalScore,
+                              'battle_royale',
+                            );
+                          setAccount(updated);
+                          try {
+                            await BattleRoyaleController.finishPlayer(
+                              room,
+                              account,
+                              finalScore,
+                            );
+                          } catch (finishErr) {
+                            console.error('finishPlayer error:', finishErr);
+                          }
                         } else {
                           const { account: updated } =
                             await ScoreController.recordScore(
@@ -119,50 +131,6 @@ export default function App() {
               }}
             </Stack.Screen>
 
-            <Stack.Screen name="BattleRoyale">
-              {(props) => (
-                <BattleRoyaleView
-                  {...props}
-                  account={account}
-                  onBack={() => props.navigation.goBack()}
-                  onStartBattle={(room) => {
-                    const quizState: QuizState = {
-                      theme: room.config.theme,
-                      questions: (room.questions || []) as any,
-                      hearts: 3,
-                      score: 0,
-                      currentIndex: 0,
-                      timeLimitSeconds: room.config.mode === 'timed_mcq' ? room.config.timeLimitSeconds : undefined,
-                    };
-                    props.navigation.navigate('Quiz', { quiz: quizState, mode: 'battle_royale', room });
-                  }}
-                />
-              )}
-            </Stack.Screen>
-
-            <Stack.Screen name="Leaderboard">
-              {(props) => (
-                <LeaderboardView
-                  {...props}
-                  account={account}
-                  onBack={() => props.navigation.goBack()}
-                />
-              )}
-            </Stack.Screen>
-
-            <Stack.Screen name="Profile">
-              {(props) => (
-                <ProfileView
-                  {...props}
-                  account={account}
-                  onAccountUpdated={(updatedAcc) => setAccount(updatedAcc)}
-                  onSignOut={async () => {
-                    await AuthController.signOut();
-                    setAccount(null);
-                  }}
-                />
-              )}
-            </Stack.Screen>
           </>
         ) : (
           <Stack.Screen name="Auth">
@@ -197,6 +165,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1f1122',
+    backgroundColor: COLORS.background,
   },
 });

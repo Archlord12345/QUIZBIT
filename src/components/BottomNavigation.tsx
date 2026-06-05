@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { COLORS, SPACING } from '../utils/theme';
+import { UI } from '../utils/ui';
 
 export interface NavItem {
   icon: string;
@@ -55,11 +56,11 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: 'white',
+    backgroundColor: COLORS.surface,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
     borderTopWidth: 1,
-    borderTopColor: '#F0F2F5',
+    borderTopColor: UI.line,
     justifyContent: 'space-around',
   },
   navItem: {
@@ -70,7 +71,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   navItemActive: {
-    backgroundColor: '#EAF2FF',
+    backgroundColor: UI.chipBg,
   },
   icon: {
     fontSize: 24,
@@ -83,7 +84,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#6B778C',
+    color: COLORS.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },

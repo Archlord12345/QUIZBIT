@@ -10,11 +10,14 @@ QuizBit est une application mobile React Native de quiz générés par IA, avec 
 
 - comptes utilisateurs Firebase Auth ;
 - profils, scores et salles Battle Royale dans Firestore ;
-- génération de questions via API Vercel avec Gemini puis fallback Mistral ;
-- correction de réponses ouvertes par IA ;
+- génération de questions via API Vercel avec **Mistral en priorité**, puis fallback Gemini (inversé pour les prompts avec média) ;
+- correction de réponses ouvertes par IA (Mistral → Gemini) ;
 - avatar utilisateur envoyé vers Cloudinary ;
-- panel admin cloud hébergé sur Vercel ;
-- panel admin local/offline pour importer des quiz JSON et tester sans cloud.
+- panel admin cloud hébergé sur Vercel avec **CRUD complet** Firestore ;
+- serveur local `local/` : panel admin + API offline + génération Ollama (~98 Mo) ;
+- mode offline mobile pointant vers le serveur local (`store.json`).
+
+**Référence données** : voir [documentation/FIRESTORE.md](./FIRESTORE.md) pour le schéma détaillé de chaque collection, la normalisation et les flux lecture/écriture.
 
 Règle produit importante : l'application mobile de production ne doit pas créer
 ou afficher de fausses données pour les comptes, scores ou battles. Les données
@@ -41,9 +44,11 @@ Firebase
 Cloudinary
   -> upload avatar utilisateur
 
-Panel local
-  -> stocke dans localStorage
+Panel local + API offline (local/)
+  -> persiste dans local/data/store.json
+  -> panel navigateur synchronisé avec l'API
   -> importe les quiz JSON exportés depuis le panel Vercel
+  -> génération Ollama optionnelle (smollm2:135m-instruct-q4_1)
 ```
 
 ## 3. Structure du dépôt
@@ -222,10 +227,13 @@ Route : `/api/generate-questions`
 
 Mécanisme serveur :
 
-1. Essaie Gemini.
-2. Si Gemini échoue ou dépasse son quota, essaie Mistral.
-3. Normalise les questions.
-4. Retourne un tableau compatible mobile/panels.
+1. Mode `auto` (défaut) : essaie **Mistral**, puis Gemini si échec ou quota.
+2. Prompt avec média (image/audio/vidéo/document) : **Gemini** en priorité, puis Mistral.
+3. `provider: mistral` ou `provider: gemini` force un ordre avec fallback inverse.
+4. Génération par lots si > 16 questions (seuils dans `generate-questions.js`).
+5. Normalise les questions et retourne un tableau compatible mobile/panels.
+
+Mode offline (`local/`) : `provider: auto` tente **Ollama** puis la banque de questions locale.
 
 Types de questions :
 
@@ -318,6 +326,7 @@ src/views/BattleRoyaleView.tsx
 src/controllers/BattleRoyaleController.ts
 vercel/lib/api/battle-room-create.js
 vercel/lib/api/battle-room-join.js
+vercel/lib/api/battle-room-list.js
 vercel/lib/api/battle-room-start.js
 vercel/lib/api/battle-room-finish.js
 ```
@@ -331,6 +340,7 @@ Routes :
 ```txt
 /api/battle-room-create
 /api/battle-room-join
+/api/battle-room-list
 /api/battle-room-start
 /api/battle-room-finish
 /api/battle-room-get
@@ -338,16 +348,23 @@ Routes :
 /api/battle-room-delete
 ```
 
-Collection Firestore :
+Collection Firestore : `battleRooms` (ID document = code de salle). Détail schéma : [FIRESTORE.md](./FIRESTORE.md#5-collection-battlerooms).
 
-```txt
-battleRooms
-```
+### Interface mobile : deux onglets
+
+Avant d'entrer dans un lobby, `BattleRoyaleView` propose :
+
+1. **Créer un lobby** — formulaire classique (thème texte/audio/vocal, mode classique ou QCM chrono, max joueurs, questions, seuil d'élimination).
+2. **Rejoindre** — saisie du code **ou** liste des lobbies actifs (`waiting` / `active`) avec thème, code, joueurs, hôte et statut. Actualisation auto toutes les 5 s. Seuls les lobbies **en attente** sont rejoignables.
+
+### Scores battle et classement
+
+À la fin d'une battle, l'app appelle d'abord `recordScore(..., 'battle_royale')` puis `battle-room-finish`. Le score apparaît ainsi dans l'onglet **Top** (filtre battle) et dans les analytics du panel.
 
 ### Lobby et chat
 
 Après création ou après avoir rejoint une salle, l'utilisateur arrive dans le
-lobby. Le formulaire Battle Royale affiche un label explicite pour chaque champ : thème, mode, nombre maximum de joueurs, nombre de questions, score minimum, temps par question et code de salle. Le lobby affiche ensuite le code, les joueurs, le mode de jeu, le nombre de
+lobby. Le lobby affiche le code, les joueurs, le mode de jeu, le nombre de
 questions et les paramètres importants. Un bouton ouvre le chat du lobby pour
 permettre aux participants de discuter et se concerter sur le thème avant le
 lancement.
@@ -391,6 +408,16 @@ Pages :
 - Battle Rooms : salles Firestore ;
 - Settings : diagnostics et test IA.
 
+### CRUD Firestore
+
+Sur les pages Quiz, Users, Scores et Battle Rooms :
+
+- **Créer** : document par défaut selon la collection (`vercel/src/adminCrud.js`) ;
+- **Modifier** : modale JSON éditable ;
+- **Supprimer** : confirmation puis `admin-firestore-delete`.
+
+Les mutations passent par l'API serveur (`admin-firestore-upsert` / `admin-firestore-delete`) avec clé panel et token Firestore. Les documents sont normalisés à la lecture via `firestore-normalize.js`.
+
 ### Diagnostics Settings
 
 Vérifie :
@@ -412,22 +439,36 @@ quizbit-quiz-v1
 
 Ce fichier est fait pour être importé dans le panel local/offline.
 
-## 14. Panel admin local/offline
+## 14. Panel admin local / serveur offline
 
 Dossier : `local/`
 
-Rôle : tester sans backend.
+Rôle : jouer et administrer **sans Internet** via un serveur Node tout-en-un.
 
-Stockage : `localStorage`.
+```sh
+cd local
+npm start
+```
+
+- Panel : http://localhost:3000/
+- API mobile : http://localhost:3000/api/…
+- Persistance : `local/data/store.json` (partagé app + panel)
 
 Pages :
 
-- Dashboard local ;
-- Quiz ;
+- Dashboard ;
+- Quiz (génération Ollama + CRUD) ;
 - Joueurs ;
 - Scores ;
 - Battle Rooms ;
-- Import / Export.
+- Import / Export ;
+- Paramètres (URL serveur, test Ollama).
+
+L'app mobile active **Mode offline** dans Paramètres et pointe vers l'IP du PC (`10.0.2.2` émulateur, IP LAN sur téléphone réel).
+
+Compte démo : `demo@local.quizbit` / `demo123`.
+
+Voir aussi `local/README.md`.
 
 ### Import quiz Vercel
 
@@ -458,25 +499,40 @@ vercel/lib/api/
 Routes principales :
 
 ```txt
+# Auth & profil
 /api/auth-register
 /api/auth-login
 /api/firebase-auth
-/api/generate-questions
-/api/validate-answer
-/api/scores-record
-/api/scores-list
 /api/user-update-avatar
 /api/user-update-stats
+
+# Quiz & IA
+/api/generate-questions
+/api/validate-answer
+/api/test-gemini
+/api/test-mistral
+/api/test-cloudinary
+
+# Scores
+/api/scores-record
+/api/scores-list
+
+# Battle Royale
 /api/battle-room-create
 /api/battle-room-join
+/api/battle-room-list
 /api/battle-room-start
 /api/battle-room-finish
 /api/battle-room-get
 /api/battle-room-chat
 /api/battle-room-delete
-/api/test-gemini
-/api/test-mistral
-/api/test-cloudinary
+
+# Panel admin Firestore
+/api/admin-firestore-stats
+/api/admin-firestore-list
+/api/admin-firestore-upsert
+/api/admin-firestore-delete
+/api/admin-save-quiz
 ```
 
 ## 16. Variables d'environnement
@@ -533,6 +589,9 @@ scores
 battleRooms
 quizzes (optionnel, surtout admin)
 ```
+
+Documentation détaillée schéma, normalisation, flux CRUD et miroir offline :
+[documentation/FIRESTORE.md](./FIRESTORE.md)
 
 Erreur connue :
 
@@ -612,12 +671,13 @@ Mobile :
 
 Battle :
 
-- créer une salle classique ;
-- rejoindre avec un code ;
+- créer une salle classique (onglet Créer) ;
+- rejoindre avec un code ou depuis la liste des lobbies actifs (onglet Rejoindre) ;
 - lancer la battle ;
 - créer une salle QCM chronométrée ;
 - vérifier le passage automatique en cas d'erreur ou timeout ;
-- vérifier la fin et le récapitulatif.
+- vérifier le récapitulatif et le score dans le classement battle ;
+- chat lobby avant démarrage.
 
 Panels :
 
@@ -756,3 +816,17 @@ Après fusion dans `main` :
 6. Rebuilder l'APK si la PR touche le mobile ou les modules natifs.
 7. Tester sur un vrai téléphone : permissions, avatar, médias, quiz, battle,
    chat lobby et leaderboard.
+
+## 24. Référence Firestore (tables / collections)
+
+Pour une description exhaustive de chaque collection, des champs, de la couche
+`firestore-normalize.js`, des routes API associées et du miroir offline
+`store.json`, consulter :
+
+```txt
+documentation/FIRESTORE.md
+```
+
+Ce fichier est la source de vérité pour comprendre comment les données sont
+**présentées** dans les panels et **traitées** côté API avant écriture ou après
+lecture Firestore.

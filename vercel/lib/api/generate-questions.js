@@ -1,5 +1,6 @@
 const { getEnv } = require('../env');
 const { verifyIdToken } = require('../auth-verify');
+const { withProviderFallback } = require('../ai-fallback');
 
 const BATCH_THRESHOLD = 16;
 const BATCH_SIZE = 12;
@@ -320,38 +321,27 @@ const generateQuestionsOnce = async (
 ) => {
   const enrichedPrompt = enrichPromptWithMedia(prompt, mediaPayload);
   const preferGemini = Boolean(
-    mediaPayload?.base64 && ['audio', 'image', 'video'].includes(mediaPayload.category),
+    mediaPayload?.base64 &&
+      ['audio', 'image', 'video'].includes(mediaPayload.category),
   );
 
-  if (preferGemini || provider === 'gemini') {
-    return generateWithGemini(enrichedPrompt, count, options, mediaPayload);
+  const callMistral = () =>
+    generateWithMistral(enrichedPrompt, count, options, mediaPayload);
+  const callGemini = () =>
+    generateWithGemini(enrichedPrompt, count, options, mediaPayload);
+
+  if (provider === 'gemini') {
+    return withProviderFallback(callGemini, callMistral, 'gemini', 'mistral');
   }
   if (provider === 'mistral') {
-    return generateWithMistral(enrichedPrompt, count, options, mediaPayload);
+    return withProviderFallback(callMistral, callGemini, 'mistral', 'gemini');
   }
 
-  try {
-    return await generateWithGemini(enrichedPrompt, count, options, mediaPayload);
-  } catch (geminiError) {
-    if (preferGemini) throw geminiError;
-    try {
-      const fallback = await generateWithMistral(
-        enrichedPrompt,
-        count,
-        options,
-        mediaPayload,
-      );
-      return {
-        ...fallback,
-        fallbackFrom: 'gemini',
-        fallbackReason: toErrorMessage(geminiError),
-      };
-    } catch (mistralError) {
-      throw new Error(
-        `Gemini: ${toErrorMessage(geminiError)} | Mistral: ${toErrorMessage(mistralError)}`,
-      );
-    }
+  if (preferGemini) {
+    return withProviderFallback(callGemini, callMistral, 'gemini', 'mistral');
   }
+
+  return withProviderFallback(callMistral, callGemini, 'mistral', 'gemini');
 };
 
 const generateQuestionsChunked = async (

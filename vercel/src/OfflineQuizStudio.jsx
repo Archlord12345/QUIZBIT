@@ -506,9 +506,9 @@ export default function OfflineQuizStudio() {
             <label>
               IA
               <select value={provider} onChange={e => setProvider(e.target.value)}>
-                <option value="auto">Auto (Gemini → Mistral)</option>
+                <option value="auto">Auto (Mistral → Gemini, média: Gemini → Mistral)</option>
+                <option value="mistral">Mistral (prioritaire)</option>
                 <option value="gemini">Gemini (recommandé médias)</option>
-                <option value="mistral">Mistral</option>
               </select>
             </label>
           </div>
@@ -575,6 +575,13 @@ export default function OfflineQuizStudio() {
               <div className="ai-model">
                 {result.provider} / {result.model}
               </div>
+              {result.fallbackFrom ? (
+                <div className="ai-note">
+                  {result.fallbackFrom === 'mistral'
+                    ? 'Mistral indisponible (quota ou erreur), bascule sur Gemini.'
+                    : 'Gemini indisponible (quota ou erreur), bascule sur Mistral.'}
+                </div>
+              ) : null}
               {result.offlineNote ? (
                 <div className="ai-note">{result.offlineNote}</div>
               ) : null}

@@ -34,16 +34,13 @@ const styles = StyleSheet.create({
     width: 82,
   },
   title: {
-    color: COLORS.textOnDark,
+    color: COLORS.text,
     fontSize: 44,
     fontWeight: '900',
     letterSpacing: 0.5,
-    textShadowColor: COLORS.glow,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 18,
   },
   subtitle: {
-    color: COLORS.secondary,
+    color: COLORS.primary,
     fontSize: 15,
     fontWeight: '700',
     textAlign: 'center',

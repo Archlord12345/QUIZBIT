@@ -1,6 +1,6 @@
 # QuizBit
 
-QuizBit est une plateforme de quiz mobile avec génération de questions par IA, comptes Firebase, scores Firestore, mode battle royale, stockage avatar Cloudinary, panel admin cloud et panel admin local.
+QuizBit est une plateforme de quiz mobile avec génération de questions par IA (Mistral/Gemini/Ollama), comptes Firebase, scores Firestore, mode battle royale, stockage avatar Cloudinary, panel admin cloud avec CRUD Firestore, et serveur local offline (`local/`).
 
 ## Liens importants
 
@@ -16,21 +16,18 @@ QuizBit est une plateforme de quiz mobile avec génération de questions par IA,
 
 - Inscription et connexion via Firebase Auth.
 - Profils utilisateurs stockés dans Firestore.
-- Génération de quiz avec Google Gemini.
+- Génération de quiz via API Vercel : Mistral en priorité, fallback Gemini (inversé si média de thème).
 - Questions QCM et questions ouvertes.
 - QCM avec 2 à 5 choix maximum.
 - Questions ouvertes : l'utilisateur saisit sa réponse et l'app l'analyse avec Gemini/Mistral pour validation. Chaque mode de jeu demande un nombre de questions défini avant lancement.
 - Scores sauvegardés dans Firestore.
 - Leaderboard global depuis Firestore.
 - Mode battle royale avec salles Firestore :
-  - création de salle ;
-  - code de salle ;
-  - rejoindre une salle ;
-  - nombre maximal de joueurs ;
-  - nombre de questions ;
-  - seuil d'élimination ;
-  - statut `waiting`, `active`, `finished` ;
-  - calcul du gagnant.
+  - onglet **Créer un lobby** (mode classique ou QCM chrono) ;
+  - onglet **Rejoindre** : code manuel ou liste des lobbies actifs avec thème ;
+  - chat lobby, démarrage hôte, élimination par seuil de score ;
+  - statuts `waiting`, `active`, `finished` ;
+  - scores battle enregistrés au classement (`mode: battle_royale`).
 - Upload d'avatar via Cloudinary si configuré.
 - Données réelles uniquement côté app mobile : pas de mode invité, pas de mock data, pas de fallback local de compte/score/battle.
 
@@ -44,40 +41,33 @@ Le panel cloud est disponible ici :
 https://quizbit-admin.vercel.app/
 ```
 
-Il permet de consulter et diagnostiquer les données réelles Firestore :
+Il permet de consulter, **créer, modifier et supprimer** les données Firestore :
 
 - dashboard global ;
-- utilisateurs ;
-- quiz ;
-- questions, réponses attendues, types de questions et choix QCM ;
-- scores ;
-- battle rooms ;
-- recherche dans les données chargées ;
-- export CSV ;
-- export JSON ;
-- panneau de détails JSON par document ;
-- top scores ;
-- activité récente ;
-- diagnostics Firebase, Gemini, Mistral et Cloudinary.
+- utilisateurs, quiz, scores, battle rooms ;
+- CRUD via modale JSON (`admin-firestore-upsert` / `admin-firestore-delete`) ;
+- recherche, export CSV/JSON, détail document ;
+- diagnostics Firebase, Gemini, Mistral et Cloudinary ;
+- connexion Firestore : Paramètres → Connecter ou variables `PANEL_FIRESTORE_*`.
 
 Les tests Gemini, Mistral et Cloudinary passent par des routes API Vercel côté serveur afin d'éviter les problèmes CORS et de garder les clés hors du bundle navigateur.
 
-### Panel admin local
+### Panel admin local + API offline
 
-Le dossier `local/` contient un panel admin local, sans backend, pour tests/développement hors cloud.
+Le dossier `local/` est un serveur tout-en-un : panel admin + API compatible mobile, sans cloud.
 
 ```sh
 cd local
-npm run start
+npm start
 ```
 
-Puis ouvrir :
+- Panel : http://localhost:3000/
+- API : http://localhost:3000/api/…
+- Données : `local/data/store.json`
+- Génération IA locale : Ollama (`npm run setup:ollama`, modèle ~98 Mo)
+- Compte démo : `demo@local.quizbit` / `demo123`
 
-```txt
-http://localhost:4173
-```
-
-Ce panel utilise `localStorage`. Il ne modifie pas Firestore.
+Ce mode ne modifie pas Firestore. Voir `local/README.md`.
 
 ## Architecture du dépôt
 
@@ -134,7 +124,7 @@ Cette commande génère automatiquement :
 - le logo du splash Android `android/app/src/main/res/drawable-nodpi/logo_splash.png` ;
 - le logo runtime React Native `src/assets/logo.png`.
 
-Le thème mobile et les panels utilisent une palette sombre bleu/cyan/violet assortie au logo.
+Le thème mobile utilise une palette crème / violet / corail (alignée sur la page Classement).
 
 ## Prérequis
 
@@ -212,15 +202,18 @@ L'app mobile ne parle plus directement à Firebase Auth pour la création/connex
 VERCEL_API_BASE_URL=https://quizbit-admin.vercel.app
 ```
 
-Routes principales :
+Routes principales (dispatcher unique `vercel/api/index.js`) :
 
 ```txt
-/api/auth-register
-/api/auth-login
-/api/user-update-avatar
-/api/user-update-stats
-/api/scores-record
-/api/scores-list
+/api/auth-register          /api/auth-login
+/api/generate-questions     /api/validate-answer
+/api/scores-record          /api/scores-list
+/api/user-update-avatar     /api/user-update-stats
+/api/battle-room-create     /api/battle-room-join
+/api/battle-room-list       /api/battle-room-start
+/api/battle-room-finish     /api/battle-room-get
+/api/battle-room-chat       /api/battle-room-delete
+/api/admin-firestore-*      (panel CRUD)
 ```
 
 Ces routes utilisent Firebase côté serveur Vercel puis renvoient les données nécessaires à l'application.
@@ -410,67 +403,18 @@ QuizBit supporte deux types de questions dans les quiz Firestore et dans le pane
 
 Pour une question ouverte, l'utilisateur saisit lui-même sa réponse. L'app compare d'abord la réponse normalisée, puis utilise Gemini pour analyser les synonymes et formulations équivalentes.
 
-## Collections Firestore attendues
+## Données Firestore
 
-### `users`
+Quatre collections principales : `users`, `scores`, `battleRooms`, `quizzes`.
 
-```ts
-{
-  id: string;
-  email: string;
-  displayName: string;
-  avatarUrl?: string;
-  gamesPlayed: number;
-  totalScore: number;
-  bestScore: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
+Elles sont lues/écrites via l'API Vercel, normalisées par `vercel/lib/firestore-normalize.js`, et administrées depuis le panel (CRUD + exports).
+
+**Documentation complète** (schéma de chaque table, flux lecture/écriture, normalisation, miroir offline) :
+
+```txt
+documentation/FIRESTORE.md
+documentation/README.md
 ```
-
-### `scores`
-
-```ts
-{
-  userId: string;
-  displayName: string;
-  theme: string;
-  score: number;
-  mode: 'solo' | 'battle_royale';
-  createdAt: Timestamp;
-}
-```
-
-### `battleRooms`
-
-```ts
-{
-  id: string;
-  code: string;
-  hostId: string;
-  status: 'waiting' | 'active' | 'finished';
-  config: {
-    theme: string;
-    maxPlayers: number;
-    questionCount: number;
-    eliminationScore: number;
-  };
-  players: Array<{
-    userId: string;
-    displayName: string;
-    score: number;
-    eliminated: boolean;
-    finished: boolean;
-  }>;
-  questions?: Question[];
-  winnerId?: string;
-  createdAt: string;
-}
-```
-
-### `quizzes`
-
-Le panel admin lit aussi une collection `quizzes` si elle existe pour afficher les quiz générés.
 
 ## Politique données réelles
 
@@ -504,9 +448,13 @@ Configurer les variables d'environnement Vercel avant déploiement pour que diag
 
 ## Documentation complète
 
-Le dossier `documentation/` décrit le fonctionnement du projet de A à Z, dont un guide opérationnel des panels admin :
-architecture, configuration Firebase/Vercel, génération IA, avatars,
-Battle Royale, session persistante et déploiement. Le panel Vercel peut exporter les quiz generes en JSON, et le panel local peut les importer pour un usage offline.
+| Fichier | Contenu |
+|---------|---------|
+| `documentation/README.md` | Guide A à Z : architecture, écrans, API, panels, déploiement |
+| `documentation/FIRESTORE.md` | Référence données : collections, schémas, normalisation, CRUD, offline |
+| `local/README.md` | Serveur offline, Ollama, compte démo, URL mobile |
+
+Le panel Vercel exporte les quiz en JSON (`quizbit-quiz-v1`) ; le panel local les importe pour usage offline.
 
 ## Pull request
 

@@ -9,10 +9,13 @@ import {
   View,
 } from 'react-native';
 import BattleRoyaleController, {
+  BattleLobbySummary,
   BattleRoyaleRoom,
 } from '../controllers/BattleRoyaleController';
 import { UserAccount } from '../controllers/AuthController';
-import { COLORS, SPACING } from '../utils/theme';
+import { COLORS, PLACEHOLDER, SPACING } from '../utils/theme';
+import { LAYOUT, RADIUS, SHADOW, UI } from '../utils/ui';
+import { ScreenHeader, ScreenScroll } from '../components/ScreenLayout';
 import { pickThemeMedia, ThemeMedia } from '../utils/themeMediaPicker';
 import {
   buildThemeMediaPayload,
@@ -25,7 +28,8 @@ import { MAX_VOICE_RECORD_MS } from '../utils/voiceRecorder';
 type BattleRoyaleViewProps = {
   account: UserAccount;
   navigation: any;
-  onBack: () => void;
+  onBack?: () => void;
+  embedded?: boolean;
   onStartBattle: (room: BattleRoyaleRoom) => void;
 };
 
@@ -33,6 +37,7 @@ const BattleRoyaleView = ({
   account,
   navigation,
   onBack,
+  embedded = false,
   onStartBattle,
 }: BattleRoyaleViewProps) => {
   const [theme, setTheme] = useState('Culture générale');
@@ -45,6 +50,9 @@ const BattleRoyaleView = ({
   const [eliminationScore, setEliminationScore] = useState('20');
   const [timeLimitSeconds, setTimeLimitSeconds] = useState('15');
   const [joinCode, setJoinCode] = useState('');
+  const [battleTab, setBattleTab] = useState<'create' | 'join'>('create');
+  const [activeLobbies, setActiveLobbies] = useState<BattleLobbySummary[]>([]);
+  const [lobbiesLoading, setLobbiesLoading] = useState(false);
   const [room, setRoom] = useState<BattleRoyaleRoom | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatText, setChatText] = useState('');
@@ -85,22 +93,39 @@ const BattleRoyaleView = ({
     }
   };
 
-  const joinRoom = async () => {
-    if (!joinCode.trim()) {
+  const joinRoom = async (codeOverride?: string) => {
+    const code = (codeOverride || joinCode).trim().toUpperCase();
+    if (!code) {
       return;
     }
 
     setLoading(true);
     setError('');
     try {
-      const nextRoom = await BattleRoyaleController.joinRoom(joinCode, account);
+      const nextRoom = await BattleRoyaleController.joinRoom(code, account);
       setRoom(nextRoom);
+      setJoinCode(code);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Connexion salle impossible.',
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadActiveLobbies = async () => {
+    setLobbiesLoading(true);
+    try {
+      setActiveLobbies(await BattleRoyaleController.listActiveRooms(account));
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Impossible de charger les lobbies actifs.',
+      );
+    } finally {
+      setLobbiesLoading(false);
     }
   };
 
@@ -228,6 +253,14 @@ const BattleRoyaleView = ({
   };
 
   useEffect(() => {
+    if (room || battleTab !== 'join') return;
+    loadActiveLobbies();
+    const interval = setInterval(loadActiveLobbies, 5000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room, battleTab, account.id]);
+
+  useEffect(() => {
     if (!room) return;
     if (room.status === 'finished') return;
 
@@ -249,25 +282,45 @@ const BattleRoyaleView = ({
   }, [room, account, onStartBattle, navigation]);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>
-        {room ? `Salle : ${room.code}` : 'Battle Royale'}
-      </Text>
+    <ScreenScroll contentStyle={styles.container}>
+      <ScreenHeader
+        title={room ? `Salle ${room.code}` : 'Battle Royale'}
+        onBack={onBack}
+        showBack={!embedded && Boolean(onBack)}
+      />
       <Text style={styles.subtitle}>
         {room
           ? 'Attends que tous les joueurs soient connectés dans le lobby, discute dans le chat et prépare-toi !'
-          : 'Configure une salle, invite les joueurs avec le code, puis lance le quiz.'}
+          : battleTab === 'create'
+          ? 'Mode classique : configure ton lobby et invite les joueurs avec le code.'
+          : 'Rejoins un lobby existant ou choisis-en un dans la liste des parties actives.'}
       </Text>
 
       {!room ? (
         <>
+          <View style={styles.tabRow}>
+            <ModeChip
+              active={battleTab === 'create'}
+              label="Créer un lobby"
+              onPress={() => setBattleTab('create')}
+              style={styles.tabChip}
+            />
+            <ModeChip
+              active={battleTab === 'join'}
+              label="Rejoindre"
+              onPress={() => setBattleTab('join')}
+              style={styles.tabChip}
+            />
+          </View>
+
+          {battleTab === 'create' ? (
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Créer une salle</Text>
+            <Text style={styles.sectionTitle}>Lobby classique</Text>
             <FieldLabel label="Thème du jeu">
               <TextInput
                 style={styles.input}
                 placeholder="Ex: React Native, capitales, sport..."
-                placeholderTextColor="#6B778C"
+                placeholderTextColor={PLACEHOLDER}
                 value={theme}
                 onChangeText={setTheme}
               />
@@ -304,7 +357,7 @@ const BattleRoyaleView = ({
                   style={styles.input}
                   keyboardType="numeric"
                   placeholder="10"
-                  placeholderTextColor="#6B778C"
+                  placeholderTextColor={PLACEHOLDER}
                   value={maxPlayers}
                   onChangeText={setMaxPlayers}
                 />
@@ -314,7 +367,7 @@ const BattleRoyaleView = ({
                   style={styles.input}
                   keyboardType="numeric"
                   placeholder="5"
-                  placeholderTextColor="#6B778C"
+                  placeholderTextColor={PLACEHOLDER}
                   value={questionCount}
                   onChangeText={value => setQuestionCount(clampNumber(value, 3, 20))}
                 />
@@ -325,7 +378,7 @@ const BattleRoyaleView = ({
                 style={styles.input}
                 keyboardType="numeric"
                 placeholder="20"
-                placeholderTextColor="#6B778C"
+                placeholderTextColor={PLACEHOLDER}
                 value={eliminationScore}
                 onChangeText={setEliminationScore}
               />
@@ -336,7 +389,7 @@ const BattleRoyaleView = ({
                   style={styles.input}
                   keyboardType="numeric"
                   placeholder="15"
-                  placeholderTextColor="#6B778C"
+                  placeholderTextColor={PLACEHOLDER}
                   value={timeLimitSeconds}
                   onChangeText={setTimeLimitSeconds}
                 />
@@ -346,23 +399,88 @@ const BattleRoyaleView = ({
               <Text style={styles.primaryButtonText}>Créer la salle</Text>
             </TouchableOpacity>
           </View>
-
+          ) : (
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Rejoindre une salle</Text>
-            <FieldLabel label="Code de salle à rejoindre">
+            <View style={styles.joinHeader}>
+              <Text style={styles.sectionTitle}>Rejoindre un lobby</Text>
+              <TouchableOpacity
+                style={styles.refreshChip}
+                onPress={loadActiveLobbies}
+                disabled={lobbiesLoading}
+              >
+                <Text style={styles.refreshChipText}>
+                  {lobbiesLoading ? '...' : 'Actualiser'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <FieldLabel label="Code de salle">
               <TextInput
                 style={styles.input}
                 autoCapitalize="characters"
                 placeholder="Ex: A1B2C3"
-                placeholderTextColor="#6B778C"
+                placeholderTextColor={PLACEHOLDER}
                 value={joinCode}
                 onChangeText={setJoinCode}
               />
             </FieldLabel>
-            <TouchableOpacity style={styles.secondaryButton} onPress={joinRoom}>
-              <Text style={styles.secondaryButtonText}>Rejoindre</Text>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => joinRoom()}
+            >
+              <Text style={styles.secondaryButtonText}>Rejoindre avec le code</Text>
             </TouchableOpacity>
+
+            <Text style={styles.lobbyListTitle}>Lobbies actifs</Text>
+            {lobbiesLoading && !activeLobbies.length ? (
+              <ActivityIndicator color={COLORS.primary} style={styles.loader} />
+            ) : null}
+            {!lobbiesLoading && !activeLobbies.length ? (
+              <Text style={styles.lobbyEmpty}>
+                Aucun lobby en attente ou en cours pour le moment.
+              </Text>
+            ) : null}
+            {activeLobbies.map(lobby => (
+              <TouchableOpacity
+                key={lobby.code}
+                style={[
+                  styles.lobbyCard,
+                  lobby.status === 'active' && styles.lobbyCardDisabled,
+                ]}
+                onPress={() => {
+                  if (lobby.status !== 'waiting') {
+                    setError('Cette partie a déjà commencé. Choisis un lobby en attente.');
+                    return;
+                  }
+                  joinRoom(lobby.code);
+                }}
+              >
+                <View style={styles.lobbyCardTop}>
+                  <Text style={styles.lobbyTheme} numberOfLines={1}>
+                    {lobby.theme}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.lobbyStatus,
+                      lobby.status === 'active'
+                        ? styles.lobbyStatusActive
+                        : styles.lobbyStatusWaiting,
+                    ]}
+                  >
+                    {lobby.status === 'active' ? 'En cours' : 'En attente'}
+                  </Text>
+                </View>
+                <Text style={styles.lobbyMeta}>
+                  Code {lobby.code} · {lobby.playerCount}/{lobby.maxPlayers}{' '}
+                  joueurs
+                </Text>
+                <Text style={styles.lobbyMeta}>
+                  Hôte {lobby.hostName} ·{' '}
+                  {lobby.mode === 'timed_mcq' ? 'QCM chrono' : 'Classique'}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
+          )}
         </>
       ) : (
         <View style={styles.roomCard}>
@@ -487,14 +605,10 @@ const BattleRoyaleView = ({
       )}
 
       {loading ? (
-        <ActivityIndicator color="white" style={styles.loader} />
+        <ActivityIndicator color={COLORS.primary} style={styles.loader} />
       ) : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <TouchableOpacity style={styles.backButton} onPress={onBack}>
-        <Text style={styles.backText}>Retour</Text>
-      </TouchableOpacity>
-    </ScrollView>
+    </ScreenScroll>
   );
 };
 
@@ -523,13 +637,15 @@ const ModeChip = ({
   active,
   label,
   onPress,
+  style,
 }: {
   active: boolean;
   label: string;
   onPress: () => void;
+  style?: object;
 }) => (
   <TouchableOpacity
-    style={[styles.modeChip, active && styles.modeChipActive]}
+    style={[styles.modeChip, active && styles.modeChipActive, style]}
     onPress={onPress}
   >
     <Text style={[styles.modeChipText, active && styles.modeChipTextActive]}>
@@ -540,46 +656,34 @@ const ModeChip = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.primary,
-    flexGrow: 1,
-    padding: SPACING.lg,
-  },
-  title: {
-    color: 'white',
-    fontSize: 36,
-    fontWeight: '900',
-    marginTop: 32,
-    textAlign: 'center',
-  },
-  eyebrow: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 1.6,
-    marginTop: 32,
-    textAlign: 'center',
-    textTransform: 'uppercase',
+    paddingHorizontal: LAYOUT.screenPaddingH,
   },
   subtitle: {
-    color: COLORS.secondary,
+    color: COLORS.muted,
+    fontSize: 14,
     lineHeight: 21,
-    marginBottom: 20,
-    marginTop: 8,
+    marginBottom: LAYOUT.sectionGap,
     textAlign: 'center',
   },
   card: {
-    backgroundColor: 'white',
-    borderRadius: 18,
+    backgroundColor: COLORS.surface,
+    borderColor: UI.line,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
     gap: 12,
-    marginBottom: 16,
+    marginBottom: LAYOUT.sectionGap,
     padding: SPACING.lg,
+    ...SHADOW.card,
   },
   roomCard: {
-    backgroundColor: '#EAF2FF',
-    borderRadius: 18,
+    backgroundColor: COLORS.backgroundSoft,
+    borderColor: UI.chipBorder,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
     gap: 10,
-    marginBottom: 16,
+    marginBottom: LAYOUT.sectionGap,
     padding: SPACING.lg,
+    ...SHADOW.soft,
   },
   lobbyActions: {
     flexDirection: 'row',
@@ -712,6 +816,89 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     textTransform: 'uppercase',
   },
+  tabRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: LAYOUT.sectionGap,
+  },
+  tabChip: {
+    flex: 1,
+  },
+  joinHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  refreshChip: {
+    backgroundColor: UI.chipBg,
+    borderColor: UI.chipBorder,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  refreshChipText: {
+    color: COLORS.primary,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  lobbyListTitle: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: '900',
+    marginTop: 8,
+    textTransform: 'uppercase',
+  },
+  lobbyEmpty: {
+    color: COLORS.muted,
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  lobbyCard: {
+    backgroundColor: COLORS.backgroundSoft,
+    borderColor: UI.line,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    gap: 4,
+    padding: 12,
+  },
+  lobbyCardDisabled: {
+    opacity: 0.72,
+  },
+  lobbyCardTop: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  lobbyTheme: {
+    color: COLORS.text,
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  lobbyStatus: {
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: '800',
+    overflow: 'hidden',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  lobbyStatusWaiting: {
+    backgroundColor: UI.chipBg,
+    color: COLORS.primary,
+  },
+  lobbyStatusActive: {
+    backgroundColor: 'rgba(238, 104, 69, 0.15)',
+    color: COLORS.secondary,
+  },
+  lobbyMeta: {
+    color: COLORS.muted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
   segmentedRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -745,8 +932,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   input: {
-    backgroundColor: '#FAFBFC',
-    borderColor: '#DFE1E6',
+    backgroundColor: COLORS.surface,
+    borderColor: UI.line,
     borderRadius: 10,
     borderWidth: 1,
     color: COLORS.text,
@@ -772,7 +959,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     alignItems: 'center',
-    borderColor: COLORS.secondary,
+    borderColor: COLORS.primary,
     borderRadius: 10,
     borderWidth: 1,
     padding: 15,
@@ -806,28 +993,20 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   error: {
-    color: 'white',
+    color: COLORS.error,
     fontWeight: '700',
     marginVertical: 12,
     textAlign: 'center',
   },
-  backButton: {
-    alignSelf: 'center',
-    padding: 12,
-  },
-  backText: {
-    color: 'white',
-    textDecorationLine: 'underline',
-  },
   waitingForHostContainer: {
-    backgroundColor: '#F4F5F7',
+    backgroundColor: UI.surfaceSoft,
     borderRadius: 8,
     padding: 12,
     marginVertical: 8,
     alignItems: 'center',
   },
   waitingForHostText: {
-    color: '#5E6C84',
+    color: COLORS.muted,
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',

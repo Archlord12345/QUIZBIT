@@ -67,9 +67,23 @@ const server = http.createServer(async (req, res) => {
   return serveStatic(req, res);
 });
 
-server.listen(PORT, HOST, () => {
+server.listen(PORT, HOST, async () => {
   console.log(`QuizBit offline server: http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
   console.log(`Panel admin: http://localhost:${PORT}/`);
   console.log(`API mobile: http://10.0.2.2:${PORT} (emulateur Android)`);
   console.log('Compte demo: demo@local.quizbit / demo123');
+  try {
+    const { getOllamaConfig, isOllamaAvailable } = await import(
+      './lib/ollama-generate.js'
+    );
+    const config = getOllamaConfig();
+    const ready = await isOllamaAvailable();
+    console.log(
+      ready
+        ? `Ollama: ${config.model} (generation IA locale active)`
+        : `Ollama: indisponible — npm run setup:ollama (modele ${config.model})`,
+    );
+  } catch {
+    console.log('Ollama: verification impossible');
+  }
 });

@@ -14,10 +14,19 @@ import { COLORS } from '../utils/theme';
 
 type LeaderboardViewProps = {
   account: UserAccount;
-  onBack: () => void;
+  active?: boolean;
+  onBack?: () => void;
+  embedded?: boolean;
+  refreshToken?: number;
 };
 
-const LeaderboardView = ({ account, onBack }: LeaderboardViewProps) => {
+const LeaderboardView = ({
+  account,
+  active = true,
+  onBack,
+  embedded = false,
+  refreshToken = 0,
+}: LeaderboardViewProps) => {
   const [mode, setMode] = useState<GameMode | undefined>(undefined);
   const [scores, setScores] = useState<ScoreEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,9 +47,10 @@ const LeaderboardView = ({ account, onBack }: LeaderboardViewProps) => {
   };
 
   useEffect(() => {
+    if (!active) return;
     loadScores();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, [mode, active, refreshToken]);
 
   const getInitials = (name: string) => {
     return name
@@ -65,7 +75,7 @@ const LeaderboardView = ({ account, onBack }: LeaderboardViewProps) => {
     <View style={styles.container}>
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator color={COLORS.secondary} size="large" />
+          <ActivityIndicator color={COLORS.primary} size="large" />
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
@@ -81,6 +91,7 @@ const LeaderboardView = ({ account, onBack }: LeaderboardViewProps) => {
         <LeaderboardCard
           ranks={mappedRanks}
           onBackClick={onBack}
+          showBackButton={!embedded && Boolean(onBack)}
           activeSeason={mode === 'battle_royale' ? "Mode Battle" : mode === 'solo' ? "Mode Solo" : "Saison 4"}
           selectedMode={mode}
           onSelectMode={setMode}
@@ -93,7 +104,7 @@ const LeaderboardView = ({ account, onBack }: LeaderboardViewProps) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.background,
   },
   loadingContainer: {
     flex: 1,
@@ -120,7 +131,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   retryText: { color: 'white', fontWeight: '800' },
-  backLink: { color: COLORS.secondary, fontWeight: '800' },
+  backLink: { color: COLORS.primary, fontWeight: '800' },
 });
 
 export default LeaderboardView;

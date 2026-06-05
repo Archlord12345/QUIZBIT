@@ -2,10 +2,13 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LeaderboardUser } from '../types';
 import { GameMode } from '../controllers/ScoreController';
+import { COLORS } from '../utils/theme';
+import { LAYOUT, UI } from '../utils/ui';
 
 interface LeaderboardCardProps {
   ranks: LeaderboardUser[];
-  onBackClick: () => void;
+  onBackClick?: () => void;
+  showBackButton?: boolean;
   activeSeason?: string;
   selectedMode?: GameMode;
   onSelectMode?: (mode: GameMode | undefined) => void;
@@ -14,6 +17,7 @@ interface LeaderboardCardProps {
 export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
   ranks,
   onBackClick,
+  showBackButton = Boolean(onBackClick),
   activeSeason = "Saison 4",
   selectedMode,
   onSelectMode,
@@ -23,18 +27,28 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
   const top2Input = ranks.find((item) => item.rank === 2);
   const top3Input = ranks.find((item) => item.rank === 3);
   const others = ranks.filter((item) => item.rank > 3).sort((a, b) => a.rank - b.rank);
+  const emptyMessage =
+    selectedMode === 'battle_royale'
+      ? 'Aucun score Battle pour le moment. Termine une partie Battle Royale pour apparaitre ici.'
+      : selectedMode === 'solo'
+      ? 'Aucun score Solo pour le moment. Joue un quiz pour apparaitre ici.'
+      : 'Aucun score enregistre pour le moment. Joue un quiz ou une Battle Royale.';
 
   return (
     <View style={styles.container}>
       {/* Top Bar Navigation */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={onBackClick}
-          style={styles.backButton}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
+        {showBackButton && onBackClick ? (
+          <TouchableOpacity
+            onPress={onBackClick}
+            style={styles.backButton}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.backArrow}>←</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerSide} />
+        )}
 
         <Text style={styles.headerTitle}>Classement</Text>
 
@@ -75,6 +89,14 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
           </TouchableOpacity>
         </View>
       )}
+
+      {ranks.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyEmoji}>🏆</Text>
+          <Text style={styles.emptyTitle}>Classement vide</Text>
+          <Text style={styles.emptyText}>{emptyMessage}</Text>
+        </View>
+      ) : null}
 
       {/* Podium Section */}
       <View style={styles.podiumContainer}>
@@ -246,7 +268,7 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fdf8fa',
+    backgroundColor: COLORS.background,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     overflow: 'hidden',
@@ -256,16 +278,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 16,
-    paddingHorizontal: 20,
-    backgroundColor: '#fdf8fa',
+    paddingHorizontal: LAYOUT.screenPaddingH,
+    backgroundColor: COLORS.background,
+  },
+  headerSide: {
+    width: 40,
+    height: 40,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'white',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: '#e7e5e4',
+    borderColor: UI.line,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -277,13 +303,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#2e1d33',
+    color: COLORS.text,
     letterSpacing: -0.2,
   },
   seasonBadge: {
-    backgroundColor: '#fcf5fb',
+    backgroundColor: UI.chipBg,
     borderWidth: 1,
-    borderColor: '#f5ecf6',
+    borderColor: UI.chipBorder,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -291,12 +317,34 @@ const styles = StyleSheet.create({
   seasonText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#7a317a',
+    color: COLORS.primary,
+  },
+  emptyState: {
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+    paddingHorizontal: LAYOUT.screenPaddingH,
+    paddingVertical: 20,
+  },
+  emptyEmoji: {
+    fontSize: 28,
+  },
+  emptyTitle: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  emptyText: {
+    color: COLORS.muted,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 20,
+    textAlign: 'center',
   },
   filters: {
     flexDirection: 'row',
     gap: 8,
-    paddingHorizontal: 20,
+    paddingHorizontal: LAYOUT.screenPaddingH,
     marginBottom: 12,
   },
   filterButton: {
@@ -304,8 +352,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#e7e5e4',
-    backgroundColor: 'white',
+    borderColor: UI.line,
+    backgroundColor: COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -315,16 +363,16 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   filterButtonActive: {
-    backgroundColor: '#7a317a',
-    borderColor: '#7a317a',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   filterText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#78716c',
+    color: COLORS.muted,
   },
   filterTextActive: {
-    color: 'white',
+    color: COLORS.textOnDark,
   },
   podiumContainer: {
     flexDirection: 'row',
@@ -334,7 +382,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
-    backgroundColor: '#fdf8fa',
+    backgroundColor: COLORS.background,
   },
   podiumColumn: {
     flex: 1,
@@ -373,13 +421,13 @@ const styles = StyleSheet.create({
   avatarRank1: {
     width: 60,
     height: 60,
-    backgroundColor: '#ee6845',
+    backgroundColor: COLORS.secondary,
     borderWidth: 3,
   },
   avatarRank2: {
     width: 52,
     height: 52,
-    backgroundColor: '#4a204e',
+    backgroundColor: COLORS.primaryDark,
   },
   avatarRank3: {
     width: 52,
@@ -398,7 +446,7 @@ const styles = StyleSheet.create({
   podiumName: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#2e1d33',
+    color: COLORS.text,
     textAlign: 'center',
     width: '100%',
   },
@@ -409,14 +457,14 @@ const styles = StyleSheet.create({
   podiumScore: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#78716c',
+    color: COLORS.muted,
     marginTop: 1,
     marginBottom: 4,
   },
   podiumScoreRank1: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#ee6845',
+    color: COLORS.secondary,
     marginTop: 1,
     marginBottom: 4,
   },
@@ -435,7 +483,7 @@ const styles = StyleSheet.create({
   },
   standRank1: {
     height: 80,
-    backgroundColor: '#faebea',
+    backgroundColor: COLORS.surfaceElevated,
     borderColor: 'rgba(245, 179, 164, 0.25)',
   },
   standRank2: {
@@ -460,7 +508,7 @@ const styles = StyleSheet.create({
   },
   scrollList: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: COLORS.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 16,
@@ -479,12 +527,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   rankRowNormal: {
-    backgroundColor: 'white',
-    borderColor: '#f5f5f4',
+    backgroundColor: COLORS.surface,
+    borderColor: UI.lineMuted,
   },
   rankRowCurrentUser: {
-    backgroundColor: 'rgba(250, 236, 238, 0.7)',
-    borderColor: '#edd3d8',
+    backgroundColor: UI.currentUserBg,
+    borderColor: UI.currentUserBorder,
   },
   rankLeft: {
     flexDirection: 'row',
@@ -500,7 +548,7 @@ const styles = StyleSheet.create({
   rankNumber: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#78716c',
+    color: COLORS.muted,
   },
   rankAvatarCircle: {
     width: 36,
@@ -510,20 +558,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rankAvatarNormal: {
-    backgroundColor: '#e9eef7',
+    backgroundColor: UI.avatarBg,
   },
   rankAvatarCurrentUser: {
-    backgroundColor: '#5b2861',
+    backgroundColor: COLORS.primarySoft,
   },
   rankAvatarText: {
     fontSize: 12,
     fontWeight: '900',
   },
   rankAvatarTextNormal: {
-    color: '#2e1d33',
+    color: COLORS.text,
   },
   rankAvatarTextCurrentUser: {
-    color: 'white',
+    color: COLORS.textOnDark,
   },
   rankInfo: {
     flex: 1,
@@ -531,11 +579,11 @@ const styles = StyleSheet.create({
   rankName: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#2e1d33',
+    color: COLORS.text,
   },
   rankPoints: {
     fontSize: 11,
-    color: '#78716c',
+    color: COLORS.muted,
     marginTop: 1,
   },
   rankRight: {
@@ -553,36 +601,36 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   trendUp: {
-    backgroundColor: '#ecfdf5',
-    borderColor: '#d1fae5',
+    backgroundColor: UI.trendUpBg,
+    borderColor: UI.trendUpBorder,
   },
   trendDown: {
-    backgroundColor: '#fff1f2',
-    borderColor: '#ffe4e6',
+    backgroundColor: UI.trendDownBg,
+    borderColor: UI.trendDownBorder,
   },
   trendNeutral: {
-    backgroundColor: '#f5f5f4',
-    borderColor: '#e7e5e4',
+    backgroundColor: UI.lineMuted,
+    borderColor: UI.line,
   },
   trendTextUp: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#10b981',
+    color: COLORS.success,
   },
   trendTextDown: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#f43f5e',
+    color: COLORS.error,
   },
   trendTextNeutral: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#78716c',
+    color: COLORS.muted,
   },
   trophyIndicator: {
     padding: 6,
-    backgroundColor: '#fff7ed',
-    borderColor: '#ffedd5',
+    backgroundColor: UI.trophyBg,
+    borderColor: UI.trophyBorder,
     borderWidth: 1,
     borderRadius: 999,
     alignItems: 'center',
@@ -591,16 +639,16 @@ const styles = StyleSheet.create({
   backArrow: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#57534e',
+    color: COLORS.textSubtle,
   },
   trendArrowUp: {
     fontSize: 10,
-    color: '#10b981',
+    color: COLORS.success,
     fontWeight: 'bold',
   },
   trendArrowDown: {
     fontSize: 10,
-    color: '#f43f5e',
+    color: COLORS.error,
     fontWeight: 'bold',
   },
   trophyIndicatorText: {

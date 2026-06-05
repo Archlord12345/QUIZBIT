@@ -23,8 +23,18 @@ import {
   Sparkles,
   Users,
   FileJson,
+  Pencil,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import OfflineQuizStudio from './OfflineQuizStudio.jsx';
+import {
+  PAGE_COLLECTION,
+  defaultDocument,
+  deleteFirestoreRecord,
+  isCrudPage,
+  upsertFirestoreRecord,
+} from './adminCrud.js';
 import {
   FIRESTORE_SESSION_EVENT,
   getPanelAdminKey,
@@ -196,6 +206,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [loading, setLoading] = useState({ stats: true });
   const [error, setError] = useState('');
+  const [firestoreNotice, setFirestoreNotice] = useState('');
   const [globalFilter, setGlobalFilter] = useState('');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [testResults, setTestResults] = useState({});
@@ -209,9 +220,23 @@ export default function App() {
   const [users, setUsers] = useState([]);
   const [scores, setScores] = useState([]);
   const [battleRooms, setBattleRooms] = useState([]);
+  const [crudModal, setCrudModal] = useState(null);
+  const [crudBusy, setCrudBusy] = useState(false);
 
   const setLoadingFlag = useCallback((key, value) => {
     setLoading(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const applyFirestoreApiResult = useCallback(data => {
+    if (data.firestoreReady === false) {
+      setFirestoreNotice(
+        data.message ||
+          'Firestore non connecte : Parametres → Acces Firestore → Connecter.',
+      );
+      return true;
+    }
+    setFirestoreNotice('');
+    return false;
   }, []);
 
   const fetchStats = useCallback(async () => {
@@ -220,6 +245,10 @@ export default function App() {
     try {
       if (getPanelAdminKey()) {
         const data = await postPanelApi('admin-firestore-stats');
+        if (applyFirestoreApiResult(data)) {
+          setStats(data.stats || { players: 0, quizzes: 0, scores: 0, battleRooms: 0 });
+          return;
+        }
         setStats(data.stats);
         return;
       }
@@ -243,17 +272,21 @@ export default function App() {
         battleRooms: roomSnap.data().count,
       });
     } catch (err) {
-      console.error(err);
       const msg = err.message || 'Impossible de charger les statistiques Firestore.';
+      if (
+        !/Firestore|panel manquant|Acces Firestore|Connecter Firestore/i.test(msg)
+      ) {
+        console.error(err);
+      }
       setError(
-        msg.includes('Firestore') || msg.includes('panel manquant')
+        /Firestore|panel manquant|Acces Firestore/i.test(msg)
           ? `${msg} Ouvre le menu Parametres et clique sur « Connecter Firestore ».`
           : msg,
       );
     } finally {
       setLoadingFlag('stats', false);
     }
-  }, [setLoadingFlag]);
+  }, [applyFirestoreApiResult, setLoadingFlag]);
 
   const fetchCollection = useCallback(
     async page => {
@@ -266,6 +299,13 @@ export default function App() {
           const data = await postPanelApi('admin-firestore-list', {
             collection: config.name,
           });
+          if (applyFirestoreApiResult(data)) {
+            if (page === 'questions') setQuizzes([]);
+            if (page === 'users') setUsers([]);
+            if (page === 'scores') setScores([]);
+            if (page === 'battle') setBattleRooms([]);
+            return;
+          }
           const rows = data.rows || [];
           if (page === 'questions') setQuizzes(rows);
           if (page === 'users') setUsers(rows);
@@ -307,7 +347,7 @@ export default function App() {
         setLoadingFlag('data', false);
       }
     },
-    [setLoadingFlag],
+    [applyFirestoreApiResult, setLoadingFlag],
   );
 
   useEffect(() => {
@@ -398,6 +438,90 @@ export default function App() {
     };
   }, [battleRooms, quizzes, scores]);
 
+  const refreshData = useCallback(() => {
+    fetchStats();
+    if (isCrudPage(currentPage)) fetchCollection(currentPage);
+  }, [currentPage, fetchCollection, fetchStats]);
+
+  const openCrudCreate = useCallback(() => {
+    if (!isCrudPage(currentPage)) return;
+    setCrudModal({
+      mode: 'create',
+      page: currentPage,
+      id: null,
+      json: JSON.stringify(defaultDocument(currentPage), null, 2),
+      error: '',
+    });
+  }, [currentPage]);
+
+  const openCrudEdit = useCallback(
+    record => {
+      if (!isCrudPage(currentPage)) return;
+      const { id, ...rest } = record;
+      setCrudModal({
+        mode: 'edit',
+        page: currentPage,
+        id,
+        json: JSON.stringify(rest, null, 2),
+        error: '',
+      });
+    },
+    [currentPage],
+  );
+
+  const handleCrudDelete = useCallback(
+    async record => {
+      const collection = PAGE_COLLECTION[currentPage];
+      if (!collection || !record?.id) return;
+      const label =
+        record.theme || record.displayName || record.code || record.id;
+      if (!window.confirm(`Supprimer « ${label} » ?`)) return;
+      setCrudBusy(true);
+      setError('');
+      try {
+        await deleteFirestoreRecord(collection, record.id);
+        if (selectedRecord?.id === record.id) setSelectedRecord(null);
+        refreshData();
+      } catch (err) {
+        setError(err.message || 'Suppression impossible.');
+      } finally {
+        setCrudBusy(false);
+      }
+    },
+    [currentPage, refreshData, selectedRecord],
+  );
+
+  const handleCrudSave = useCallback(async () => {
+    if (!crudModal) return;
+    let document;
+    try {
+      document = JSON.parse(crudModal.json);
+    } catch {
+      setCrudModal(prev => ({ ...prev, error: 'JSON invalide.' }));
+      return;
+    }
+    const collection = PAGE_COLLECTION[crudModal.page];
+    if (!collection) return;
+    setCrudBusy(true);
+    setCrudModal(prev => ({ ...prev, error: '' }));
+    try {
+      await upsertFirestoreRecord(
+        collection,
+        document,
+        crudModal.mode === 'edit' ? crudModal.id : undefined,
+      );
+      setCrudModal(null);
+      refreshData();
+    } catch (err) {
+      setCrudModal(prev => ({
+        ...prev,
+        error: err.message || 'Enregistrement impossible.',
+      }));
+    } finally {
+      setCrudBusy(false);
+    }
+  }, [crudModal, refreshData]);
+
   const exportRows = useCallback(
     format => {
       const filename = `quizbit-${currentPage}-${new Date()
@@ -442,6 +566,12 @@ export default function App() {
       runDiagnostic('firebase', async () => {
         if (getPanelAdminKey()) {
           const data = await postPanelApi('admin-firestore-stats');
+          if (data.firestoreReady === false) {
+            throw new Error(
+              data.message ||
+                'Firestore non connecte (Parametres → Connecter Firestore).',
+            );
+          }
           return `Firestore OK via API (${data.stats.players} joueurs, ${data.stats.quizzes} quiz)`;
         }
         const db = getFirestoreDb();
@@ -464,6 +594,12 @@ export default function App() {
       ),
   };
 
+  useEffect(() => {
+    if (currentPage === 'settings') {
+      runDiagnostic('mistral', () => testServerEndpoint('/api/test-mistral'));
+    }
+  }, [currentPage, runDiagnostic]);
+
   return (
     <div className="admin-shell">
       <Sidebar currentPage={currentPage} onPage={setCurrentPage} />
@@ -475,14 +611,16 @@ export default function App() {
             NAV_ITEMS.find(item => item.id === currentPage)?.label ||
             'Dashboard'
           }
+          showCreate={isCrudPage(currentPage)}
+          onCreate={openCrudCreate}
           onExportCsv={() => exportRows('csv')}
           onExportJson={() => exportRows('json')}
-          onRefresh={() => {
-            fetchStats();
-            fetchCollection(currentPage);
-          }}
+          onRefresh={refreshData}
         />
         {error ? <Banner tone="error">{error}</Banner> : null}
+        {firestoreNotice && !error ? (
+          <Banner>{firestoreNotice}</Banner>
+        ) : null}
         {!firebaseEnabled ? (
           <Banner>
             Firebase client non configure (variables VITE_FIREBASE_* au build).
@@ -504,6 +642,9 @@ export default function App() {
               currentPage !== 'settings' &&
               currentPage !== 'offline-studio' && (
               <DataPage
+                crudBusy={crudBusy}
+                onDelete={handleCrudDelete}
+                onEdit={openCrudEdit}
                 page={currentPage}
                 rows={currentRows}
                 globalFilter={globalFilter}
@@ -524,6 +665,17 @@ export default function App() {
           </motion.section>
         </AnimatePresence>
       </main>
+      {crudModal ? (
+        <CrudModal
+          busy={crudBusy}
+          modal={crudModal}
+          onClose={() => setCrudModal(null)}
+          onSave={handleCrudSave}
+          setJson={value =>
+            setCrudModal(prev => ({ ...prev, json: value, error: '' }))
+          }
+        />
+      ) : null}
     </div>
   );
 }
@@ -564,10 +716,12 @@ function Sidebar({ currentPage, onPage }) {
 
 function Topbar({
   loading,
+  onCreate,
   onExportCsv,
   onExportJson,
   onRefresh,
   page,
+  showCreate,
   title,
 }) {
   const isOfflineStudio = page === 'offline-studio';
@@ -581,8 +735,13 @@ function Topbar({
         </p>
         <h1>{title}</h1>
       </div>
-      {showExport || showRefresh ? (
+      {showExport || showRefresh || showCreate ? (
         <div className="topbar-actions">
+          {showCreate ? (
+            <button className="btn ghost" onClick={onCreate}>
+              <Plus size={16} /> Nouveau
+            </button>
+          ) : null}
           {showExport ? (
             <button className="btn ghost" onClick={onExportCsv}>
               <Download size={16} /> CSV
@@ -764,7 +923,10 @@ function Panel({ children, className = '', title }) {
 }
 
 function DataPage({
+  crudBusy,
   globalFilter,
+  onDelete,
+  onEdit,
   page,
   rows,
   selectedRecord,
@@ -772,8 +934,14 @@ function DataPage({
   setSelectedRecord,
 }) {
   const columns = useMemo(
-    () => getColumns(page, setSelectedRecord),
-    [page, setSelectedRecord],
+    () =>
+      getColumns(page, {
+        crudBusy,
+        onDelete,
+        onEdit,
+        onSelect: setSelectedRecord,
+      }),
+    [crudBusy, onDelete, onEdit, page, setSelectedRecord],
   );
   const table = useReactTable({
     data: rows,
@@ -848,19 +1016,40 @@ function DataPage({
       </div>
       {selectedRecord && (
         <DetailsPanel
-          record={selectedRecord}
+          crudBusy={crudBusy}
           onClose={() => setSelectedRecord(null)}
+          onDelete={onDelete}
+          onEdit={onEdit}
+          record={selectedRecord}
         />
       )}
     </div>
   );
 }
 
-function getColumns(page, onSelect) {
+function getColumns(page, { crudBusy, onDelete, onEdit, onSelect }) {
   const action = row => (
-    <button className="btn small" onClick={() => onSelect(row.original)}>
-      Voir
-    </button>
+    <div className="row-actions">
+      <button className="btn small" onClick={() => onSelect(row.original)}>
+        Voir
+      </button>
+      <button
+        className="btn small ghost"
+        disabled={crudBusy}
+        onClick={() => onEdit(row.original)}
+        title="Modifier"
+      >
+        <Pencil size={14} />
+      </button>
+      <button
+        className="btn small danger"
+        disabled={crudBusy}
+        onClick={() => onDelete(row.original)}
+        title="Supprimer"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
   );
   if (page === 'questions')
     return [
@@ -1020,7 +1209,7 @@ function ModePill({ label, mode }) {
   return <span className={`pill ${mode || 'solo'}`}>{text}</span>;
 }
 
-function DetailsPanel({ onClose, record }) {
+function DetailsPanel({ crudBusy, onClose, onDelete, onEdit, record }) {
   return (
     <aside className="details-panel glass-panel">
       <div className="details-head">
@@ -1029,8 +1218,64 @@ function DetailsPanel({ onClose, record }) {
           Fermer
         </button>
       </div>
+      <div className="details-actions">
+        <button
+          className="btn small ghost"
+          disabled={crudBusy}
+          onClick={() => onEdit(record)}
+        >
+          <Pencil size={14} /> Modifier
+        </button>
+        <button
+          className="btn small danger"
+          disabled={crudBusy}
+          onClick={() => onDelete(record)}
+        >
+          <Trash2 size={14} /> Supprimer
+        </button>
+      </div>
       <pre>{JSON.stringify(record, null, 2)}</pre>
     </aside>
+  );
+}
+
+function CrudModal({ busy, modal, onClose, onSave, setJson }) {
+  const title =
+    modal.mode === 'create'
+      ? 'Creer un enregistrement'
+      : `Modifier ${modal.id || ''}`;
+  return (
+    <div className="crud-overlay" role="dialog" aria-modal="true">
+      <section className="crud-modal glass-panel">
+        <div className="details-head">
+          <h2>{title}</h2>
+          <button className="btn small ghost" disabled={busy} onClick={onClose}>
+            Fermer
+          </button>
+        </div>
+        <p className="crud-hint">
+          Edite le document JSON (sans le champ <code>id</code> — il est gere
+          automatiquement).
+        </p>
+        <textarea
+          className="crud-json"
+          disabled={busy}
+          onChange={event => setJson(event.target.value)}
+          rows={18}
+          spellCheck={false}
+          value={modal.json}
+        />
+        {modal.error ? <p className="crud-error">{modal.error}</p> : null}
+        <div className="crud-actions">
+          <button className="btn ghost" disabled={busy} onClick={onClose}>
+            Annuler
+          </button>
+          <button className="btn primary" disabled={busy} onClick={onSave}>
+            {busy ? 'Enregistrement...' : 'Enregistrer'}
+          </button>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -1048,9 +1293,9 @@ function SettingsPage({
       firebaseConfig.projectId || 'projectId manquant',
     ],
     [
-      'Gemini route',
-      results.gemini?.status === 'success',
-      results.gemini?.message || 'Non teste',
+      'Mistral route',
+      results.mistral?.status === 'success',
+      results.mistral?.message || 'Non teste',
     ],
     [
       'Firebase Auth serveur',
@@ -1058,9 +1303,9 @@ function SettingsPage({
       results.auth?.message || 'Non teste',
     ],
     [
-      'Mistral route',
-      results.mistral?.status === 'success',
-      results.mistral?.message || 'Non teste',
+      'Gemini route',
+      results.gemini?.status === 'success',
+      results.gemini?.message || 'Non teste',
     ],
     [
       'Cloudinary route',
@@ -1084,16 +1329,16 @@ function SettingsPage({
           result={results.auth}
         />
         <TestRow
-          label="Google Gemini API"
-          loading={loading.gemini}
-          onTest={diagnostics.gemini}
-          result={results.gemini}
-        />
-        <TestRow
           label="Mistral AI API"
           loading={loading.mistral}
           onTest={diagnostics.mistral}
           result={results.mistral}
+        />
+        <TestRow
+          label="Google Gemini API"
+          loading={loading.gemini}
+          onTest={diagnostics.gemini}
+          result={results.gemini}
         />
         <TestRow
           label="Cloudinary Upload"
@@ -1319,16 +1564,16 @@ function AiPromptTester() {
           >
             {loadingProvider === 'auto'
               ? 'Generation...'
-              : 'Tester la generation'}
+              : 'Tester (Mistral → Gemini)'}
           </button>
           <button
             className="btn ghost"
             disabled={loading || !prompt.trim()}
-            onClick={() => generate('mistral')}
+            onClick={() => generate('gemini')}
           >
-            {loadingProvider === 'mistral'
-              ? 'Mistral...'
-              : 'Tester avec Mistral'}
+            {loadingProvider === 'gemini'
+              ? 'Gemini...'
+              : 'Tester avec Gemini'}
           </button>
         </div>
         {error ? <div className="ai-error">{error}</div> : null}
@@ -1343,8 +1588,9 @@ function AiPromptTester() {
             </button>
             {result.fallbackFrom ? (
               <div className="ai-note">
-                Gemini indisponible, generation faite automatiquement avec
-                Mistral.
+                {result.fallbackFrom === 'mistral'
+                  ? 'Mistral indisponible (quota ou erreur), bascule automatique sur Gemini.'
+                  : 'Gemini indisponible (quota ou erreur), bascule automatique sur Mistral.'}
               </div>
             ) : null}
             <QuizPreview questions={result.questions} />

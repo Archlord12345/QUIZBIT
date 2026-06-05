@@ -1,4 +1,5 @@
 const { getEnv } = require('../env');
+const { withProviderFallback } = require('../ai-fallback');
 
 const requestWithTimeout = async (url, options = {}, timeoutMs = 12000) => {
   const controller = new AbortController();
@@ -123,18 +124,13 @@ const validateWithMistral = async payload => {
   throw new Error(errors[0] || 'Validation Mistral impossible.');
 };
 
-const validateFlexible = async payload => {
-  try {
-    return await validateWithGemini(payload);
-  } catch (geminiError) {
-    const fallback = await validateWithMistral(payload);
-    return {
-      ...fallback,
-      fallbackFrom: 'gemini',
-      fallbackReason: toErrorMessage(geminiError),
-    };
-  }
-};
+const validateFlexible = async payload =>
+  withProviderFallback(
+    () => validateWithMistral(payload),
+    () => validateWithGemini(payload),
+    'mistral',
+    'gemini',
+  );
 
 const { verifyIdToken } = require('../auth-verify');
 

@@ -12,10 +12,19 @@ module.exports = async (req, res) => {
   }
   try {
     await verifyIdToken(idToken);
-    const scores = await listDocuments('scores', idToken, 25, 'score desc');
+    let scores = [];
+    try {
+      scores = await listDocuments('scores', idToken, 100, 'score desc');
+    } catch {
+      scores = await listDocuments('scores', idToken, 100, '');
+    }
+    const filtered = scores
+      .filter(score => !mode || score.mode === mode)
+      .sort((left, right) => Number(right.score || 0) - Number(left.score || 0))
+      .slice(0, 50);
     return res.status(200).json({
       ok: true,
-      scores: scores.filter(score => !mode || score.mode === mode),
+      scores: filtered,
     });
   } catch (error) {
     return res

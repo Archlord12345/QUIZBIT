@@ -83,6 +83,9 @@ jobs:
       - name: Install JavaScript dependencies
         run: npm ci
 
+      - name: Apply native patches (audio-recorder-player)
+        run: npx patch-package --error-on-fail
+
       - name: Lint
         run: npm run lint
 

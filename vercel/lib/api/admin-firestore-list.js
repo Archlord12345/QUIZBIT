@@ -2,6 +2,10 @@ const { listDocuments } = require('../firebase-rest');
 const { assertPanelAdminKey } = require('../panel-auth');
 const { resolveFirestoreIdToken } = require('../panel-firestore');
 const {
+  isFirestoreAccessError,
+  isPanelAuthError,
+} = require('../panel-api-errors');
+const {
   COLLECTION_ALIASES,
   ORDER_BY,
   normalizeRow,
@@ -51,13 +55,26 @@ module.exports = async (req, res) => {
 
     return res.status(200).json({
       ok: true,
+      firestoreReady: true,
       collection: resolvedName,
       rows: rows.map(row => normalizeRow(resolvedName, row)),
       count: rows.length,
     });
   } catch (error) {
     const message = error.message || 'Lecture Firestore impossible.';
-    const status = message.includes('panel') ? 401 : 502;
-    return res.status(status).json({ ok: false, message });
+    if (isPanelAuthError(message)) {
+      return res.status(401).json({ ok: false, message });
+    }
+    if (isFirestoreAccessError(message)) {
+      return res.status(200).json({
+        ok: true,
+        firestoreReady: false,
+        collection,
+        rows: [],
+        count: 0,
+        message,
+      });
+    }
+    return res.status(502).json({ ok: false, message });
   }
 };

@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import LogoMark from '../components/LogoMark';
+import { ScreenHeader, ScreenScroll } from '../components/ScreenLayout';
 import { UserAccount } from '../controllers/AuthController';
 import QuizController, { QuizState } from '../controllers/QuizController';
 import { OpenAnswerMode, QuestionType } from '../models/AIModel';
@@ -27,7 +27,7 @@ import { ThemeMediaSection } from '../components/ThemeMediaSection';
 import VoiceController from '../controllers/VoiceController';
 import { MAX_VOICE_RECORD_MS } from '../utils/voiceRecorder';
 import { COLORS, SPACING, HELPER, PLACEHOLDER, LINE, INPUT_BG } from '../utils/theme';
-import { RADIUS, SHADOW, UI } from '../utils/ui';
+import { LAYOUT, RADIUS, SHADOW, UI } from '../utils/ui';
 import { Header } from '../components/Header';
 
 // Component Imports
@@ -73,6 +73,7 @@ const HomeView = ({
   onQuizReady,
 }: HomeViewProps) => {
   const [activeTab, setActiveTab] = useState<'home' | 'quiz' | 'battle' | 'top' | 'profile'>('home');
+  const [leaderboardRefresh, setLeaderboardRefresh] = useState(0);
   const [theme, setTheme] = useState('');
   const [questionType, setQuestionType] = useState<QuestionType>('mixed');
   const [questionCount, setQuestionCount] = useState('5');
@@ -91,6 +92,12 @@ const HomeView = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordMs, isRecording]);
+
+  useEffect(() => {
+    if (activeTab === 'top') {
+      setLeaderboardRefresh(token => token + 1);
+    }
+  }, [activeTab]);
 
   const normalizedQuestionCount = Math.max(
     1,
@@ -270,43 +277,14 @@ const HomeView = ({
           </View>
         </View>
 
-        {/* Section: Support de thème */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Support de thème</Text>
-          <TouchableOpacity onPress={() => handleThemeMedia('any')} activeOpacity={0.7}>
-            <Text style={styles.seeAllText}>Voir tout {'>'}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ThemeMediaSection
-          themeMedia={themeMedia}
-          loading={loading}
-          isRecording={isRecording}
-          recordDurationLabel={VoiceController.formatDuration(recordMs)}
-          onStartRecording={handleStartRecording}
-          onStopRecording={handleStopRecording}
-          onPickAudio={() => handleThemeMedia('audio')}
-          onPickImage={() => handleThemeMedia('image')}
-          onPickDocument={() => handleThemeMedia('document')}
-          onPickAny={() => handleThemeMedia('any')}
-          onRemove={() => setThemeMedia(null)}
-        />
       </ScrollView>
     );
   };
 
   const renderQuizGeneratorForm = () => {
     return (
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <Header displayName={account.displayName} />
-        
-        <View style={styles.logoSection}>
-          <LogoMark compact subtitle="Génère tes quiz avec l'IA" />
-        </View>
+      <ScreenScroll>
+        <ScreenHeader title="Générer un quiz" />
 
         <View style={styles.card}>
           <Text style={styles.label}>Quiz solo intelligent</Text>
@@ -427,7 +405,7 @@ const HomeView = ({
             )}
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </ScreenScroll>
     );
   };
 
@@ -442,7 +420,7 @@ const HomeView = ({
           <BattleRoyaleView
             account={account}
             navigation={navigation as any}
-            onBack={() => setActiveTab('home')}
+            embedded
             onStartBattle={onStartBattle}
           />
         );
@@ -450,7 +428,9 @@ const HomeView = ({
         return (
           <LeaderboardView
             account={account}
-            onBack={() => setActiveTab('home')}
+            active={activeTab === 'top'}
+            embedded
+            refreshToken={leaderboardRefresh}
           />
         );
       case 'profile':
@@ -458,7 +438,7 @@ const HomeView = ({
           <ProfileView
             account={account}
             navigation={navigation as any}
-            onBack={() => setActiveTab('home')}
+            embedded
             onAccountUpdated={onAccountUpdated}
             onSignOut={onSignOut}
           />
@@ -509,27 +489,25 @@ const OptionChip = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.background,
     flex: 1,
   },
   contentContainer: {
     flex: 1,
   },
   scrollContainer: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.background,
     flexGrow: 1,
-    paddingBottom: SPACING.xl,
-  },
-  logoSection: {
-    marginVertical: SPACING.xl,
-    paddingHorizontal: SPACING.lg,
+    paddingBottom: LAYOUT.screenPaddingBottom,
   },
   card: {
     backgroundColor: COLORS.surfaceLight,
     borderRadius: RADIUS.lg,
-    marginBottom: 18,
-    marginHorizontal: SPACING.lg,
-    padding: SPACING.xl,
+    borderColor: UI.line,
+    borderWidth: 1,
+    marginBottom: LAYOUT.sectionGap,
+    marginHorizontal: LAYOUT.screenPaddingH,
+    padding: SPACING.lg,
     ...SHADOW.card,
   },
   label: {
@@ -589,7 +567,7 @@ const styles = StyleSheet.create({
   },
   mediaButton: {
     alignItems: 'center',
-    borderColor: COLORS.secondary,
+    borderColor: COLORS.primary,
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 14,
@@ -653,20 +631,20 @@ const styles = StyleSheet.create({
   },
   // Dashboard Specific Styles
   scoreCardContainer: {
-    marginHorizontal: SPACING.lg,
-    marginBottom: 18,
+    marginHorizontal: LAYOUT.screenPaddingH,
+    marginBottom: LAYOUT.sectionGap,
   },
   gridRow1: {
     flexDirection: 'row',
-    marginHorizontal: SPACING.lg,
-    marginBottom: 12,
-    gap: 12,
+    marginHorizontal: LAYOUT.screenPaddingH,
+    marginBottom: LAYOUT.cardGap,
+    gap: LAYOUT.cardGap,
   },
   gridRow2: {
     flexDirection: 'row',
-    marginHorizontal: SPACING.lg,
-    marginBottom: 18,
-    gap: 12,
+    marginHorizontal: LAYOUT.screenPaddingH,
+    marginBottom: LAYOUT.sectionGap,
+    gap: LAYOUT.cardGap,
   },
   orangeCardWrapper: {
     flex: 1.8,
@@ -681,26 +659,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginHorizontal: SPACING.lg,
+    marginHorizontal: LAYOUT.screenPaddingH,
     marginTop: 12,
     marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '900',
-    color: COLORS.textOnDark,
+    color: COLORS.text,
   },
   seeAllText: {
     fontSize: 12,
-    color: COLORS.secondary,
+    color: COLORS.primary,
     fontWeight: '700',
   },
   pillsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    marginBottom: 24,
-    gap: 8,
+    paddingHorizontal: LAYOUT.screenPaddingH,
+    marginBottom: LAYOUT.screenPaddingBottom,
+    gap: LAYOUT.cardGap,
   },
   pillButton: {
     flex: 1,

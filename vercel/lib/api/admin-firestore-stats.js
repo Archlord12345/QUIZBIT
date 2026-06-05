@@ -1,6 +1,11 @@
 const { listDocuments } = require('../firebase-rest');
 const { assertPanelAdminKey } = require('../panel-auth');
 const { resolveFirestoreIdToken } = require('../panel-firestore');
+const {
+  EMPTY_FIRESTORE_STATS,
+  isFirestoreAccessError,
+  isPanelAuthError,
+} = require('../panel-api-errors');
 const { COLLECTION_ALIASES } = require('../firestore-normalize');
 
 const countCollection = async (aliases, idToken) => {
@@ -37,6 +42,7 @@ module.exports = async (req, res) => {
 
     return res.status(200).json({
       ok: true,
+      firestoreReady: true,
       stats: {
         quizzes: quizzes.count,
         players: users.count,
@@ -52,7 +58,17 @@ module.exports = async (req, res) => {
     });
   } catch (error) {
     const message = error.message || 'Statistiques Firestore impossibles.';
-    const status = message.includes('panel') ? 401 : 502;
-    return res.status(status).json({ ok: false, message });
+    if (isPanelAuthError(message)) {
+      return res.status(401).json({ ok: false, message });
+    }
+    if (isFirestoreAccessError(message)) {
+      return res.status(200).json({
+        ok: true,
+        firestoreReady: false,
+        stats: EMPTY_FIRESTORE_STATS,
+        message,
+      });
+    }
+    return res.status(502).json({ ok: false, message });
   }
 };

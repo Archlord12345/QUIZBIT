@@ -79,3 +79,6 @@ yarn-error.log
 
 # Données runtime serveur offline (seed versionné)
 local/data/store.json
+
+# Build panel Vercel (regénéré par npm run build)
+vercel/dist/

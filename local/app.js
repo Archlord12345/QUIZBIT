@@ -1,11 +1,38 @@
 /* eslint-env browser */
 /* eslint-disable no-alert */
 const STORAGE_KEY = 'quizbit-local-admin-v1';
-const API_BASE =
+const API_BASE_STORAGE_KEY = 'quizbit-local-api-base';
+
+const defaultApiBase = () =>
   window.QUIZBIT_LOCAL_API ||
   (window.location.port === '4173'
     ? 'http://localhost:3000'
     : window.location.origin);
+
+const normalizePanelApiBase = raw => {
+  const value = String(raw || '').trim();
+  if (!value) return defaultApiBase();
+  if (/^https?:\/\//i.test(value)) {
+    return value.replace(/\/+$/, '');
+  }
+  const host = value.replace(/^\/+|\/+$/g, '');
+  if (host.includes(':')) {
+    return `http://${host}`.replace(/\/+$/, '');
+  }
+  return `http://${host}:3000`.replace(/\/+$/, '');
+};
+
+function getApiBase() {
+  try {
+    const saved = localStorage.getItem(API_BASE_STORAGE_KEY);
+    if (saved?.trim()) {
+      return normalizePanelApiBase(saved);
+    }
+  } catch (error) {
+    console.warn(error);
+  }
+  return normalizePanelApiBase(defaultApiBase());
+}
 
 const initialState = {
   quizzes: [],
@@ -16,6 +43,7 @@ const initialState = {
 
 let state = loadState();
 let currentPage = 'dashboard';
+let editing = null;
 
 const pages = [
   ['dashboard', 'Dashboard'],
@@ -24,6 +52,7 @@ const pages = [
   ['scores', 'Scores'],
   ['battleRooms', 'Battle Rooms'],
   ['tools', 'Import / Export'],
+  ['settings', 'Parametres'],
 ];
 
 function loadState() {
@@ -43,7 +72,7 @@ function saveState() {
 
 async function pullStateFromServer() {
   try {
-    const response = await fetch(`${API_BASE}/api/admin/state`);
+    const response = await fetch(`${getApiBase()}/api/admin/state`);
     const data = await response.json();
     if (data.ok && data.state) {
       state = { ...initialState, ...data.state };
@@ -57,7 +86,7 @@ async function pullStateFromServer() {
 }
 
 async function pushStateToServer() {
-  const response = await fetch(`${API_BASE}/api/admin/state`, {
+  const response = await fetch(`${getApiBase()}/api/admin/state`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ state }),
@@ -111,16 +140,20 @@ function render() {
       </aside>
       <main class="main qb-page">
         ${renderHeader()}
-        <div class="notice"><strong>Mode offline.</strong> Serveur API: <code>${API_BASE}</code>. Les donnees sont synchronisees avec l app mobile. Importe un quiz JSON exporte depuis Vercel pour enrichir la banque locale.</div>
+        <div class="notice"><strong>Mode offline.</strong> Serveur API: <code>${getApiBase()}</code>. Les donnees sont synchronisees avec l app mobile. Importe un quiz JSON exporte depuis Vercel pour enrichir la banque locale.</div>
         ${renderPage()}
       </main>
     </div>
+    ${editing ? renderCrudEditor() : ''}
   `;
 
   document.querySelectorAll('[data-page]').forEach(button => {
     button.addEventListener('click', () => setPage(button.dataset.page));
   });
   bindPageActions();
+  if (currentPage === 'settings') {
+    testOllamaApi('ollama-settings-status');
+  }
 }
 
 function renderHeader() {
@@ -142,7 +175,46 @@ function renderPage() {
   if (currentPage === 'users') return renderUsers();
   if (currentPage === 'scores') return renderScores();
   if (currentPage === 'battleRooms') return renderBattleRooms();
+  if (currentPage === 'settings') return renderSettings();
   return renderTools();
+}
+
+function renderSettings() {
+  const current = getApiBase();
+  const saved = localStorage.getItem(API_BASE_STORAGE_KEY) || '';
+  return `
+    <section class="card">
+      <h2>Parametres · Serveur API</h2>
+      <p class="hint-box">
+        URL utilisee par ce panel et pour synchroniser les donnees (defaut: origine actuelle ou
+        <code>http://localhost:3000</code>).
+      </p>
+      <label class="field-label" for="api-base-input">URL du serveur</label>
+      <input
+        id="api-base-input"
+        type="url"
+        value="${escapeHtml(saved || current)}"
+        placeholder="http://192.168.1.42:3000"
+      />
+      <div class="actions" style="margin-top:12px">
+        <button class="button" type="button" id="save-api-base">Enregistrer l URL</button>
+        <button class="button secondary" type="button" id="reset-api-base">Revenir au defaut</button>
+      </div>
+      <p class="hint-box">URL active: <code>${escapeHtml(current)}</code></p>
+    </section>
+    <section class="card">
+      <h2>Ollama · IA locale</h2>
+      <p class="hint-box">
+        Genere des quiz sans cloud via Ollama (<code>OLLAMA_MODEL</code>,
+        defaut <code>smollm2:135m-instruct-q4_1</code>).
+      </p>
+      <div class="actions">
+        <button class="button" type="button" id="test-ollama-settings">Tester Ollama</button>
+        <button class="button secondary" type="button" id="setup-ollama-hint">Commande d installation</button>
+      </div>
+      <p id="ollama-settings-status" class="hint-box">Statut non verifie.</p>
+    </section>
+  `;
 }
 
 function renderDashboard() {
@@ -168,7 +240,28 @@ function statCard(label, value) {
 function renderQuizzes() {
   return `
     <section class="card">
-      <h2>Creer un quiz local</h2>
+      <h2>Generer avec Ollama (IA locale)</h2>
+      <p class="hint-box">
+        Modele par defaut: <code>smollm2:135m-instruct-q4_1</code> (~98 Mo).
+        Installe-le avec <code>npm run setup:ollama</code> dans <code>local/</code>.
+      </p>
+      <div class="form-grid">
+        <input id="ollama-theme" placeholder="Theme (ex. Histoire de France)" />
+        <input id="ollama-count" type="number" min="1" max="10" value="5" placeholder="Questions" />
+        <select id="ollama-type">
+          <option value="mixed">Mixte</option>
+          <option value="mcq">QCM</option>
+          <option value="open">Ouvertes</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button class="button" type="button" id="generate-ollama-quiz">Generer via Ollama</button>
+        <button class="button secondary" type="button" id="test-ollama">Tester Ollama</button>
+      </div>
+      <p id="ollama-status" class="hint-box"></p>
+    </section>
+    <section class="card">
+      <h2>Creer un quiz local (manuel)</h2>
       <div class="form-grid">
         <input id="quiz-theme" placeholder="Theme" />
         <input id="quiz-count" type="number" min="1" value="5" placeholder="Nombre questions" />
@@ -182,9 +275,10 @@ function renderQuizzes() {
       <td>${escapeHtml(quiz.theme)}</td>
       <td>${quiz.questions.length}</td>
       <td>${new Date(quiz.createdAt).toLocaleString()}</td>
-      <td><button class="button danger" data-delete-quiz="${
-        quiz.id
-      }">Supprimer</button></td>
+      <td class="row-actions">
+        <button class="button secondary" data-edit-quiz="${quiz.id}">Modifier</button>
+        <button class="button danger" data-delete-quiz="${quiz.id}">Supprimer</button>
+      </td>
     `,
     )}
   `;
@@ -209,9 +303,10 @@ function renderUsers() {
       <td>${user.gamesPlayed}</td>
       <td>${user.totalScore}</td>
       <td>${user.bestScore}</td>
-      <td><button class="button danger" data-delete-user="${
-        user.id
-      }">Supprimer</button></td>
+      <td class="row-actions">
+        <button class="button secondary" data-edit-user="${user.id}">Modifier</button>
+        <button class="button danger" data-delete-user="${user.id}">Supprimer</button>
+      </td>
     `,
     )}
   `;
@@ -248,9 +343,10 @@ function renderScores() {
         score.mode === 'battle_royale' ? 'battle' : 'solo'
       }">${score.mode}</span></td>
       <td>${new Date(score.createdAt).toLocaleString()}</td>
-      <td><button class="button danger" data-delete-score="${
-        score.id
-      }">Supprimer</button></td>
+      <td class="row-actions">
+        <button class="button secondary" data-edit-score="${score.id}">Modifier</button>
+        <button class="button danger" data-delete-score="${score.id}">Supprimer</button>
+      </td>
     `,
     )}
   `;
@@ -278,9 +374,10 @@ function renderBattleRooms() {
       <td>${room.config.questionCount}</td>
       <td>${room.config.eliminationScore}</td>
       <td>${room.status}</td>
-      <td><button class="button danger" data-delete-battle="${
-        room.id
-      }">Supprimer</button></td>
+      <td class="row-actions">
+        <button class="button secondary" data-edit-battle="${room.id}">Modifier</button>
+        <button class="button danger" data-delete-battle="${room.id}">Supprimer</button>
+      </td>
     `,
     )}
   `;
@@ -307,6 +404,32 @@ function renderTools() {
   `;
 }
 
+function renderCrudEditor() {
+  const label =
+    editing.entity === 'quizzes'
+      ? 'quiz'
+      : editing.entity === 'users'
+      ? 'joueur'
+      : editing.entity === 'scores'
+      ? 'score'
+      : 'battle room';
+  return `
+    <div class="crud-overlay">
+      <section class="card crud-modal">
+        <h2>Modifier ${label}</h2>
+        <p class="hint-box">Edite le JSON (sans le champ <code>id</code>).</p>
+        <textarea id="crud-json" rows="16" spellcheck="false">${escapeHtml(
+          editing.json,
+        )}</textarea>
+        <div class="actions" style="margin-top:12px">
+          <button class="button" type="button" id="crud-save">Enregistrer</button>
+          <button class="button secondary" type="button" id="crud-cancel">Annuler</button>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
 function table(headers, rows, rowRenderer) {
   return `
     <div class="table-wrap" style="margin-top:18px">
@@ -327,6 +450,33 @@ function table(headers, rows, rowRenderer) {
 }
 
 function bindPageActions() {
+  document.getElementById('save-api-base')?.addEventListener('click', () => {
+    const input = document.getElementById('api-base-input');
+    const value = input?.value?.trim() || '';
+    if (!value) {
+      alert('Indique une URL (ex. http://localhost:3000).');
+      return;
+    }
+    localStorage.setItem(API_BASE_STORAGE_KEY, normalizePanelApiBase(value));
+    alert(`Serveur enregistre: ${getApiBase()}`);
+    render();
+  });
+  document.getElementById('reset-api-base')?.addEventListener('click', () => {
+    localStorage.removeItem(API_BASE_STORAGE_KEY);
+    alert(`URL par defaut: ${getApiBase()}`);
+    render();
+  });
+
+  document
+    .getElementById('generate-ollama-quiz')
+    ?.addEventListener('click', generateQuizWithOllama);
+  document.getElementById('test-ollama')?.addEventListener('click', testOllamaApi);
+  document
+    .getElementById('test-ollama-settings')
+    ?.addEventListener('click', () => testOllamaApi('ollama-settings-status'));
+  document.getElementById('setup-ollama-hint')?.addEventListener('click', () => {
+    alert('Dans le dossier local/: npm run setup:ollama');
+  });
   document.getElementById('add-quiz')?.addEventListener('click', addQuiz);
   document.getElementById('add-user')?.addEventListener('click', addUser);
   document.getElementById('add-score')?.addEventListener('click', addScore);
@@ -347,6 +497,34 @@ function bindPageActions() {
     .getElementById('import-quiz-file')
     ?.addEventListener('change', importQuizFile);
 
+  document
+    .querySelectorAll('[data-edit-quiz]')
+    .forEach(button =>
+      button.addEventListener('click', () =>
+        openEdit('quizzes', button.dataset.editQuiz),
+      ),
+    );
+  document
+    .querySelectorAll('[data-edit-user]')
+    .forEach(button =>
+      button.addEventListener('click', () =>
+        openEdit('users', button.dataset.editUser),
+      ),
+    );
+  document
+    .querySelectorAll('[data-edit-score]')
+    .forEach(button =>
+      button.addEventListener('click', () =>
+        openEdit('scores', button.dataset.editScore),
+      ),
+    );
+  document
+    .querySelectorAll('[data-edit-battle]')
+    .forEach(button =>
+      button.addEventListener('click', () =>
+        openEdit('battleRooms', button.dataset.editBattle),
+      ),
+    );
   document
     .querySelectorAll('[data-delete-quiz]')
     .forEach(button =>
@@ -375,6 +553,155 @@ function bindPageActions() {
         removeById('battleRooms', button.dataset.deleteBattle),
       ),
     );
+  document.getElementById('crud-save')?.addEventListener('click', saveEdit);
+  document.getElementById('crud-cancel')?.addEventListener('click', () => {
+    editing = null;
+    render();
+  });
+}
+
+async function applyCrud(action, entity, id, data) {
+  try {
+    const response = await fetch(`${getApiBase()}/api/admin/crud`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, entity, id, data }),
+    });
+    const result = await response.json();
+    if (response.ok && result.ok && result.state) {
+      state = { ...initialState, ...result.state };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      editing = null;
+      render();
+      return true;
+    }
+    if (!response.ok) {
+      throw new Error(result.message || 'CRUD serveur impossible.');
+    }
+  } catch (error) {
+    console.warn('CRUD serveur indisponible, fallback local.', error);
+  }
+  return false;
+}
+
+function openEdit(entity, id) {
+  const item = state[entity].find(row => row.id === id);
+  if (!item) return;
+  const { id: _id, ...rest } = item;
+  editing = { entity, id, json: JSON.stringify(rest, null, 2) };
+  render();
+}
+
+async function saveEdit() {
+  if (!editing) return;
+  let data;
+  try {
+    data = JSON.parse(document.getElementById('crud-json').value);
+  } catch (error) {
+    alert(`JSON invalide: ${error.message}`);
+    return;
+  }
+  const applied = await applyCrud('update', editing.entity, editing.id, data);
+  if (applied) return;
+  const list = [...state[editing.entity]];
+  const index = list.findIndex(item => item.id === editing.id);
+  if (index < 0) return;
+  list[index] = { ...list[index], ...data, id: editing.id };
+  const next = { ...state, [editing.entity]: list };
+  if (editing.entity === 'scores') {
+    next.users = recalcUsersFromScores(next.users, next.scores);
+  }
+  editing = null;
+  mutate(next);
+}
+
+function recalcUsersFromScores(users, scores) {
+  const byUser = new Map(
+    users.map(user => [
+      user.id,
+      { ...user, gamesPlayed: 0, totalScore: 0, bestScore: 0 },
+    ]),
+  );
+  for (const score of scores) {
+    const user = byUser.get(score.userId);
+    if (!user) continue;
+    const value = Number(score.score) || 0;
+    user.gamesPlayed += 1;
+    user.totalScore += value;
+    user.bestScore = Math.max(user.bestScore, value);
+  }
+  return Array.from(byUser.values());
+}
+
+async function testOllamaApi(statusId = 'ollama-status') {
+  const status = document.getElementById(statusId);
+  if (status) status.textContent = 'Test Ollama en cours...';
+  try {
+    const response = await fetch(`${getApiBase()}/api/test-ollama`);
+    const data = await response.json();
+    if (!response.ok || !data.ok) {
+      throw new Error(data.message || `HTTP ${response.status}`);
+    }
+    if (status) {
+      status.textContent = data.message || 'Ollama OK';
+    } else {
+      alert(data.message || 'Ollama OK');
+    }
+  } catch (error) {
+    const message = error.message || 'Ollama indisponible';
+    if (status) status.textContent = message;
+    else alert(message);
+  }
+}
+
+async function generateQuizWithOllama() {
+  const theme =
+    document.getElementById('ollama-theme')?.value?.trim() ||
+    document.getElementById('quiz-theme')?.value?.trim() ||
+    'Culture generale';
+  const count = Math.max(
+    1,
+    Math.min(10, Number(document.getElementById('ollama-count')?.value) || 5),
+  );
+  const questionType = document.getElementById('ollama-type')?.value || 'mixed';
+  const status = document.getElementById('ollama-status');
+  if (status) status.textContent = 'Generation Ollama en cours...';
+  try {
+    const response = await fetch(`${getApiBase()}/api/generate-questions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: theme,
+        count,
+        provider: 'ollama',
+        questionType,
+        choiceCount: 4,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok || !Array.isArray(data.questions)) {
+      throw new Error(data.message || `HTTP ${response.status}`);
+    }
+    const quiz = {
+      id: uid('quiz'),
+      theme,
+      format: 'quizbit-quiz-v1',
+      provider: data.provider || 'ollama',
+      model: data.model || 'ollama',
+      questions: data.questions,
+      createdAt: new Date().toISOString(),
+    };
+    mutate({ ...state, quizzes: [quiz, ...state.quizzes] });
+    if (status) {
+      status.textContent = `Quiz genere (${data.provider}/${data.model}) — ${data.questions.length} question(s).`;
+    }
+  } catch (error) {
+    if (status) {
+      status.textContent = error.message || 'Generation Ollama impossible.';
+    } else {
+      alert(error.message || 'Generation Ollama impossible.');
+    }
+  }
 }
 
 function addQuiz() {
@@ -497,8 +824,26 @@ function addBattleRoom() {
   });
 }
 
-function removeById(key, id) {
-  mutate({ ...state, [key]: state[key].filter(item => item.id !== id) });
+async function removeById(key, id) {
+  const label =
+    key === 'quizzes'
+      ? 'ce quiz'
+      : key === 'users'
+      ? 'ce joueur'
+      : key === 'scores'
+      ? 'ce score'
+      : 'cette battle room';
+  if (!confirm(`Supprimer ${label} ?`)) return;
+  const applied = await applyCrud('delete', key, id);
+  if (applied) return;
+  const next = {
+    ...state,
+    [key]: state[key].filter(item => item.id !== id),
+  };
+  if (key === 'scores') {
+    next.users = recalcUsersFromScores(next.users, next.scores);
+  }
+  mutate(next);
 }
 
 function exportJson() {

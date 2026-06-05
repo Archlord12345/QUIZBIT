@@ -29,6 +29,11 @@ npm start
 4. Connecte-toi avec le compte démo ou crée un compte local.
 5. Joue : quiz solo, scores, battle royale (données dans `local/data/store.json`).
 
+### URL du serveur (app mobile + panel)
+
+- **App mobile** : Paramètres → Mode offline → champ **URL du serveur local** (ex. `http://10.0.2.2:3000` ou `http://192.168.1.42:3000`) → **Enregistrer**.
+- **Panel local** : menu **Parametres** → saisir l’URL du serveur API → **Enregistrer l URL**.
+
 ## Panel admin
 
 - Dashboard, quiz, joueurs, scores, battle rooms
@@ -36,12 +41,34 @@ npm start
 - **Synchroniser avec le serveur** : pousse `localStorage` vers l'API
 - Au chargement, le panel récupère l'état du serveur (partagé avec l'app)
 
-## Génération de questions offline
+## Génération de questions offline (Ollama)
 
-L'API utilise les **quiz importés** dans le panel (ou le seed `Culture generale`).  
-Sans quiz correspondant, des questions locales génériques sont créées.
+Le serveur local peut générer des quiz via **Ollama** (IA 100 % locale, sans cloud).
 
-L'audio vocal en mode offline utilise les quiz déjà présents (pas d'appel Gemini).
+### Installation du modèle (~98 Mo)
+
+```sh
+cd local
+npm run setup:ollama
+```
+
+Modèle par défaut : `smollm2:135m-instruct-q4_1` (98 Mo, sous la limite 100 Mo).
+
+Variables optionnelles :
+
+| Variable | Défaut |
+|----------|--------|
+| `OLLAMA_BASE_URL` | `http://127.0.0.1:11434` |
+| `OLLAMA_MODEL` | `smollm2:135m-instruct-q4_1` |
+| `OLLAMA_DISABLED` | `1` pour désactiver |
+
+### Utilisation
+
+- **Panel local** → onglet **Quiz** → « Générer via Ollama »
+- **App mobile** (mode offline) : `/api/generate-questions` avec `provider: auto` tente Ollama puis retombe sur la banque locale
+- **Test** : `GET /api/test-ollama` ou bouton « Tester Ollama »
+
+Sans Ollama, l'API utilise les **quiz importés** (ou des questions génériques locales).
 
 ## Panel Vercel (cloud)
 

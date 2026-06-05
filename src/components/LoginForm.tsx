@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import AuthController, { UserAccount } from '../controllers/AuthController';
+import { checkApiHealth } from '../utils/networkHealth';
 import { COLORS, SPACING, PLACEHOLDER, HELPER } from '../utils/theme';
 import { RADIUS, SHADOW, UI } from '../utils/ui';
 
@@ -24,6 +25,26 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [apiStatus, setApiStatus] = useState<string | null>(null);
+  const [apiReachable, setApiReachable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const probe = async () => {
+      const health = await checkApiHealth();
+      if (!active) return;
+      setApiReachable(health.ok);
+      setApiStatus(
+        health.ok
+          ? `${health.mode === 'local' ? 'Mode offline' : 'Mode cloud'} — ${health.url}`
+          : health.message,
+      );
+    };
+    probe();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleSubmit = async () => {
     setError(null);
@@ -46,6 +67,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
     setLoading(true);
     try {
+      const health = await checkApiHealth();
+      if (!health.ok) {
+        setError(health.message);
+        setApiReachable(false);
+        setApiStatus(health.message);
+        return;
+      }
+
       const account = isLoginMode
         ? await AuthController.login(cleanEmail, password)
         : await AuthController.register(cleanEmail, password, name);
@@ -105,6 +134,24 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {apiStatus ? (
+          <View
+            style={[
+              styles.statusBox,
+              apiReachable ? styles.statusOk : styles.statusWarn,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusText,
+                apiReachable ? styles.statusTextOk : styles.statusTextWarn,
+              ]}
+            >
+              {apiStatus}
+            </Text>
+          </View>
+        ) : null}
 
         {error ? (
           <View style={styles.errorBox}>
@@ -208,7 +255,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     lineHeight: 38,
   },
-  titleHighlight: { color: COLORS.accent },
+  titleHighlight: { color: COLORS.secondary },
   subtitle: {
     fontSize: 13,
     color: HELPER,
@@ -231,6 +278,16 @@ const styles = StyleSheet.create({
   toggleButtonActive: { backgroundColor: COLORS.primary },
   toggleText: { fontSize: 13, fontWeight: '800', color: HELPER },
   toggleTextActive: { color: COLORS.textOnDark },
+  statusBox: {
+    padding: 12,
+    borderRadius: RADIUS.md,
+    marginBottom: SPACING.md,
+  },
+  statusOk: { backgroundColor: 'rgba(34, 197, 94, 0.12)' },
+  statusWarn: { backgroundColor: UI.errorBg },
+  statusText: { fontSize: 11, fontWeight: '700', lineHeight: 16 },
+  statusTextOk: { color: COLORS.success },
+  statusTextWarn: { color: COLORS.error },
   errorBox: {
     backgroundColor: UI.errorBg,
     padding: 12,

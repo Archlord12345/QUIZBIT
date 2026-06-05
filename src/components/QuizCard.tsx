@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { COLORS } from '../utils/theme';
+import { COLORS, LINE } from '../utils/theme';
+import { UI } from '../utils/ui';
 
 interface QuizCardProps {
   variant: 'primary' | 'secondary';
@@ -18,8 +19,8 @@ export const QuizCard: React.FC<QuizCardProps> = ({
   subtitle,
   icon: Icon,
   onClick,
-  iconColor = '#ee6845',
-  bgColor = '#ffffff',
+  iconColor = COLORS.secondary,
+  bgColor = COLORS.surface,
 }) => {
   const isPrimary = variant === 'primary';
 
@@ -77,14 +78,14 @@ export const QuizCard: React.FC<QuizCardProps> = ({
 const styles = StyleSheet.create({
   primaryCard: {
     width: '100%',
-    backgroundColor: '#ee6845',
+    backgroundColor: COLORS.secondary,
     borderRadius: 24,
     padding: 20,
     height: 144,
     justifyContent: 'space-between',
     position: 'relative',
     overflow: 'hidden',
-    shadowColor: '#ee6845',
+    shadowColor: COLORS.secondary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
@@ -129,7 +130,7 @@ const styles = StyleSheet.create({
   secondaryCard: {
     width: '100%',
     borderWidth: 1,
-    borderColor: '#e7e5e4',
+    borderColor: LINE,
     borderRadius: 24,
     padding: 16,
     height: 144,
@@ -144,14 +145,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f5f5f4',
+    backgroundColor: UI.lineMuted,
     borderWidth: 1,
     borderColor: 'rgba(231, 229, 228, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryTitle: {
-    color: '#2e1d33',
+    color: COLORS.text,
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: -0.2,

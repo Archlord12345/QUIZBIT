@@ -43,9 +43,25 @@ export type BattleRoyaleRoom = {
   createdAt: string;
 };
 
+export type BattleLobbySummary = {
+  code: string;
+  theme: string;
+  status: 'waiting' | 'active';
+  mode: BattleRoyaleMode;
+  playerCount: number;
+  maxPlayers: number;
+  hostName: string;
+  createdAt: string | null;
+};
+
 type BattleRoomResponse = {
   ok: boolean;
   room: BattleRoyaleRoom;
+};
+
+type BattleRoomListResponse = {
+  ok: boolean;
+  rooms: BattleLobbySummary[];
 };
 
 class BattleRoyaleController {
@@ -60,6 +76,15 @@ class BattleRoyaleController {
       idToken: host.idToken,
     });
     return response.room;
+  }
+
+  async listActiveRooms(account: UserAccount): Promise<BattleLobbySummary[]> {
+    this.assertAuthenticated(account);
+    const response = await apiPost<BattleRoomListResponse>(
+      '/api/battle-room-list',
+      { idToken: account.idToken },
+    );
+    return response.rooms || [];
   }
 
   async joinRoom(

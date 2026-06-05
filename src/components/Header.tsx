@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { COLORS } from '../utils/theme';
+import { LAYOUT, UI } from '../utils/ui';
 
 interface HeaderProps {
   displayName: string;
@@ -23,14 +24,12 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.profileSection}>
-        {/* Profile Circle with Initials and Green Active Dot */}
         <View style={styles.avatarWrapper}>
           <View style={styles.avatarContainer}>
             <Text style={styles.avatarText}>
               {getInitials(displayName)}
             </Text>
           </View>
-          {/* Active status indicator dot */}
           <View style={styles.statusDot} />
         </View>
 
@@ -40,7 +39,6 @@ export const Header: React.FC<HeaderProps> = ({
         </View>
       </View>
 
-      {/* Bell / Notification Button */}
       <TouchableOpacity
         onPress={onNotificationClick}
         style={styles.bellButton}
@@ -58,7 +56,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingHorizontal: LAYOUT.screenPaddingH,
   },
   profileSection: {
     flexDirection: 'row',
@@ -72,19 +70,19 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: COLORS.primarySoft,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'white',
-    shadowColor: '#000',
+    borderColor: COLORS.surface,
+    shadowColor: '#2e1d33',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 3,
     elevation: 2,
   },
   avatarText: {
-    color: '#92400E',
+    color: COLORS.textOnDark,
     fontWeight: '900',
     fontSize: 14,
     letterSpacing: 0.5,
@@ -96,9 +94,9 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#10B981',
+    backgroundColor: COLORS.success,
     borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderColor: COLORS.background,
   },
   textContainer: {
     justifyContent: 'center',
@@ -113,18 +111,18 @@ const styles = StyleSheet.create({
   nameText: {
     fontSize: 16,
     fontWeight: '900',
-    color: COLORS.textOnDark,
+    color: COLORS.text,
     marginTop: 2,
   },
   bellButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: UI.line,
   },
   bellEmoji: {
     fontSize: 16,

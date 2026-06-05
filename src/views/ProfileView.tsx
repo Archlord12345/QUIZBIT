@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -11,13 +10,15 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AuthController, { UserAccount } from '../controllers/AuthController';
 import { pickAvatarFromLibrary } from '../utils/avatarPicker';
-import { COLORS, SPACING } from '../utils/theme';
-import LogoMark from '../components/LogoMark';
+import { COLORS, LINE } from '../utils/theme';
+import { LAYOUT, RADIUS, UI } from '../utils/ui';
+import { ScreenHeader, ScreenScroll, screenCardStyle } from '../components/ScreenLayout';
 
 type ProfileViewProps = {
   account: UserAccount;
   navigation: NativeStackNavigationProp<any>;
   onBack?: () => void;
+  embedded?: boolean;
   onAccountUpdated: (account: UserAccount) => void;
   onSignOut: () => void;
 };
@@ -26,6 +27,7 @@ const ProfileView = ({
   account,
   navigation,
   onBack,
+  embedded = false,
   onAccountUpdated,
   onSignOut,
 }: ProfileViewProps) => {
@@ -54,22 +56,20 @@ const ProfileView = ({
     }
   };
 
+  const handleBack = () => {
+    if (onBack) onBack();
+    else navigation.goBack();
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => (onBack ? onBack() : navigation.goBack())}
-          style={styles.backButton}
-        >
-          <Text style={styles.backButtonText}>← Retour</Text>
-        </TouchableOpacity>
-        <LogoMark compact />
-        <View style={styles.headerSpacer} />
-      </View>
+    <ScreenScroll>
+      <ScreenHeader
+        title="Mon profil"
+        onBack={handleBack}
+        showBack={!embedded}
+      />
 
-      <Text style={styles.pageTitle}>Mon Profil</Text>
-
-      <View style={styles.profileCard}>
+      <View style={[screenCardStyle, styles.profileCard]}>
         <View style={styles.profileTop}>
           {account.avatarUrl ? (
             <Image source={{ uri: account.avatarUrl }} style={styles.avatar} />
@@ -84,7 +84,7 @@ const ProfileView = ({
             <Text style={styles.profileName}>{account.displayName}</Text>
             <Text style={styles.profileMeta}>{account.email}</Text>
             <Text style={styles.profileHint}>
-              Session sauvegardée et synchronisée avec Firebase.
+              Session synchronisée via l&apos;API Vercel.
             </Text>
           </View>
         </View>
@@ -110,19 +110,19 @@ const ProfileView = ({
         </TouchableOpacity>
       </View>
 
-      <View style={styles.actionsCard}>
+      <View style={[screenCardStyle, styles.actionsCard]}>
         <TouchableOpacity
           style={styles.secondaryButton}
           onPress={() => navigation.navigate('Settings')}
         >
-          <Text style={styles.secondaryButtonText}>Paramètres de l'application</Text>
+          <Text style={styles.secondaryButtonText}>Paramètres de l&apos;application</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.dangerButton} onPress={onSignOut}>
           <Text style={styles.dangerButtonText}>Déconnexion</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </ScreenScroll>
   );
 };
 
@@ -134,42 +134,8 @@ const Stat = ({ label, value }: { label: string; value: number }) => (
 );
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.primary,
-    flexGrow: 1,
-    padding: SPACING.lg,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: SPACING.xl,
-    marginTop: SPACING.sm,
-  },
-  headerSpacer: {
-    width: 70,
-  },
-  backButton: {
-    padding: SPACING.md,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 14,
-  },
-  backButtonText: {
-    color: 'white',
-    fontWeight: '800',
-  },
-  pageTitle: {
-    color: 'white',
-    fontSize: 32,
-    fontWeight: '900',
-    marginBottom: SPACING.lg,
-  },
   profileCard: {
-    backgroundColor: 'white',
-    borderRadius: 24,
     gap: 16,
-    padding: SPACING.xl,
-    marginBottom: SPACING.lg,
   },
   profileTop: {
     alignItems: 'center',
@@ -184,7 +150,7 @@ const styles = StyleSheet.create({
   avatarPlaceholder: {
     alignItems: 'center',
     backgroundColor: COLORS.primary,
-    borderColor: COLORS.secondary,
+    borderColor: COLORS.accent,
     borderRadius: 40,
     borderWidth: 2,
     height: 80,
@@ -205,7 +171,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   profileMeta: {
-    color: '#6B778C',
+    color: COLORS.muted,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -217,12 +183,12 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: LAYOUT.cardGap,
     marginTop: 8,
   },
   statBox: {
-    backgroundColor: '#F4F5F7',
-    borderRadius: 16,
+    backgroundColor: UI.surfaceSoft,
+    borderRadius: RADIUS.md,
     flex: 1,
     padding: 16,
   },
@@ -233,27 +199,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   statLabel: {
-    color: '#6B778C',
+    color: COLORS.muted,
     fontSize: 12,
     fontWeight: '800',
+    marginTop: 4,
     textAlign: 'center',
     textTransform: 'uppercase',
-    marginTop: 4,
   },
   errorText: {
     color: COLORS.error,
     fontSize: 14,
-    textAlign: 'center',
     fontWeight: '600',
+    textAlign: 'center',
   },
   primaryButton: {
     alignItems: 'center',
     backgroundColor: COLORS.accent,
-    borderRadius: 14,
+    borderRadius: RADIUS.md,
     padding: 16,
   },
   primaryButtonText: {
-    color: 'white',
+    color: COLORS.textOnDark,
     fontSize: 16,
     fontWeight: '800',
   },
@@ -261,15 +227,12 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   actionsCard: {
-    backgroundColor: 'white',
-    borderRadius: 24,
-    padding: SPACING.xl,
     gap: 12,
   },
   secondaryButton: {
     alignItems: 'center',
-    borderColor: '#DFE1E6',
-    borderRadius: 14,
+    borderColor: LINE,
+    borderRadius: RADIUS.md,
     borderWidth: 2,
     padding: 16,
   },
@@ -280,8 +243,8 @@ const styles = StyleSheet.create({
   },
   dangerButton: {
     alignItems: 'center',
-    backgroundColor: '#FFF0F0',
-    borderRadius: 14,
+    backgroundColor: UI.errorBg,
+    borderRadius: RADIUS.md,
     padding: 16,
   },
   dangerButtonText: {

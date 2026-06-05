@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { COLORS } from '../utils/theme';
 
 interface ScoreCardProps {
   totalScore: number;
@@ -16,9 +17,8 @@ export const ScoreCard: React.FC<ScoreCardProps> = ({
 }) => {
   return (
     <View style={styles.card}>
-      {/* Decorative background radial highlight */}
       <View style={styles.glowCircle} />
-      
+
       <View style={styles.headerRow}>
         <View>
           <Text style={styles.label}>SCORE TOTAL</Text>
@@ -26,28 +26,23 @@ export const ScoreCard: React.FC<ScoreCardProps> = ({
             {(totalScore || 0).toLocaleString()}
           </Text>
         </View>
-        
-        {/* Golden Trophy badge */}
+
         <View style={styles.trophyBadge}>
           <Text style={styles.trophyEmoji}>🏆</Text>
         </View>
       </View>
 
-      {/* Row of Stats */}
       <View style={styles.statsRow}>
-        {/* Parties */}
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>Parties</Text>
           <Text style={styles.statValue}>{partiesPlayed}</Text>
         </View>
 
-        {/* Meilleur */}
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>Meilleur</Text>
           <Text style={styles.statValue}>{bestScore}</Text>
         </View>
 
-        {/* Streak */}
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>Streak</Text>
           <View style={styles.streakContainer}>
@@ -62,14 +57,14 @@ export const ScoreCard: React.FC<ScoreCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#4d1f4d',
+    backgroundColor: COLORS.primaryDark,
     borderRadius: 24,
     padding: 20,
     position: 'relative',
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: '#2e1d33',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.12,
     shadowRadius: 10,
     elevation: 5,
   },
@@ -80,7 +75,7 @@ const styles = StyleSheet.create({
     width: 128,
     height: 128,
     borderRadius: 64,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   headerRow: {
     flexDirection: 'row',
@@ -91,13 +86,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 10,
     fontWeight: '900',
-    color: '#D6D3D1',
+    color: 'rgba(255,255,255,0.65)',
     letterSpacing: 1.5,
   },
   scoreValue: {
     fontSize: 32,
     fontWeight: '900',
-    color: 'white',
+    color: COLORS.textOnDark,
     letterSpacing: -0.5,
     marginTop: 4,
   },
@@ -105,11 +100,11 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgba(238, 104, 69, 0.15)',
+    backgroundColor: 'rgba(238, 104, 69, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(238, 104, 69, 0.3)',
+    borderColor: 'rgba(238, 104, 69, 0.35)',
   },
   trophyEmoji: {
     fontSize: 22,
@@ -122,7 +117,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 16,
     paddingVertical: 12,
     paddingHorizontal: 8,
@@ -132,7 +127,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#D6D3D1',
+    color: 'rgba(255,255,255,0.6)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 4,
@@ -140,7 +135,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 15,
     fontWeight: '800',
-    color: 'white',
+    color: COLORS.textOnDark,
   },
   streakContainer: {
     flexDirection: 'row',
@@ -149,7 +144,7 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   streakText: {
-    color: '#F97316',
+    color: COLORS.secondary,
   },
   fireEmoji: {
     fontSize: 14,

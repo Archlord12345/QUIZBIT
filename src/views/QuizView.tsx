@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import QuizController, { QuizState } from '../controllers/QuizController';
 import { GameMode } from '../controllers/ScoreController';
-import { COLORS, SPACING, HELPER, LINE, INPUT_BG } from '../utils/theme';
-import { RADIUS, SHADOW, UI } from '../utils/ui';
+import { COLORS, SPACING, HELPER, LINE, INPUT_BG, PLACEHOLDER } from '../utils/theme';
+import { LAYOUT, RADIUS, SHADOW, UI } from '../utils/ui';
 
 type QuizViewProps = {
   initialQuiz: QuizState;
@@ -190,8 +190,15 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
             },
           ]}
         >
-          <Text style={styles.summaryTitle}>Quiz terminé</Text>
+          <Text style={styles.summaryTitle}>
+            {mode === 'battle_royale' ? 'Battle Royale terminée' : 'Quiz terminé'}
+          </Text>
           <Text style={styles.summaryScore}>Score final : {completedScore}</Text>
+          {mode === 'battle_royale' ? (
+            <Text style={styles.summaryIntro}>
+              Ton score est enregistré dans le classement (onglet Top → filtre Battle).
+            </Text>
+          ) : null}
           <Text style={styles.summaryIntro}>
             Voici la liste complète des questions et des réponses attendues.
           </Text>
@@ -270,7 +277,7 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
             <TextInput
               style={styles.input}
               placeholder="Tape ta réponse"
-              placeholderTextColor="#6B778C"
+              placeholderTextColor={PLACEHOLDER}
               value={openAnswer}
               onChangeText={setOpenAnswer}
               editable={!submitting}
@@ -324,9 +331,11 @@ const QuizView = ({ initialQuiz, mode, onComplete, onExit }: QuizViewProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.background,
     flexGrow: 1,
-    padding: SPACING.md,
+    paddingHorizontal: LAYOUT.screenPaddingH,
+    paddingTop: SPACING.md,
+    paddingBottom: LAYOUT.screenPaddingBottom,
   },
   header: {
     flexDirection: 'row',
@@ -335,17 +344,17 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
   score: {
-    color: COLORS.textOnDark,
+    color: COLORS.text,
     fontSize: 22,
     fontWeight: 'bold',
   },
   hearts: {
-    color: COLORS.textOnDark,
+    color: COLORS.primary,
     fontSize: 18,
     fontWeight: '600',
   },
   modeBadge: {
-    color: COLORS.secondary,
+    color: COLORS.accent,
     fontWeight: '800',
     marginBottom: 18,
     textAlign: 'center',
@@ -359,7 +368,7 @@ const styles = StyleSheet.create({
     ...SHADOW.card,
   },
   progress: {
-    color: COLORS.secondary,
+    color: COLORS.primary,
     fontWeight: '700',
     marginBottom: 20,
     textAlign: 'center',
@@ -483,12 +492,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   summaryIntro: {
-    color: '#5E6C84',
+    color: HELPER,
     lineHeight: 20,
     textAlign: 'center',
   },
   summaryQuestion: {
-    backgroundColor: '#F4F5F7',
+    backgroundColor: UI.surfaceSoft,
     borderRadius: 16,
     gap: 6,
     padding: 12,
@@ -506,7 +515,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   summaryOptions: {
-    color: '#5E6C84',
+    color: HELPER,
     fontSize: 12,
   },
   quitButton: {
@@ -515,7 +524,7 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
   },
   quitText: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: COLORS.muted,
     fontSize: 16,
     textDecorationLine: 'underline',
   },
