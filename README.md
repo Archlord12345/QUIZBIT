@@ -29,7 +29,9 @@ QuizBit est une plateforme de quiz mobile avec génération de questions par IA 
   - statuts `waiting`, `active`, `finished` ;
   - scores battle enregistrés au classement (`mode: battle_royale`).
 - Upload d'avatar via Cloudinary si configuré.
-- Données réelles uniquement côté app mobile : pas de mode invité, pas de mock data, pas de fallback local de compte/score/battle.
+- **Mode offline** : serveur local (`npm run local:serve`), statut Ollama visible dans Paramètres.
+- Permissions Android runtime (micro, médias, Wi‑Fi proche) via `appPermissions.ts`.
+- Données réelles en production cloud ; le mode offline utilise `local/data/store.json`.
 
 ### Panel admin Vercel
 
@@ -57,14 +59,13 @@ Les tests Gemini, Mistral et Cloudinary passent par des routes API Vercel côté
 Le dossier `local/` est un serveur tout-en-un : panel admin + API compatible mobile, sans cloud.
 
 ```sh
-cd local
-npm start
+npm run local:serve
 ```
 
 - Panel : http://localhost:3000/
 - API : http://localhost:3000/api/…
 - Données : `local/data/store.json`
-- Génération IA locale : Ollama (`npm run setup:ollama`, modèle ~98 Mo)
+- Ollama : chargé **automatiquement** au démarrage (`smollm2:135m-instruct-q4_1`, ~98 Mo)
 - Compte démo : `demo@local.quizbit` / `demo123`
 
 Ce mode ne modifie pas Firestore. Voir `local/README.md`.
@@ -321,20 +322,24 @@ npm run build
 
 Ces routes sont utilisées par la page Settings du panel admin.
 
+## Scripts npm utiles
+
+| Script | Description |
+|--------|-------------|
+| `npm run local:serve` | Serveur offline + panel + Ollama auto |
+| `npm run local:server` | Alias de `local:serve` |
+| `npm run local:ollama` | Installe le modèle Ollama manuellement |
+| `npm run logo` | Génère les assets logo Android / app |
+
 ## Panel admin local
 
 ```sh
-cd local
-npm run start
+npm run local:serve
 ```
 
-Vérification syntaxe :
+Vérification syntaxe : `npm run check --prefix local`
 
-```sh
-npm run check
-```
-
-Le panel local sert à manipuler des données locales dans le navigateur. Il ne remplace pas Firestore pour l'application mobile.
+Le panel local synchronise avec l'API (`store.json`). Il ne modifie pas Firestore cloud.
 
 ## Tests et qualité
 
@@ -431,28 +436,24 @@ Si Firebase ou Gemini n'est pas configuré, l'app affiche une erreur explicite a
 
 ## Déploiement Vercel
 
-Le panel `vercel/` est prévu pour Vercel et répond actuellement à :
+URL : https://quizbit-admin.vercel.app/
 
-```txt
-https://quizbit-admin.vercel.app/
-```
+Configuration racine : `vercel.json` + `api/index.js` (wrapper vers `vercel/api/`).
 
-Le dépôt contient deux configurations pour sécuriser le lien avec Vercel :
+- **Install** : dépendances panel + install racine sans scripts (`patch-package` ignoré sur Vercel)
+- **Build** : `vercel/dist/` via Vite
+- **Functions** : `/api/*` → dispatcher unique, timeout 120 s
 
-- `vercel/vercel.json` si le projet Vercel utilise `vercel/` comme root directory ;
-- `vercel.json` + wrappers `api/` à la racine si le projet Vercel est lié à la racine du dépôt.
-
-Dans les deux cas, le build cible le panel admin et garde les routes API de diagnostics disponibles.
-
-Configurer les variables d'environnement Vercel avant déploiement pour que diagnostics et données Firestore fonctionnent correctement.
+Guide complet : `documentation/DEPLOIEMENT.md`
 
 ## Documentation complète
 
 | Fichier | Contenu |
 |---------|---------|
-| `documentation/README.md` | Guide A à Z : architecture, écrans, API, panels, déploiement |
-| `documentation/FIRESTORE.md` | Référence données : collections, schémas, normalisation, CRUD, offline |
-| `local/README.md` | Serveur offline, Ollama, compte démo, URL mobile |
+| `documentation/README.md` | Guide A à Z : architecture, écrans, API, panels |
+| `documentation/FIRESTORE.md` | Référence données : collections, schémas, normalisation, CRUD |
+| `documentation/DEPLOIEMENT.md` | Vercel, CI APK, serveur offline, scripts, dépannage |
+| `local/README.md` | Serveur offline, Ollama auto, compte démo, URL mobile |
 
 Le panel Vercel exporte les quiz en JSON (`quizbit-quiz-v1`) ; le panel local les importe pour usage offline.
 

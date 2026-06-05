@@ -32,10 +32,6 @@ export const stateFromPanel = state => ({
   battleRooms: battleRoomsToMap(state.battleRooms),
 });
 
-const recalcUserStats = users => {
-  return users.map(user => ({ ...user }));
-};
-
 const applyScoreStats = (users, scores) => {
   const byUser = new Map(users.map(user => [user.id, { ...user }]));
   for (const score of scores) {

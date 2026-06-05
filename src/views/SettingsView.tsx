@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -15,7 +15,7 @@ import {
   setApiMode,
   setOfflineApiUrl,
 } from '../utils/api';
-import { checkApiHealth, OllamaHealth } from '../utils/networkHealth';
+import { checkApiHealth } from '../utils/networkHealth';
 import { COLORS, LINE, SPACING, PLACEHOLDER, INPUT_BG } from '../utils/theme';
 import { UI } from '../utils/ui';
 import { ScreenHeader, ScreenScroll, screenCardStyle } from '../components/ScreenLayout';
@@ -33,17 +33,14 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
       : 'http://localhost:3000',
   );
   const [saveHint, setSaveHint] = useState('');
-  const [ollamaStatus, setOllamaStatus] = useState<OllamaHealth | null>(null);
   const [ollamaMessage, setOllamaMessage] = useState('');
 
-  const refreshOllama = async () => {
+  const refreshOllama = useCallback(async () => {
     const health = await checkApiHealth();
     if (health.mode !== 'local' || !health.ok) {
-      setOllamaStatus(null);
       setOllamaMessage('');
       return;
     }
-    setOllamaStatus(health.ollama || null);
     if (health.ollama?.available) {
       setOllamaMessage(`IA locale active — modele ${health.ollama.model}`);
     } else if (health.ollama?.enabled) {
@@ -53,19 +50,19 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
     } else {
       setOllamaMessage('Ollama desactive sur le serveur local.');
     }
-  };
+  }, []);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setIsOffline((await getApiMode()) === 'local');
     setApiUrl(await getApiBaseUrl());
     setOfflineServerUrl(await getOfflineApiUrl());
     setSaveHint('');
     await refreshOllama();
-  };
+  }, [refreshOllama]);
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
 
   const toggleOffline = async (value: boolean) => {
     await setApiMode(value ? 'local' : 'remote');

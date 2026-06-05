@@ -94,6 +94,9 @@ Sans Ollama, l'API utilise les **quiz importés** (ou des questions génériques
 | Fichier | Rôle |
 |---------|------|
 | `server.mjs` | HTTP : static + `/api/*` |
-| `lib/offline-api.js` | Routes API offline |
+| `scripts/ensure-ollama.mjs` | Auto : daemon Ollama + pull modèle |
+| `lib/offline-api.js` | Routes API offline (`/api/health`, génération, battle…) |
+| `lib/ollama-generate.js` | Génération quiz via Ollama |
+| `lib/admin-crud.js` | CRUD panel ↔ `store.json` |
 | `lib/store.js` | Persistance `data/store.json` |
-| `app.js` | UI panel (sync serveur) |
+| `app.js` | UI panel (sync serveur, statut Ollama) |

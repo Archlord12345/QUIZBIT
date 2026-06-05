@@ -17,7 +17,10 @@ QuizBit est une application mobile React Native de quiz générés par IA, avec 
 - serveur local `local/` : panel admin + API offline + génération Ollama (~98 Mo) ;
 - mode offline mobile pointant vers le serveur local (`store.json`).
 
-**Référence données** : voir [documentation/FIRESTORE.md](./FIRESTORE.md) pour le schéma détaillé de chaque collection, la normalisation et les flux lecture/écriture.
+| Document | Contenu |
+|----------|---------|
+| [FIRESTORE.md](./FIRESTORE.md) | Collections, schémas, normalisation, CRUD, miroir offline |
+| [DEPLOIEMENT.md](./DEPLOIEMENT.md) | Vercel, CI APK, `local:serve`, Ollama, dépannage builds |
 
 Règle produit importante : l'application mobile de production ne doit pas créer
 ou afficher de fausses données pour les comptes, scores ou battles. Les données
@@ -69,8 +72,9 @@ Panel local + API offline (local/)
 │   ├── lib/api/                     # Handlers serveur réels
 │   ├── lib/firebase-rest.js         # Accès REST Firebase Auth/Firestore
 │   └── src/                         # Panel admin Vercel
-├── api/index.js                     # Wrapper si Vercel déploie la racine
-├── local/                           # Panel admin local/offline
+├── api/index.js                     # Wrapper API Vercel (racine dépôt)
+├── scripts/postinstall.mjs          # patch-package (sauf Vercel / sans module RN)
+├── local/                           # Serveur offline + panel + Ollama
 └── documentation/                   # Cette documentation
 ```
 
@@ -649,10 +653,16 @@ Après ajout/modification de modules natifs, reconstruire l'APK.
 
 ## 20. Déploiement
 
-1. Fusionner la PR dans `main`.
-2. Redéployer Vercel depuis `main`.
-3. Rebuilder l'APK Android/iOS.
-4. Installer l'APK sur un vrai téléphone pour tester les permissions natives.
+Guide détaillé : [DEPLOIEMENT.md](./DEPLOIEMENT.md)
+
+Résumé :
+
+1. Fusionner dans `main` → déploiement Vercel automatique.
+2. Vérifier `vercel.json` : install panel + `npm ci --ignore-scripts` racine.
+3. `scripts/postinstall.mjs` : ne pas appliquer les patches React Native sur Vercel.
+4. GitHub Actions produit l'APK release (artifact).
+5. Serveur local : `npm run local:serve` (Ollama + API + panel).
+6. Tester panel Settings, CRUD Firestore, app mobile cloud et offline.
 
 ## 21. Checklist de test manuel
 
@@ -769,40 +779,30 @@ Ce fichier peut être importé dans le panel local sans Firebase ni Vercel.
 
 ### 23.3 Panel local : configuration attendue
 
-Le panel local est conçu pour fonctionner hors cloud. Il ne parle pas à
-Firestore, Firebase Auth, Gemini, Mistral ou Cloudinary. Tout est stocké dans le
-navigateur via `localStorage`.
+Le serveur `local/` est un backend offline complet : panel admin + API mobile.
 
-La page **Import / Export** contient une carte **Configuration locale** qui
-explique :
+```sh
+npm run local:serve
+```
 
-- le stockage local ;
-- l'import de quiz Vercel ;
-- l'usage recommandé : démo, test, préparation offline.
+Au lancement : Ollama auto (`ensure-ollama.mjs`), serveur HTTP port 3000,
+persistance `local/data/store.json`, sync panel ↔ API via `/api/admin/state`.
 
-Workflow recommandé :
+L'app mobile lit `GET /api/health` (champ `ollama`) pour afficher le statut IA
+dans **Paramètres**.
 
-1. Générer un quiz dans le panel Vercel.
-2. Exporter le JSON offline.
-3. Ouvrir le panel local.
-4. Aller dans **Import / Export**.
-5. Importer le fichier JSON.
-6. Vérifier le quiz dans la page **Quiz**.
+Workflow :
+
+1. `npm run local:serve` sur le PC.
+2. Panel http://localhost:3000/ — importer un JSON Vercel si besoin.
+3. App → Paramètres → mode offline + URL serveur (`10.0.2.2` ou IP LAN).
+4. Jouer quiz, scores, battle sans Internet.
 
 ### 23.4 Ce que le panel local ne fait pas
 
-Le panel local ne remplace pas le backend de production. Il ne doit pas être
-utilisé pour valider :
-
-- Firebase Auth ;
-- Firestore réel ;
-- scores cloud ;
-- rooms Battle Royale réelles ;
-- upload Cloudinary ;
-- quotas Gemini/Mistral.
-
-Il sert uniquement à manipuler des données locales, importer/exporter des quiz
-et tester un scénario offline.
+Le mode offline ne remplace pas la production cloud pour Firebase Auth réel,
+Firestore, Cloudinary ni les quotas Gemini/Mistral en direct. Il sert à démo,
+tests LAN, génération Ollama et développement hors connexion.
 
 ### 23.5 Ordre conseillé après fusion d'une PR
 
@@ -830,3 +830,10 @@ documentation/FIRESTORE.md
 Ce fichier est la source de vérité pour comprendre comment les données sont
 **présentées** dans les panels et **traitées** côté API avant écriture ou après
 lecture Firestore.
+
+## 25. Déploiement et builds
+
+Vercel, CI APK GitHub Actions, `postinstall` / `patch-package`, scripts
+`local:serve` et dépannage :
+
+[documentation/DEPLOIEMENT.md](./DEPLOIEMENT.md)
