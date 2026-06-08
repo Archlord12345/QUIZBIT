@@ -730,15 +730,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   chatCard: {
-    backgroundColor: '#EFEAE2',
-    borderColor: '#DFE1E6',
+    backgroundColor: '#eef3ff',
+    borderColor: '#dfe7f5',
     borderRadius: 16,
     borderWidth: 1,
     height: 400,
     overflow: 'hidden',
   },
   chatHeader: {
-    backgroundColor: '#075E54',
+    backgroundColor: '#1d4ed8',
     padding: 12,
   },
   chatTitle: {
@@ -747,7 +747,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   chatHint: {
-    color: '#D1D7DB',
+    color: '#c9d9f7',
     fontSize: 12,
     lineHeight: 18,
   },
@@ -770,7 +770,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   chatMessageMe: {
-    backgroundColor: '#DCF8C6',
+    backgroundColor: '#d8e4fb',
     alignSelf: 'flex-end',
     borderTopRightRadius: 0,
   },
@@ -780,13 +780,13 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 0,
   },
   chatAuthor: {
-    color: '#075E54',
+    color: '#1d4ed8',
     fontSize: 12,
     fontWeight: 'bold',
     marginBottom: 2,
   },
   chatText: {
-    color: '#111B21',
+    color: '#0f1c44',
     fontSize: 14,
   },
   chatTime: {
@@ -809,7 +809,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#e2ecff',
     gap: 8,
   },
   chatInputWhatsApp: {
@@ -819,10 +819,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#111B21',
+    color: '#0f1c44',
   },
   sendButtonWhatsApp: {
-    backgroundColor: '#00A884',
+    backgroundColor: '#2563eb',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -930,8 +930,8 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   lobbyStatusActive: {
-    backgroundColor: 'rgba(238, 104, 69, 0.15)',
-    color: COLORS.secondary,
+    backgroundColor: 'rgba(56, 189, 248, 0.18)',
+    color: COLORS.primarySoft,
   },
   lobbyMeta: {
     color: COLORS.muted,
@@ -944,7 +944,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   modeChip: {
-    borderColor: '#DFE1E6',
+    borderColor: '#dfe7f5',
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: 14,

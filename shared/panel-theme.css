@@ -1,56 +1,57 @@
 /**
  * Tokens alignés sur src/utils/theme.ts + src/utils/ui.ts (app mobile QuizBit)
+ * Palette logo : robot spirale bleu electrique sur blanc.
  */
 :root {
   color-scheme: light;
 
-  --qb-primary: #7a317a;
-  --qb-primary-dark: #4a204e;
-  --qb-primary-soft: #5b2861;
-  --qb-secondary: #ee6845;
-  --qb-accent: #ee6845;
-  --qb-background: #fdf8fa;
-  --qb-background-soft: #fcf5fb;
+  --qb-primary: #2563eb;
+  --qb-primary-dark: #152a63;
+  --qb-primary-soft: #1d4ed8;
+  --qb-secondary: #38bdf8;
+  --qb-accent: #38bdf8;
+  --qb-background: #eef3ff;
+  --qb-background-soft: #f6f9ff;
   --qb-surface: #ffffff;
   --qb-surface-light: #ffffff;
-  --qb-surface-muted: #fdfafb;
-  --qb-surface-elevated: #faebea;
-  --qb-text: #2e1d33;
+  --qb-surface-muted: #f1f6ff;
+  --qb-surface-elevated: #e2ecff;
+  --qb-text: #0f1c44;
   --qb-text-on-dark: #ffffff;
-  --qb-muted: #78716c;
-  --qb-muted-soft: #57534e;
-  --qb-line-soft: #e7e5e4;
+  --qb-muted: #5a6b8c;
+  --qb-muted-soft: #3a4a6b;
+  --qb-line-soft: #dfe7f5;
   --qb-input-bg: #ffffff;
   --qb-error: #f43f5e;
   --qb-success: #10b981;
   --qb-warning: #f59e0b;
-  --qb-violet: #7a317a;
-  --qb-glow: rgb(238 104 69 / 35%);
-  --qb-gradient-start: #fdf8fa;
-  --qb-gradient-mid: #faebea;
-  --qb-gradient-end: #fcf5fb;
-  --qb-chip-bg: #fcf5fb;
-  --qb-chip-border: #f5ecf6;
+  --qb-violet: #2563eb;
+  --qb-glow: rgb(37 99 235 / 35%);
+  --qb-gradient-start: #eef3ff;
+  --qb-gradient-mid: #e2ecff;
+  --qb-gradient-end: #f6f9ff;
+  --qb-chip-bg: #eaf1ff;
+  --qb-chip-border: #d8e4fb;
 
-  /* Sidebar violet (marque mobile) */
-  --sidebar-bg-start: #4a204e;
-  --sidebar-bg-mid: #5b2861;
-  --sidebar-bg-end: #7a317a;
+  /* Sidebar bleu nuit (marque mobile) */
+  --sidebar-bg-start: #0e1f55;
+  --sidebar-bg-mid: #152a63;
+  --sidebar-bg-end: #1d4ed8;
   --sidebar-text: #ffffff;
-  --sidebar-muted: rgb(255 255 255 / 72%);
+  --sidebar-muted: rgb(255 255 255 / 74%);
   --sidebar-line: rgb(255 255 255 / 16%);
   --sidebar-line-strong: rgb(255 255 255 / 28%);
-  --sidebar-accent: #ee6845;
+  --sidebar-accent: #38bdf8;
   --sidebar-hover: rgb(255 255 255 / 10%);
-  --sidebar-active: rgb(238 104 69 / 18%);
+  --sidebar-active: rgb(56 189 248 / 22%);
 
   /* Alias panels admin */
   --bg: var(--qb-background);
   --bg-soft: var(--qb-background-soft);
   --panel: rgb(255 255 255 / 94%);
   --panel-strong: #ffffff;
-  --line: rgb(122 49 122 / 14%);
-  --line-strong: rgb(122 49 122 / 26%);
+  --line: rgb(37 99 235 / 14%);
+  --line-strong: rgb(37 99 235 / 26%);
   --text: var(--qb-text);
   --text-dark: var(--qb-text);
   --muted: var(--qb-muted);
@@ -60,24 +61,24 @@
   --green: var(--qb-success);
   --amber: var(--qb-warning);
   --red: var(--qb-error);
-  --focus-ring: rgb(122 49 122 / 14%);
-  --shadow-soft: rgb(46 29 51 / 8%);
-  --shadow-card: rgb(46 29 51 / 10%);
+  --focus-ring: rgb(37 99 235 / 18%);
+  --shadow-soft: rgb(15 28 68 / 8%);
+  --shadow-card: rgb(15 28 68 / 12%);
   --code-bg: var(--qb-primary-dark);
-  --code-text: #f8f4fa;
-  --overlay: rgb(46 29 51 / 45%);
+  --code-text: #eaf1ff;
+  --overlay: rgb(15 28 68 / 50%);
 }
 
 .quizbit-panel-bg {
   background-color: var(--qb-background);
   background-image: radial-gradient(
       circle at 12% 8%,
-      rgb(122 49 122 / 10%),
+      rgb(37 99 235 / 12%),
       transparent 28rem
     ),
     radial-gradient(
       circle at 88% 4%,
-      rgb(238 104 69 / 12%),
+      rgb(56 189 248 / 16%),
       transparent 30rem
     ),
     linear-gradient(
@@ -105,7 +106,7 @@
     var(--sidebar-bg-end) 100%
   );
   border-color: var(--sidebar-line);
-  box-shadow: 12px 0 40px rgb(74 32 78 / 18%);
+  box-shadow: 12px 0 40px rgb(14 31 85 / 28%);
   color: var(--sidebar-text);
 }
 
@@ -142,7 +143,7 @@
   background: linear-gradient(135deg, var(--qb-primary), var(--qb-primary-soft));
   border: 0;
   border-radius: 10px;
-  box-shadow: 0 10px 24px rgb(122 49 122 / 24%);
+  box-shadow: 0 10px 24px rgb(37 99 235 / 28%);
   color: #fff;
   cursor: pointer;
   font-weight: 800;
@@ -151,7 +152,7 @@
 }
 
 .btn-accent:hover {
-  box-shadow: 0 12px 28px rgb(122 49 122 / 32%);
+  box-shadow: 0 12px 28px rgb(37 99 235 / 36%);
   transform: translateY(-1px);
 }
 
@@ -173,7 +174,7 @@
 }
 
 .eyebrow {
-  color: var(--qb-secondary);
+  color: var(--qb-primary);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.14em;
@@ -196,6 +197,6 @@
 }
 
 .mode-pill.open {
-  background: rgb(122 49 122 / 14%);
+  background: rgb(37 99 235 / 14%);
   color: var(--qb-primary);
 }

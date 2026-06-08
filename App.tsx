@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-
 // Real View Imports
 import HomeView from './src/views/HomeView';
 import AuthView from './src/views/AuthView';
 import QuizView from './src/views/QuizView';
 import SettingsView from './src/views/SettingsView';
-import { COLORS } from './src/utils/theme';
+import SplashScreen from './src/components/SplashScreen';
 
 // Controller & Type Imports
 import AuthController, { UserAccount } from './src/controllers/AuthController';
@@ -46,11 +44,7 @@ export default function App() {
   }, []);
 
   if (isLoading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#ee6845" />
-      </View>
-    );
+    return <SplashScreen message="Connexion a ton univers QuizBit" />;
   }
 
   return (
@@ -173,12 +167,3 @@ export default function App() {
     </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-});

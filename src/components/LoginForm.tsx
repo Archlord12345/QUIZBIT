@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   inputRightIconContainer: { padding: 4 },
   inputRightIcon: { fontSize: 16, color: HELPER },
   submitButton: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.primary,
     paddingVertical: 16,
     borderRadius: RADIUS.pill,
     flexDirection: 'row',

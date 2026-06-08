@@ -20,8 +20,8 @@ import { EmptyState, Panel } from './ui.jsx';
 
 const CHART_TOOLTIP_STYLE = {
   background: '#ffffff',
-  border: '1px solid #e7e5e4',
-  color: '#2e1d33',
+  border: '1px solid #dfe7f5',
+  color: '#0f1c44',
 };
 
 const CHART_HEIGHT = {
@@ -67,8 +67,8 @@ export function Dashboard({ analytics, stats, users = [], usersById = {} }) {
   ];
   const roomData = [
     { name: 'Waiting', value: analytics.waitingRooms, color: '#f59e0b' },
-    { name: 'Active', value: analytics.activeRooms, color: '#ee6845' },
-    { name: 'Finished', value: analytics.finishedRooms, color: '#78716c' },
+    { name: 'Active', value: analytics.activeRooms, color: '#38bdf8' },
+    { name: 'Finished', value: analytics.finishedRooms, color: '#94a3c4' },
   ];
   const scoreData = analytics.topScores.map(score => ({
     name: score.displayName || 'Player',
@@ -87,12 +87,12 @@ export function Dashboard({ analytics, stats, users = [], usersById = {} }) {
           <BarChart data={scoreData}>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="rgba(122,49,122,.12)"
+              stroke="rgba(37,99,235,.12)"
             />
-            <XAxis dataKey="name" stroke="#78716c" tick={{ fontSize: 12 }} />
-            <YAxis stroke="#78716c" tick={{ fontSize: 12 }} />
+            <XAxis dataKey="name" stroke="#5a6b8c" tick={{ fontSize: 12 }} />
+            <YAxis stroke="#5a6b8c" tick={{ fontSize: 12 }} />
             <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-            <Bar dataKey="score" fill="#7a317a" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="score" fill="#2563eb" radius={[8, 8, 0, 0]} />
           </BarChart>
         </DashboardChart>
       </Panel>
@@ -124,17 +124,17 @@ export function Dashboard({ analytics, stats, users = [], usersById = {} }) {
           >
             <defs>
               <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#7a317a" stopOpacity={0.75} />
-                <stop offset="95%" stopColor="#ee6845" stopOpacity={0} />
+                <stop offset="5%" stopColor="#2563eb" stopOpacity={0.75} />
+                <stop offset="95%" stopColor="#38bdf8" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <XAxis dataKey="name" stroke="#78716c" tick={{ fontSize: 12 }} />
-            <YAxis stroke="#78716c" tick={{ fontSize: 12 }} />
+            <XAxis dataKey="name" stroke="#5a6b8c" tick={{ fontSize: 12 }} />
+            <YAxis stroke="#5a6b8c" tick={{ fontSize: 12 }} />
             <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
             <Area
               type="monotone"
               dataKey="value"
-              stroke="#7a317a"
+              stroke="#2563eb"
               fill="url(#scoreGradient)"
             />
           </AreaChart>

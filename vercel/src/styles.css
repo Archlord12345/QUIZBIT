@@ -70,12 +70,12 @@ button:disabled.is-loading {
   align-items: center;
   background: radial-gradient(
     circle,
-    rgb(238 104 69 / 24%),
+    rgb(56 189 248 / 24%),
     rgb(255 255 255 / 12%)
   );
   border: 1px solid var(--sidebar-line-strong);
   border-radius: 20px;
-  box-shadow: 0 0 28px rgb(238 104 69 / 16%);
+  box-shadow: 0 0 28px rgb(56 189 248 / 16%);
   display: grid;
   height: 58px;
   overflow: hidden;
@@ -175,7 +175,7 @@ h2 {
   background: linear-gradient(135deg, var(--qb-primary), var(--qb-primary-soft));
   border: 0;
   border-radius: 10px;
-  box-shadow: 0 10px 24px rgb(122 49 122 / 22%);
+  box-shadow: 0 10px 24px rgb(37 99 235 / 22%);
   color: white;
   cursor: pointer;
   display: inline-flex;
@@ -186,7 +186,7 @@ h2 {
 }
 
 .btn:hover {
-  box-shadow: 0 12px 28px rgb(122 49 122 / 30%);
+  box-shadow: 0 12px 28px rgb(37 99 235 / 30%);
   transform: translateY(-1px);
 }
 
@@ -198,7 +198,7 @@ h2 {
 
 .btn.primary {
   background: linear-gradient(135deg, var(--qb-primary), var(--qb-primary-soft));
-  box-shadow: 0 8px 20px rgb(122 49 122 / 22%);
+  box-shadow: 0 8px 20px rgb(37 99 235 / 22%);
   color: #fff;
 }
 
@@ -428,7 +428,7 @@ td strong {
 }
 
 tr:hover td {
-  background: rgb(122 49 122 / 5%);
+  background: rgb(37 99 235 / 5%);
   color: var(--qb-text);
 }
 
@@ -491,7 +491,7 @@ tr:hover td {
 }
 
 .choice {
-  background: rgb(122 49 122 / 10%);
+  background: rgb(37 99 235 / 10%);
   border-radius: 999px;
   color: var(--qb-text);
   font-size: 12px;
@@ -521,7 +521,7 @@ tr:hover td {
 
 .pill.open,
 .pill.battle_royale {
-  background: rgb(122 49 122 / 14%);
+  background: rgb(37 99 235 / 14%);
   color: var(--qb-primary);
 }
 
@@ -683,8 +683,8 @@ tr:hover td {
 }
 
 .offline-status {
-  background: rgb(238 104 69 / 10%);
-  border: 1px solid rgb(238 104 69 / 24%);
+  background: rgb(56 189 248 / 10%);
+  border: 1px solid rgb(56 189 248 / 24%);
   border-radius: 12px;
   color: var(--qb-secondary);
   font-size: 14px;
@@ -748,7 +748,7 @@ tr:hover td {
 }
 
 .offline-count-badge {
-  background: rgb(122 49 122 / 10%);
+  background: rgb(37 99 235 / 10%);
   border: 1px solid var(--line-strong);
   border-radius: 999px;
   color: var(--qb-primary);
@@ -802,7 +802,7 @@ table {
 }
 
 .offline-dropzone {
-  background: rgb(238 104 69 / 6%);
+  background: rgb(56 189 248 / 6%);
   border: 1px dashed var(--line-strong);
   border-radius: 16px;
   margin-bottom: 14px;
@@ -823,8 +823,8 @@ table {
 }
 
 .offline-file-badge {
-  background: rgb(122 49 122 / 10%);
-  border: 1px solid rgb(122 49 122 / 22%);
+  background: rgb(37 99 235 / 10%);
+  border: 1px solid rgb(37 99 235 / 22%);
   border-radius: 14px;
   display: grid;
   gap: 6px;
