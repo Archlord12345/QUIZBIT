@@ -35,6 +35,7 @@ import {
   firebaseEnabled,
   getFirestoreDb,
 } from './lib/firestoreClient.js';
+import { PanelSplash } from './components/PanelSplash.jsx';
 import { Sidebar } from './components/Sidebar.jsx';
 import { Topbar } from './components/Topbar.jsx';
 import { Banner } from './components/ui.jsx';
@@ -45,6 +46,7 @@ import { SettingsPage } from './components/SettingsPage.jsx';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [booting, setBooting] = useState(true);
   const [loading, setLoading] = useState({ stats: true });
   const [error, setError] = useState('');
   const [firestoreNotice, setFirestoreNotice] = useState('');
@@ -468,6 +470,15 @@ export default function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setBooting(false), 1300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (booting) {
+    return <PanelSplash />;
+  }
 
   return (
     <div className="admin-shell">

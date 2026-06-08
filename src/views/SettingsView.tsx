@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   },
   saveUrlButton: {
     alignItems: 'center',
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.primary,
     borderRadius: 10,
     marginTop: 4,
     paddingVertical: 14,

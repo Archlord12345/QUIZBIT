@@ -96,3 +96,225 @@
 .kpi-card strong {
   color: var(--qb-primary);
 }
+
+/* ----------------------------------------------------------------------
+ * Ecran de chargement plein ecran (panels Vercel + local)
+ * -------------------------------------------------------------------- */
+.panel-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 16%, rgb(56 189 248 / 22%), transparent 42%),
+    radial-gradient(circle at 82% 84%, rgb(37 99 235 / 38%), transparent 46%),
+    linear-gradient(160deg, #0e1f55 0%, #152a63 52%, #1d4ed8 100%);
+  color: #fff;
+  animation: panel-splash-in 0.4s ease;
+}
+
+.panel-splash--leaving {
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+@keyframes panel-splash-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.panel-splash__glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(2px);
+}
+
+.panel-splash__glow--top {
+  top: -140px;
+  right: -100px;
+  width: 360px;
+  height: 360px;
+  background: rgb(56 189 248 / 18%);
+}
+
+.panel-splash__glow--bottom {
+  bottom: -160px;
+  left: -120px;
+  width: 380px;
+  height: 380px;
+  background: rgb(37 99 235 / 28%);
+}
+
+.panel-splash__cube {
+  position: absolute;
+  border: 1px solid rgb(255 255 255 / 22%);
+  background: rgb(56 189 248 / 22%);
+  border-radius: 8px;
+  animation: panel-splash-float 6s ease-in-out infinite;
+}
+
+.panel-splash__cube--a {
+  top: 22%;
+  left: 16%;
+  width: 30px;
+  height: 30px;
+}
+
+.panel-splash__cube--b {
+  top: 30%;
+  right: 18%;
+  width: 20px;
+  height: 20px;
+  animation-delay: 1.4s;
+}
+
+.panel-splash__cube--c {
+  bottom: 22%;
+  right: 26%;
+  width: 24px;
+  height: 24px;
+  animation-delay: 2.6s;
+}
+
+@keyframes panel-splash-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-18px) rotate(180deg);
+  }
+}
+
+.panel-splash__center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.panel-splash__stage {
+  position: relative;
+  width: 184px;
+  height: 184px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 26px;
+}
+
+.panel-splash__halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgb(56 189 248 / 12%);
+  animation: panel-splash-pulse 1.8s ease-in-out infinite;
+}
+
+.panel-splash__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: #38bdf8;
+  border-right-color: rgb(56 189 248 / 45%);
+  animation: panel-splash-spin 1.4s linear infinite;
+}
+
+.panel-splash__ring--inner {
+  inset: 26px;
+  border-width: 2px;
+  border-top-color: transparent;
+  border-bottom-color: rgb(255 255 255 / 70%);
+  border-left-color: rgb(255 255 255 / 22%);
+  animation: panel-splash-spin 2.4s linear infinite reverse;
+}
+
+.panel-splash__logo {
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
+  animation: panel-splash-pulse 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 12px 26px rgb(8 16 44 / 55%));
+}
+
+@keyframes panel-splash-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes panel-splash-pulse {
+  0%,
+  100% {
+    transform: scale(0.94);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.panel-splash__title {
+  font-size: 38px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.panel-splash__subtitle {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgb(255 255 255 / 78%);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.panel-splash__dots {
+  display: flex;
+  gap: 8px;
+  margin-top: 26px;
+}
+
+.panel-splash__dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #38bdf8;
+  animation: panel-splash-dot 1.05s ease-in-out infinite;
+}
+
+.panel-splash__dots span:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.panel-splash__dots span:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+@keyframes panel-splash-dot {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-6px);
+  }
+}
+
+.panel-splash__message {
+  margin-top: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgb(255 255 255 / 62%);
+}

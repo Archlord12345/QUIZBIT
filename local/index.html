@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#7a317a" />
+    <meta name="theme-color" content="#2563eb" />
     <title>QuizBit Local Admin</title>
     <link rel="stylesheet" href="/panel-theme.css" />
     <link rel="stylesheet" href="/panel-layout.css" />
@@ -12,6 +12,25 @@
   </head>
   <body class="quizbit-panel-bg local-panel">
     <noscript>JavaScript est requis pour utiliser ce panel local.</noscript>
+    <div id="local-splash" class="panel-splash" role="status" aria-live="polite">
+      <div class="panel-splash__glow panel-splash__glow--top"></div>
+      <div class="panel-splash__glow panel-splash__glow--bottom"></div>
+      <span class="panel-splash__cube panel-splash__cube--a"></span>
+      <span class="panel-splash__cube panel-splash__cube--b"></span>
+      <span class="panel-splash__cube panel-splash__cube--c"></span>
+      <div class="panel-splash__center">
+        <div class="panel-splash__stage">
+          <span class="panel-splash__halo"></span>
+          <span class="panel-splash__ring"></span>
+          <span class="panel-splash__ring panel-splash__ring--inner"></span>
+          <img class="panel-splash__logo" src="/assets/logo.png" alt="QuizBit logo" />
+        </div>
+        <strong class="panel-splash__title">QuizBit</strong>
+        <span class="panel-splash__subtitle">Mode offline</span>
+        <div class="panel-splash__dots"><span></span><span></span><span></span></div>
+        <span class="panel-splash__message">Initialisation du panel local...</span>
+      </div>
+    </div>
     <div id="app"></div>
     <script src="app.js"></script>
   </body>

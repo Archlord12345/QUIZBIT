@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   avatarRank3: {
     width: 52,
     height: 52,
-    backgroundColor: 'rgba(74, 32, 78, 0.85)',
+    backgroundColor: 'rgba(21, 42, 99, 0.85)',
   },
   avatarInitials: {
     color: 'white',
@@ -507,27 +507,27 @@ const styles = StyleSheet.create({
   standRank1: {
     height: 80,
     backgroundColor: COLORS.surfaceElevated,
-    borderColor: 'rgba(245, 179, 164, 0.25)',
+    borderColor: 'rgba(56, 189, 248, 0.30)',
   },
   standRank2: {
     height: 54,
-    backgroundColor: '#fdfafb',
-    borderColor: 'rgba(101, 51, 109, 0.1)',
+    backgroundColor: '#f4f8ff',
+    borderColor: 'rgba(37, 99, 235, 0.12)',
   },
   standRank3: {
     height: 40,
-    backgroundColor: '#fdfafb',
-    borderColor: 'rgba(101, 51, 109, 0.1)',
+    backgroundColor: '#f4f8ff',
+    borderColor: 'rgba(37, 99, 235, 0.12)',
   },
   standNumber: {
     fontSize: 20,
     fontWeight: '900',
-    color: 'rgba(101, 51, 109, 0.25)',
+    color: 'rgba(37, 99, 235, 0.25)',
   },
   standNumberRank1: {
     fontSize: 24,
     fontWeight: '900',
-    color: 'rgba(238, 104, 69, 0.45)',
+    color: 'rgba(56, 189, 248, 0.55)',
   },
   scrollList: {
     flex: 1,

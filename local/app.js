@@ -1163,6 +1163,19 @@ function resetLocal() {
   mutate({ ...initialState });
 }
 
+function hideSplash() {
+  const splash = document.getElementById('local-splash');
+  if (!splash) return;
+  splash.classList.add('panel-splash--leaving');
+  setTimeout(() => splash.remove(), 480);
+}
+
+const SPLASH_MIN_MS = 1200;
+const bootStart = Date.now();
 pullStateFromServer()
   .then(() => refreshOllamaHealth())
-  .finally(() => render());
+  .finally(() => {
+    render();
+    const elapsed = Date.now() - bootStart;
+    setTimeout(hideSplash, Math.max(0, SPLASH_MIN_MS - elapsed));
+  });

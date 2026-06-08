@@ -30,7 +30,7 @@ export function Sidebar({ currentPage, onPage }) {
         })}
       </nav>
       <div className="sidebar-note">
-        Palette alignee sur l app mobile (creme #fdf8fa, violet #7a317a, corail #ee6845).
+        Palette alignee sur le logo (bleu electrique #2563eb, ciel #38bdf8, blanc).
       </div>
     </aside>
   );
