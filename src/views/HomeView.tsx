@@ -33,6 +33,7 @@ import { Header } from '../components/Header';
 // Component Imports
 import { ScoreCard } from '../components/ScoreCard';
 import { QuizCard } from '../components/QuizCard';
+import { OptionChip } from '../components/OptionChip';
 import { BottomNavigation, NavItem } from '../components/BottomNavigation';
 
 // View & Controller Imports
@@ -473,25 +474,6 @@ const clampNumber = (value: string, min: number, max: number) => {
   return String(numeric);
 };
 
-const OptionChip = ({
-  active,
-  label,
-  onPress,
-}: {
-  active: boolean;
-  label: string;
-  onPress: () => void;
-}) => (
-  <TouchableOpacity
-    style={[styles.optionChip, active && styles.optionChipActive]}
-    onPress={onPress}
-  >
-    <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>
-      {label}
-    </Text>
-  </TouchableOpacity>
-);
-
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.background,
@@ -538,24 +520,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     marginBottom: 14,
-  },
-  optionChip: {
-    borderColor: LINE,
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-  },
-  optionChipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  optionChipText: {
-    color: COLORS.text,
-    fontWeight: '800',
-  },
-  optionChipTextActive: {
-    color: COLORS.textOnDark,
   },
   settingsRow: {
     flexDirection: 'row',
