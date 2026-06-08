@@ -27,6 +27,8 @@ export default function App() {
 
   // Restore session on mount
   useEffect(() => {
+    const SPLASH_MIN_MS = 15000;
+    const start = Date.now();
     const restore = async () => {
       try {
         const acc = await AuthController.restoreSession();
@@ -37,7 +39,9 @@ export default function App() {
       } catch (err) {
         console.error("Session restoration failed:", err);
       } finally {
-        setIsLoading(false);
+        const elapsed = Date.now() - start;
+        const remaining = Math.max(0, SPLASH_MIN_MS - elapsed);
+        setTimeout(() => setIsLoading(false), remaining);
       }
     };
     restore();

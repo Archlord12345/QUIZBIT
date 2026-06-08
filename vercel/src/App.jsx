@@ -472,7 +472,7 @@ export default function App() {
   }, [currentPage]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setBooting(false), 1300);
+    const timer = setTimeout(() => setBooting(false), 15000);
     return () => clearTimeout(timer);
   }, []);
 
