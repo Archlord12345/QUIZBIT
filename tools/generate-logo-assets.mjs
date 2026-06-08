@@ -38,20 +38,45 @@ const ensureSource = async () => {
   }
 };
 
-const makeSquare = size =>
-  sharp(source)
-    .resize(size, size, {
+// Launcher icons get the branded blue gradient backdrop (matches the splash),
+// so the app icon reads as a finished badge instead of a logo floating on a
+// transparent square.
+const ICON_BG_TOP = '#152a63';
+const ICON_BG_BOTTOM = '#1d4ed8';
+
+const gradientBackground = size =>
+  Buffer.from(
+    `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">` +
+      '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+      `<stop offset="0" stop-color="${ICON_BG_TOP}"/>` +
+      `<stop offset="1" stop-color="${ICON_BG_BOTTOM}"/>` +
+      '</linearGradient></defs>' +
+      `<rect width="${size}" height="${size}" fill="url(#g)"/>` +
+      '</svg>',
+  );
+
+const makeSquare = async size => {
+  const inner = Math.round(size * 0.74);
+  const offset = Math.round((size - inner) / 2);
+  const logo = await sharp(source)
+    .resize(inner, inner, {
       fit: 'contain',
       background: { r: 5, g: 8, b: 22, alpha: 0 },
     })
+    .png()
+    .toBuffer();
+  return sharp(gradientBackground(size))
+    .composite([{ input: logo, top: offset, left: offset }])
     .png();
+};
 
-const makeRound = size => {
+const makeRound = async size => {
   const radius = size / 2;
+  const base = await (await makeSquare(size)).toBuffer();
   const svgMask = Buffer.from(
     `<svg width="${size}" height="${size}"><circle cx="${radius}" cy="${radius}" r="${radius}" fill="white"/></svg>`,
   );
-  return makeSquare(size).composite([{ input: svgMask, blend: 'dest-in' }]).png();
+  return sharp(base).composite([{ input: svgMask, blend: 'dest-in' }]).png();
 };
 
 const writePanelLogo = async targetPath =>
@@ -79,8 +104,10 @@ await sharp(source)
 for (const [folder, size] of launcherTargets) {
   const dir = path.join(androidRes, folder);
   await fs.mkdir(dir, { recursive: true });
-  await makeSquare(size).toFile(path.join(dir, 'ic_launcher.png'));
-  await makeRound(size).toFile(path.join(dir, 'ic_launcher_round.png'));
+  const square = await makeSquare(size);
+  await square.toFile(path.join(dir, 'ic_launcher.png'));
+  const round = await makeRound(size);
+  await round.toFile(path.join(dir, 'ic_launcher_round.png'));
 }
 
 console.log('QuizBit logo assets generated from logo/quizbit-logo.png');
