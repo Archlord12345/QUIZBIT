@@ -1170,7 +1170,7 @@ function hideSplash() {
   setTimeout(() => splash.remove(), 480);
 }
 
-const SPLASH_MIN_MS = 1200;
+const SPLASH_MIN_MS = 15000;
 const bootStart = Date.now();
 pullStateFromServer()
   .then(() => refreshOllamaHealth())
