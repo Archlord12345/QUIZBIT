@@ -106,10 +106,22 @@ textarea {
   width: 100%;
 }
 
+.nav-button svg {
+  flex-shrink: 0;
+  height: 18px;
+  opacity: 0.85;
+  width: 18px;
+}
+
 .nav-button:hover {
   background: var(--sidebar-hover);
   border-color: var(--sidebar-line);
   color: var(--sidebar-text);
+}
+
+.nav-button:hover svg,
+.nav-button.active svg {
+  opacity: 1;
 }
 
 .nav-button.active {
