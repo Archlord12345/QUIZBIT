@@ -66,7 +66,7 @@ export function Dashboard({ analytics, stats, users = [], usersById = {} }) {
     ['Avg Score', analytics.averageScore],
   ];
   const roomData = [
-    { name: 'Waiting', value: analytics.waitingRooms, color: '#f59e0b' },
+    { name: 'Waiting', value: analytics.waitingRooms, color: '#2563eb' },
     { name: 'Active', value: analytics.activeRooms, color: '#38bdf8' },
     { name: 'Finished', value: analytics.finishedRooms, color: '#94a3c4' },
   ];
