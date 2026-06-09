@@ -120,8 +120,9 @@ const parseQuestionsPayload = (text, count, options = {}) => {
     .slice(0, count);
 };
 
-const callOllama = async (prompt, predict = 700) => {
-  const { baseUrl, model } = getOllamaConfig();
+const callOllama = async (prompt, predict = 700, modelOverride = null) => {
+  const { baseUrl, model: defaultModel } = getOllamaConfig();
+  const model = modelOverride || defaultModel;
   const response = await requestWithTimeout(
     `${baseUrl}/api/generate`,
     {
@@ -154,9 +155,10 @@ export const listOllamaModels = async () => {
   return data.models || [];
 };
 
-export const isOllamaAvailable = async () => {
-  const { enabled, model } = getOllamaConfig();
+export const isOllamaAvailable = async (modelOverride = null) => {
+  const { enabled, model: defaultModel } = getOllamaConfig();
   if (!enabled) return false;
+  const model = modelOverride || defaultModel;
   try {
     const models = await listOllamaModels();
     const names = models.map(entry => entry.name);
@@ -169,9 +171,10 @@ export const isOllamaAvailable = async () => {
   }
 };
 
-export const testOllama = async () => {
-  await callOllama('Reponds {"ok":true}', 40);
-  const { model } = getOllamaConfig();
+export const testOllama = async (modelOverride = null) => {
+  const { model: defaultModel } = getOllamaConfig();
+  const model = modelOverride || defaultModel;
+  await callOllama('Reponds {"ok":true}', 40, model);
   return { model, message: `Ollama OK (${model})` };
 };
 
@@ -182,6 +185,10 @@ export const generateQuestionsWithOllama = async (
   mediaPayload = null,
 ) => {
   const options = normalizeGenerationOptions(body);
+  const modelOverride = String(body.model || '').trim() || null;
+  const { model: defaultModel } = getOllamaConfig();
+  const model = modelOverride || defaultModel;
+
   let theme = String(prompt || '').trim();
   if (mediaPayload?.textContent) {
     theme += `\nSupport: ${String(mediaPayload.textContent).slice(0, 4000)}`;
@@ -194,6 +201,7 @@ export const generateQuestionsWithOllama = async (
     const batchText = await callOllama(
       buildBatchPrompt(theme, count, options),
       Math.min(3500, count * 450),
+      model,
     );
     questions = parseQuestionsPayload(batchText, count, options);
   } catch {
@@ -206,6 +214,7 @@ export const generateQuestionsWithOllama = async (
       const singleText = await callOllama(
         buildSinglePrompt(theme, index, options),
         500,
+        model,
       );
       const parsed = parseQuestionsPayload(singleText, 1, options);
       if (parsed[0]) {
@@ -230,17 +239,16 @@ export const generateQuestionsWithOllama = async (
 
   questions = questions.slice(0, count);
   if (!questions.length) {
-    throw new Error('Ollama: aucune question exploitable.');
+    throw new Error(`Ollama (${model}): aucune question exploitable.`);
   }
 
-  const { model } = getOllamaConfig();
   return {
     provider: 'ollama',
     model,
     questions,
     offlineNote: usedFallback
-      ? 'Ollama: certaines questions completees par le modele local (qualite limitee du modele <100 Mo).'
-      : 'Genere localement via Ollama.',
+      ? `Ollama (${model}): certaines questions completees par le modele local.`
+      : `Genere localement via Ollama (${model}).`,
     fallbackFrom: usedFallback ? 'ollama-partial' : undefined,
   };
 };

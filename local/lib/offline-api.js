@@ -210,8 +210,10 @@ export const handleOfflineApi = async (req, res, routeName) => {
 
   if (req.method === 'GET' && routeName === 'test-ollama') {
     try {
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const model = url.searchParams.get('model');
       const { testOllama } = await import('./ollama-generate.js');
-      const result = await testOllama();
+      const result = await testOllama(model);
       return json(res, 200, { ok: true, ...result });
     } catch (error) {
       return json(res, 502, {

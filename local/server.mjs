@@ -5,6 +5,16 @@ import { fileURLToPath } from 'node:url';
 import { handleOfflineApi } from './lib/offline-api.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Chargement manuel de .env si present
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  fs.readFileSync(envPath, 'utf8').split('\n').forEach(line => {
+    const [key, ...value] = line.split('=');
+    if (key && value.length) process.env[key.trim()] = value.join('=').trim();
+  });
+}
+
 const PORT = Number(process.env.QUIZBIT_LOCAL_PORT || 3000);
 const HOST = process.env.QUIZBIT_LOCAL_HOST || '0.0.0.0';
 

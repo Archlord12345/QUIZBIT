@@ -282,9 +282,15 @@ function renderSettings() {
     <section class="card">
       <h2>Ollama · IA locale</h2>
       <p class="hint-box">
-        Genere des quiz sans cloud via Ollama (<code>OLLAMA_MODEL</code>,
-        defaut <code>smollm2:135m-instruct-q4_1</code>).
+        Teste tes modeles locaux installes.
       </p>
+      <div class="form-grid">
+        <select id="ollama-model-test">
+          <option value="">Par defaut</option>
+          <option value="gemma-quizbit">Gemma QuizBit</option>
+          <option value="smollm2:135m-instruct-q4_1">SmolLM2</option>
+        </select>
+      </div>
       <div class="actions">
         <button class="button" type="button" id="test-ollama-settings">Tester Ollama</button>
         <button class="button secondary" type="button" id="setup-ollama-hint">Commande d installation</button>
@@ -319,12 +325,16 @@ function renderQuizzes() {
     <section class="card">
       <h2>Generer avec Ollama (IA locale)</h2>
       <p class="hint-box">
-        Modele par defaut: <code>smollm2:135m-instruct-q4_1</code> (~98 Mo).
-        Charge automatiquement au demarrage via <code>npm run local:serve</code>.
+        Choisis ton modele local. Gemma est plus puissant pour le francais, SmolLM est plus rapide.
       </p>
       <div class="form-grid">
         <input id="ollama-theme" placeholder="Theme (ex. Histoire de France)" />
         <input id="ollama-count" type="number" min="1" max="10" value="5" placeholder="Questions" />
+        <select id="ollama-model-select">
+          <option value="">Modele par defaut (.env)</option>
+          <option value="gemma-quizbit">Gemma QuizBit (2.2B - Recommande)</option>
+          <option value="smollm2:135m-instruct-q4_1">SmolLM2 (135M - Rapide)</option>
+        </select>
         <select id="ollama-type">
           <option value="mixed">Mixte</option>
           <option value="mcq">QCM</option>
@@ -790,9 +800,16 @@ function recalcUsersFromScores(users, scores) {
 
 async function testOllamaApi(statusId = 'ollama-status') {
   const status = document.getElementById(statusId);
-  if (status) status.textContent = 'Test Ollama en cours...';
+  const modelSelect = statusId === 'ollama-status' 
+    ? document.getElementById('ollama-model-select')
+    : document.getElementById('ollama-model-test');
+  const model = modelSelect?.value || '';
+  
+  if (status) status.textContent = `Test Ollama (${model || 'defaut'}) en cours...`;
   try {
-    const response = await fetch(`${getApiBase()}/api/test-ollama`);
+    const url = new URL(`${getApiBase()}/api/test-ollama`);
+    if (model) url.searchParams.set('model', model);
+    const response = await fetch(url);
     const data = await response.json();
     if (!response.ok || !data.ok) {
       throw new Error(data.message || `HTTP ${response.status}`);
@@ -819,8 +836,9 @@ async function generateQuizWithOllama() {
     Math.min(10, Number(document.getElementById('ollama-count')?.value) || 5),
   );
   const questionType = document.getElementById('ollama-type')?.value || 'mixed';
+  const model = document.getElementById('ollama-model-select')?.value || '';
   const status = document.getElementById('ollama-status');
-  if (status) status.textContent = 'Generation Ollama en cours...';
+  if (status) status.textContent = `Generation Ollama (${model || 'defaut'}) en cours...`;
   try {
     const response = await fetch(`${getApiBase()}/api/generate-questions`, {
       method: 'POST',
@@ -831,6 +849,7 @@ async function generateQuizWithOllama() {
         provider: 'ollama',
         questionType,
         choiceCount: 4,
+        model,
       }),
     });
     const data = await response.json();

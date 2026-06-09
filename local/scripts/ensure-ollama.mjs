@@ -1,5 +1,19 @@
 import { execSync, spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Chargement manuel de .env si present (un niveau au dessus du dossier scripts/)
+const envPath = path.join(__dirname, '..', '.env');
+if (fs.existsSync(envPath)) {
+  fs.readFileSync(envPath, 'utf8').split('\n').forEach(line => {
+    const [key, ...value] = line.split('=');
+    if (key && value.length) process.env[key.trim()] = value.join('=').trim();
+  });
+}
 
 const MODEL = String(process.env.OLLAMA_MODEL || 'smollm2:135m-instruct-q4_1').trim();
 const BASE = String(process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434').replace(
