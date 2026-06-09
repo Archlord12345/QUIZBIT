@@ -96,13 +96,13 @@ const getLocalIPs = () => {
 };
 
 server.listen(PORT, HOST, async () => {
-  const ips = await getLocalIPs();
+  const ips = getLocalIPs();
   console.log(`QuizBit offline server: http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
   console.log(`Panel admin: http://localhost:${PORT}/`);
   ips.forEach(ip => {
     console.log(`API mobile (telephone reel): http://${ip}:${PORT}`);
   });
-  console.log(`API mobile (emulateur Android): http://10.0.2.2:${PORT}`);
+  console.log(`API mobile (emulateur Android): http://10.0.2.2:3000`);
   console.log('Compte demo: demo@local.quizbit / demo123');
   try {
     const { getOllamaConfig, isOllamaAvailable } = await import(
