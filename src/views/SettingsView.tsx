@@ -38,17 +38,18 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
   const refreshOllama = useCallback(async () => {
     const health = await checkApiHealth();
     if (health.mode !== 'local' || !health.ok) {
-      setOllamaMessage('');
+      setOllamaMessage(health.ok ? `Connecté (Ping: ${health.latency}ms)` : '');
       return;
     }
+    const pingStr = ` (Ping: ${health.latency}ms)`;
     if (health.ollama?.available) {
-      setOllamaMessage(`IA locale active — modele ${health.ollama.model}`);
+      setOllamaMessage(`IA locale active — modele ${health.ollama.model}${pingStr}`);
     } else if (health.ollama?.enabled) {
       setOllamaMessage(
-        `Ollama configure (${health.ollama.model}) — chargement au demarrage du serveur.`,
+        `Ollama configure (${health.ollama.model}) — chargement...${pingStr}`,
       );
     } else {
-      setOllamaMessage('Ollama desactive sur le serveur local.');
+      setOllamaMessage(`Ollama desactive sur le serveur local.${pingStr}`);
     }
   }, []);
 

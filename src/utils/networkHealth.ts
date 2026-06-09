@@ -35,8 +35,10 @@ export const checkApiHealth = async (): Promise<ApiHealth> => {
   const healthPath =
     mode === 'local' ? `${url}/api/health` : `${url}/api/firebase-auth`;
 
+  const start = Date.now();
   try {
     const response = await fetchWithTimeout(healthPath, { method: 'GET' });
+    const latency = Date.now() - start;
     if (response.ok) {
       const data = (await response.json().catch(() => ({}))) as {
         ollama?: OllamaHealth;
@@ -56,6 +58,7 @@ export const checkApiHealth = async (): Promise<ApiHealth> => {
         url,
         mode,
         message,
+        latency,
         ollama,
       };
     }
@@ -63,6 +66,7 @@ export const checkApiHealth = async (): Promise<ApiHealth> => {
       ok: false,
       url,
       mode,
+      latency,
       message: `Serveur repondu avec HTTP ${response.status} (${url}).`,
     };
   } catch (error) {

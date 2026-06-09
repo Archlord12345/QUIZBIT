@@ -27,7 +27,7 @@ export default function App() {
 
   // Restore session on mount
   useEffect(() => {
-    const SPLASH_MIN_MS = 15000;
+    const SPLASH_MIN_MS = 1000;
     const start = Date.now();
     const restore = async () => {
       try {

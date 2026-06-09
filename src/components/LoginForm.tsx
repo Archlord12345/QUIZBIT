@@ -36,8 +36,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       setApiReachable(health.ok);
       setApiStatus(
         health.ok
-          ? health.message ||
-              `${health.mode === 'local' ? 'Mode offline' : 'Mode cloud'} — ${health.url}`
+          ? `${health.message || (health.mode === 'local' ? 'Mode offline' : 'Mode cloud')} (Ping: ${health.latency}ms)`
           : health.message,
       );
     };

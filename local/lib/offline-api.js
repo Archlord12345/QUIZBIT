@@ -185,6 +185,27 @@ export const handleOfflineApi = async (req, res, routeName) => {
     return json(res, 204, { ok: true });
   }
 
+  if (req.method === 'GET' && routeName === 'hello') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Access-Control-Allow-Origin': '*' });
+    const now = new Date().toLocaleTimeString();
+    return res.end(`
+      <html>
+        <body style="font-family:sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#f0f2f5;">
+          <h1 style="color:#4a204e;">QuizBit: Hello!</h1>
+          <p>Serveur local actif à : <strong>${now}</strong></p>
+          <p style="color:#666;">Si tu vois ce message, la connexion reseau est OK.</p>
+          <div id="ping" style="margin-top:20px; font-weight:bold; color:#22c55e;">Calcul du temps de reponse...</div>
+          <script>
+            const start = Date.now();
+            fetch(window.location.href).then(() => {
+              document.getElementById('ping').innerText = 'Temps de reponse mesure : ' + (Date.now() - start) + ' ms';
+            });
+          </script>
+        </body>
+      </html>
+    `);
+  }
+
   if (req.method === 'GET' && routeName === 'health') {
     let ollama = { enabled: false, available: false, model: '' };
     try {

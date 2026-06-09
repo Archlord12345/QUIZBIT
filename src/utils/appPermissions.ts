@@ -17,6 +17,7 @@ const getAndroidRuntimePermissions = (): Permission[] => {
     permissions.push(PermissionsAndroid.PERMISSIONS.NEARBY_WIFI_DEVICES);
   } else {
     permissions.push(PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE);
+    permissions.push(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
   }
 
   return permissions.filter(Boolean);
