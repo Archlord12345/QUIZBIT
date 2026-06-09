@@ -18,7 +18,7 @@ export type ApiHealth = {
 const fetchWithTimeout = async (
   url: string,
   init: RequestInit,
-  timeoutMs = 10000,
+  timeoutMs = 30000,
 ): Promise<Response> => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -75,7 +75,7 @@ export const checkApiHealth = async (): Promise<ApiHealth> => {
 
     const detail =
       error instanceof Error && error.name === 'AbortError'
-        ? 'Delai depasse (10 s).'
+        ? 'Delai depasse (30 s).'
         : error instanceof Error
           ? error.message
           : 'Erreur reseau';
